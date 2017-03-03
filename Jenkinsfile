@@ -9,7 +9,7 @@ node ("docker") {
 
         stage 'zip api dir'
         dir('api'){
-            sh 'zip ../myapp.zip -r * .[^.]*'
+            sh 'zip ../api.zip -r * .[^.]*'
         }
 
         stage 'upload to S3'
@@ -18,6 +18,8 @@ node ("docker") {
         }
 
         stage 'trigger ElasticBeanstalk'
+        sh 'aws elasticbeanstalk create-application-version --application-name platform --version-label v1 --description platformv1 --source-bundle S3Bucket="nerabus",S3Key="platform/api.zip" --auto-create-application'
+        sh 'aws elasticbeanstalk create-environment --application-name platform --environment-name platform --version-label v1 --solution-stack-name "64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6"'
 
         notifySuccessful()
     } catch (e) {
@@ -38,3 +40,6 @@ def notifySuccessful() {
 def notifyFailed() {
   slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
 }
+
+
+64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6
