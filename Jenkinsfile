@@ -9,10 +9,13 @@ node ("docker") {
 
         stage 'zip api dir'
         dir('api'){
-                    sh 'zip ../myapp.zip -r * .[^.]*'
-                }
+            sh 'zip ../myapp.zip -r * .[^.]*'
+        }
 
         stage 'upload to S3'
+        dir('api'){
+            step([$class: 'S3BucketPublisher', dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'nerabus/platform', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: true, selectedRegion: 'us-east-1', showDirectlyInBrowser: false, sourceFile: "*.zip", storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], profileName: 's3', userMetadata: []])
+        }
 
         stage 'trigger ElasticBeanstalk'
 
