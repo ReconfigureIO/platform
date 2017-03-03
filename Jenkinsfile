@@ -7,21 +7,11 @@ node ("docker") {
         stage "checkout"
         checkout scm
 
-        stage 'install'
-        sh 'docker build -t "reco-builder:latest" docker'
-        sh "docker run -v ${env.WORKSPACE}:/go/src/github.com/ReconfigureIO/reco -w /go/src/github.com/ReconfigureIO/reco reco-builder make clean dependencies"
+        stage 'zip api dir'
 
-        stage 'test'
-        sh "docker run -v ${env.WORKSPACE}:/go/src/github.com/ReconfigureIO/reco -w /go/src/github.com/ReconfigureIO/reco reco-builder make test benchmark"
+        stage 'upload to S3'
 
-        stage 'build'
-        sh "docker run -v ${env.WORKSPACE}:/go/src/github.com/ReconfigureIO/reco -w /go/src/github.com/ReconfigureIO/reco reco-builder make VERSION=${env.BRANCH_NAME} packages"
-
-        stage 'post build'
-        if (env.BRANCH_NAME == "master") {
-            step([$class: 'S3BucketPublisher', dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'nerabus/reco', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: true, selectedRegion: 'us-east-1', showDirectlyInBrowser: false, sourceFile: "dist/*.tar.gz", storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], profileName: 's3', userMetadata: []])
-        }
-        sh "docker run -v ${env.WORKSPACE}:/go/src/github.com/ReconfigureIO/reco -w /go/src/github.com/ReconfigureIO/reco reco-builder make clean"
+        stage 'trigger ElasticBeanstalk'
 
         notifySuccessful()
     } catch (e) {
