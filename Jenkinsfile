@@ -40,6 +40,3 @@ def notifySuccessful() {
 def notifyFailed() {
   slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
 }
-
-
-64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6
