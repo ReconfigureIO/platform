@@ -8,6 +8,9 @@ node ("docker") {
         checkout scm
 
         stage 'zip api dir'
+        dir('api'){
+                    sh 'zip ../myapp.zip -r * .[^.]*'
+                }
 
         stage 'upload to S3'
 
