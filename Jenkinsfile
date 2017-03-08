@@ -28,6 +28,19 @@ pipeline {
             }
         }
 
+        stage('build container') {
+            steps {
+                sh 'docker build -t "reco-builder:latest" docker'
+            }
+        }
+
+        stage('upload container to ECR')
+            steps {
+                docker.withRegistry("https://your.ecr.domain.amazonws.com", "ecr:a-credential-id") {
+                    docker.image("your-image-name").push()
+                }
+            }
+
         stage('zip api dir') {
             steps {
                 dir('api'){
