@@ -1,3 +1,3 @@
 FROM debian:jessie
-COPY main /main
+COPY ./main /main
 CMD [/main]
