@@ -28,15 +28,21 @@ pipeline {
             }
         }
 
-        stage('build container') {
+        stage('create builder') {
             steps {
                 sh 'docker build -t "reco-api:latest" build'
             }
         }
 
+        stage('build binary') {
+            steps {
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api:latest" go build main.go'
+            }
+        }
+
         stage('upload container to ECR') {
             steps {
-                script{
+                script {
                     docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api") {
                         docker.image("reco-api:latest").push()
                     }
