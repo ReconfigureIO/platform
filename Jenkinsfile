@@ -40,6 +40,7 @@ pipeline {
                     docker.image("reco-api:latest").push()
                 }
             }
+        }
 
         stage('zip api dir') {
             steps {
