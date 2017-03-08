@@ -30,13 +30,19 @@ pipeline {
 
         stage('create builder') {
             steps {
-                sh 'docker build -t "reco-api:latest" build'
+                sh 'docker build -t "reco-api-builder:latest" build'
             }
         }
 
         stage('build binary') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api:latest" go build main.go'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build main.go'
+            }
+        }
+
+        stage('build container for EB') {
+            steps {
+                sh 'docker build -t "reco-api:latest" build'
             }
         }
 
