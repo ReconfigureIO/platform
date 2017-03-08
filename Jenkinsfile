@@ -30,7 +30,7 @@ pipeline {
 
         stage('build container') {
             steps {
-                sh 'docker build -t "reco-builder:latest" docker'
+                sh 'docker build -t "reco-platform:latest" build'
             }
         }
 
