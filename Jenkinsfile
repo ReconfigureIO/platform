@@ -30,14 +30,14 @@ pipeline {
 
         stage('build container') {
             steps {
-                sh 'docker build -t "reco-platform:latest" build'
+                sh 'docker build -t "reco-api:latest" build'
             }
         }
 
         stage('upload container to ECR')
             steps {
-                docker.withRegistry("https://your.ecr.domain.amazonws.com", "ecr:a-credential-id") {
-                    docker.image("your-image-name").push()
+                docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api", "ecr:a-credential-id") {
+                    docker.image("reco-api:latest").push()
                 }
             }
 
