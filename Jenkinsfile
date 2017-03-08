@@ -36,7 +36,7 @@ pipeline {
 
         stage('upload container to ECR') {
             steps {
-                docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api", "ecr:a-credential-id") {
+                docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api") {
                     docker.image("reco-api:latest").push()
                 }
             }
