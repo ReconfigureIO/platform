@@ -46,7 +46,7 @@ pipeline {
             }
         }
 
-        stage('tag EB container for ECR repo')
+        stage('tag EB container for ECR repo') {
             steps {
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
             }
