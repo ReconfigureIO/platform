@@ -36,7 +36,7 @@ pipeline {
 
         stage('build binary') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build main.go -o ./api/'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build -o ./api/main main.go'
             }
         }
 
