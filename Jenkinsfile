@@ -46,6 +46,11 @@ pipeline {
             }
         }
 
+        stage('tag EB container for ECR repo')
+            steps {
+                sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
+            }
+
         stage('get ECR token') {
             steps {
                 sh 'aws ecr get-login'
@@ -55,7 +60,7 @@ pipeline {
         stage('upload container to ECR') {
             steps {
                 script {
-                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api") {
+                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
                         docker.image("reco-api:latest").push()
                     }
                 }
