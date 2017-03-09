@@ -50,6 +50,7 @@ pipeline {
             steps {
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
             }
+        }
 
         stage('get ECR token') {
             steps {
