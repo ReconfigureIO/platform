@@ -84,8 +84,10 @@ pipeline {
 
         stage('trigger ElasticBeanstalk') {
             steps {
+                sh "git rev-parse --short HEAD > .git/commit-id"                        
+                commit_id = readFile('.git/commit-id')
                 sh 'aws elasticbeanstalk create-application-version --application-name platform --version-label v1 --description platformv1 --source-bundle S3Bucket="nerabus",S3Key="platform/EB.zip" --auto-create-application'
-                sh 'aws elasticbeanstalk create-environment --application-name platform --environment-name platform --version-label v1 --solution-stack-name "64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6"'
+                sh 'aws elasticbeanstalk create-environment --application-name platform --environment-name platform --version-label commit_id --solution-stack-name "64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6"'
             }
         }
     }
