@@ -62,7 +62,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
-                        docker.image("reco-api:latest").push()
+                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
                     }
                 }
             }
