@@ -46,6 +46,12 @@ pipeline {
             }
         }
 
+        stage('get ECR token') {
+            steps {
+                sh 'aws ecr get-login'
+            }
+        }
+
         stage('upload container to ECR') {
             steps {
                 script {
