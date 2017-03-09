@@ -54,7 +54,7 @@ pipeline {
 
         stage('get ECR token') {
             steps {
-                sh 'aws ecr get-login'
+                sh '$(aws ecr get-login --region us-east-1)'
             }
         }
 
