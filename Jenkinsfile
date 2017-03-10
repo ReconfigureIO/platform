@@ -28,64 +28,35 @@ pipeline {
             }
         }
 
-        stage('create builder') {
+        stage('install') {
             steps {
                 sh 'docker build -t "reco-api-builder:latest" build'
             }
         }
 
-        stage('build binary') {
+        stage('build') {
             steps {
                 sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build -o ./api/main main.go'
-            }
-        }
-
-        stage('build container for EB') {
-            steps {
                 sh 'docker build -t "reco-api:latest" api'
-            }
-        }
-
-        stage('tag EB container for ECR repo') {
-            steps {
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
             }
         }
 
-        stage('get ECR token') {
+        stage ('deploy') {
+//            when {
+//                expression { env.BRANCH_NAME in ["master"] }
+//            }
             steps {
                 sh '$(aws ecr get-login --region us-east-1)'
-            }
-        }
-
-        stage('upload container to ECR') {
-            steps {
                 script {
                     docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
                         docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
                     }
                 }
-            }
-        }
-
-        stage('zip api dir') {
-            steps {
                 dir('EB'){
-                    sh 'zip ../EB.zip -r * .[^.]*'
+                    sh 'eb config put production'
+                    sh 'eb deploy'
                 }
-            }
-        }
-
-        stage('upload zip to S3') {
-            steps {
-                step([$class: 'S3BucketPublisher', dontWaitForConcurrentBuildCompletion: false, entries: [[bucket: 'nerabus/platform', excludedFile: '', flatten: false, gzipFiles: false, keepForever: false, managedArtifacts: false, noUploadOnFailure: true, selectedRegion: 'us-east-1', showDirectlyInBrowser: false, sourceFile: "*.zip", storageClass: 'STANDARD', uploadFromSlave: false, useServerSideEncryption: false]], profileName: 's3', userMetadata: []])
-            }
-        }
-
-        stage ('deploy') {
-            steps {
-                sh 'aws elasticbeanstalk create-application-version --application-name platform --version-label $(git rev-parse HEAD) --description platform --process --source-bundle S3Bucket="nerabus",S3Key="platform/EB.zip"'
-                sh 'aws elasticbeanstalk update-environment --application-name platform --environment-name production --version-label $(git rev-parse HEAD)'
             }
         }
     }
