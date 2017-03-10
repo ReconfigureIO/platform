@@ -84,8 +84,8 @@ pipeline {
 
         stage ('deploy') {
             steps {
-                sh "aws elasticbeanstalk create-application-version --application-name platform --version-label ${env.GIT_COMMIT} --description platform --process --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
-                sh "aws elasticbeanstalk update-environment --application-name platform --environment-name production --version-label ${env.GIT_COMMIT}"
+                sh "aws elasticbeanstalk create-application-version --application-name platform --version-label ${git rev-parse HEAD} --description platform --process --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
+                sh "aws elasticbeanstalk update-environment --application-name platform --environment-name production --version-label ${git rev-parse HEAD}"
             }
         }
     }
