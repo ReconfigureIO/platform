@@ -84,8 +84,8 @@ pipeline {
 
         stage('trigger ElasticBeanstalk') {
             steps {
-                sh 'aws elasticbeanstalk create-application-version --application-name platform --version-label env.GIT_COMMIT --description platform --source-bundle S3Bucket="nerabus",S3Key="platform/EB.zip" --auto-create-application'
-                sh 'aws elasticbeanstalk create-environment --application-name platform --environment-name platform --version-label env.GIT_COMMIT --solution-stack-name "64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6"'
+                sh "aws elasticbeanstalk create-application-version --application-name platform --version-label v0.1.0 --description platform --auto-create-application true --process true --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
+                sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6'"
             }
         }
     }
