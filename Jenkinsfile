@@ -82,17 +82,6 @@ pipeline {
             }
         }
 
-   try {
-       // do some maven magic
-   } catch (error) {
-       stage "Cleanup after fail"
-       emailext attachLog: true, body: "Build failed (see ${env.BUILD_URL}): ${error}", subject: "[JENKINS] ${env.JOB_NAME} failed", to: 'someone@example.com'
-       throw error
-   } finally {
-       step $class: 'JUnitResultArchiver', testResults: '**/TEST-*.xml'
-   }
-}
-
         stage('create application') {
             steps {
                 try {
