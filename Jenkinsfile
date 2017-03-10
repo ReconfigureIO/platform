@@ -82,21 +82,10 @@ pipeline {
             }
         }
 
-        stage('create application') {
-            steps {
-                sh 'aws elasticbeanstalk create-application --application-name platform --description=api-platform --resource-lifecycle-config "ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=100,DeleteSourceFromS3=true}}" || true'
-            }
-        }
-
-        stage('upload application version') {
+        stage ('deploy') {
             steps {
                 sh "aws elasticbeanstalk create-application-version --application-name platform --version-label ${env.GIT_COMMIT} --description platform --process --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
-            }
-        }
-
-        stage ('create environment') {
-            steps {
-                sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6' || true"
+                sh "aws elasticbeanstalk update-environment --application-name platform --environment-name production --version-label ${env.GIT_COMMIT}"
             }
         }
     }
