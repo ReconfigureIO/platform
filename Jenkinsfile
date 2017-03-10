@@ -82,10 +82,36 @@ pipeline {
             }
         }
 
-        stage('trigger ElasticBeanstalk') {
+   try {
+       // do some maven magic
+   } catch (error) {
+       stage "Cleanup after fail"
+       emailext attachLog: true, body: "Build failed (see ${env.BUILD_URL}): ${error}", subject: "[JENKINS] ${env.JOB_NAME} failed", to: 'someone@example.com'
+       throw error
+   } finally {
+       step $class: 'JUnitResultArchiver', testResults: '**/TEST-*.xml'
+   }
+}
+
+        stage('create application') {
             steps {
-                sh "aws elasticbeanstalk create-application-version --application-name platform --version-label v0.1.0 --description platform --auto-create-application true --process true --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
-                sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6'"
+                try {
+                    sh 'aws elasticbeanstalk create-application --application-name platform --description= "{ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=100,DeleteSourceFromS3=true}"'
+                } catch (error) {}
+            }
+        }
+
+        stage('upload application version') {
+            steps {
+                sh "aws elasticbeanstalk create-application-version --application-name platform --version-label ${env.GIT_COMMIT} --description platform --process --source-bundle S3Bucket='nerabus',S3Key='platform/EB.zip'"
+            }
+        }
+
+        stage ('create environment') {
+            steps {
+                try {
+                    sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6'"
+                } catch (error) {}
             }
         }
     }
