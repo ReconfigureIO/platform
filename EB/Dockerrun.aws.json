@@ -1,9 +1,4 @@
-  "Image": {
-    "Name": "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest",
-    "Update": "true"
-  },
-
- {
+{
   "AWSEBDockerrunVersion": "1",
   "Image": {
     "Name": "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest",
@@ -14,4 +9,4 @@
       "ContainerPort": "8080"
     }
   ]
- }
+}
