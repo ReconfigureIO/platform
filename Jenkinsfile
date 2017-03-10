@@ -84,9 +84,7 @@ pipeline {
 
         stage('create application') {
             steps {
-                try {
-                    sh 'aws elasticbeanstalk create-application --application-name platform --description= "{ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=100,DeleteSourceFromS3=true}"'
-                } catch (error) {}
+                sh 'aws elasticbeanstalk create-application --application-name platform --description= "{ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig={MaxCountRule={Enabled=true,MaxCount=100,DeleteSourceFromS3=true}" || true'
             }
         }
 
@@ -98,9 +96,7 @@ pipeline {
 
         stage ('create environment') {
             steps {
-                try {
-                    sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6'"
-                } catch (error) {}
+                sh "aws elasticbeanstalk create-environment --application-name platform --environment-name master --version-label ${env.GIT_COMMIT} --solution-stack-name '64bit Amazon Linux 2016.09 v2.5.0 running Docker 1.12.6' || true"
             }
         }
     }
