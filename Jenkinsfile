@@ -84,7 +84,7 @@ pipeline {
 
         stage('create application') {
             steps {
-                sh 'aws elasticbeanstalk create-application --application-name platform --description=api-platform --resource-lifecycle-config ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig=\\{MaxCountRule=\\{Enabled=true,MaxCount=100,DeleteSourceFromS3=true\\}\\} || true'
+                sh 'aws elasticbeanstalk create-application --application-name platform --description=api-platform --resource-lifecycle-config "ServiceRole=aws-elasticbeanstalk-service-role,VersionLifecycleConfig=\\{MaxCountRule=\\{Enabled=true,MaxCount=100,DeleteSourceFromS3=true\\}\\}" || true'
             }
         }
 
