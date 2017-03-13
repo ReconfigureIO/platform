@@ -1,0 +1,35 @@
+AWSConfigurationTemplateVersion: 1.1.0.0
+EnvironmentConfigurationMetadata:
+  DateCreated: '1489180327000'
+  DateModified: '1489180493037'
+  Description: Configuration created from the EB CLI using "eb config save".
+EnvironmentTier:
+  Name: WebServer
+  Type: Standard
+OptionSettings:
+  aws:autoscaling:launchconfiguration:
+    EC2KeyName: ''
+    IamInstanceProfile: aws-elasticbeanstalk-ec2-role
+  aws:autoscaling:updatepolicy:rollingupdate:
+    MaxBatchSize: '1'
+    MinInstancesInService: '1'
+    RollingUpdateEnabled: true
+    RollingUpdateType: Health
+  aws:elasticbeanstalk:application:environment:
+    GIN_MODE: release
+    PORT: '8080'
+  aws:elasticbeanstalk:command:
+    BatchSize: '10'
+    DeploymentPolicy: Rolling
+    IgnoreHealthCheck: true
+  aws:elb:listener:80:
+    InstancePort: '80'
+    InstanceProtocol: HTTP
+    ListenerEnabled: true
+    ListenerProtocol: HTTP
+  aws:elb:loadbalancer:
+    LoadBalancerHTTPSPort: '443'
+    SSLCertificateId: arn:aws:iam::398048034572:server-certificate/production.crt
+Platform:
+  PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
+    Amazon Linux/2.5.0
