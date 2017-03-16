@@ -33,6 +33,20 @@ type Build struct {
 
 func main() {
 
+  	db, err := gorm.Open("sqlite3", "test.db")
+	if err != nil {
+	panic("failed to connect database")
+	}
+	defer db.Close()
+
+	// Migrate the schema
+	db.AutoMigrate(&Account{})
+	db.AutoMigrate(&Project{})
+	db.AutoMigrate(&AuthToken{})
+	db.AutoMigrate(&Build{})
+
+	db.Create(&Account{GithubID: "campgareth", Email: "max.siegieda@reconfigure.io"})
+
 	r := gin.Default()
 
 	// Ping test
