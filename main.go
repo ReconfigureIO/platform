@@ -7,33 +7,49 @@ import (
     _ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-type Account struct {
-  gorm.Model
-  AccountID int
-  GithubID string
-  Email string
-  TeamID
+type User struct {
+	gorm.Model
+	GithubID string
+	Emails []Email //User has many Emails, Email.UserID is key
+	Team Team // User belongs to Team, TeamID is foreign key
+	TeamID int
+	AuthTokens []AuthToken //User has many AuthTokens
+}
+
+type Email struct {
+	gorm.Model
+	User User //Email belongs to User, UserID is foreign key
+    UserID  int 
+    Email   string  `gorm:"type:varchar(100);unique_index"` // `type` set sql type, `unique_index` will create unique index for this column
+}
+
+type Team struct {
+	gorm.Model
+	Users []User
 }
 
 type Project struct {
-  gorm.Model
-  ProjectID int
-  Name string
+  	gorm.Model
+  	Team Team //Project belongs to Team
+  	TeamID int
+  	Name string
+  	Builds []Build
 }
 
 type AuthToken struct {
-  gorm.Model
-  TokenID int
-  Token string
+	gorm.Model
+  	Token string
+  	UserID int
 }
 
 type Build struct {
-  gorm.Model
-  BuildID int
-  InputArtifact string
-  OutputArtifact string
-  CreatedTime string
-  OutputStream string
+  	gorm.Model
+  	User User //Build belongs to User, UserID is foreign key
+  	UserID int
+  	InputArtifact string
+  	OutputArtifact string
+  	CreatedTime string
+  	OutputStream string
 }
 
 func main() {
@@ -51,6 +67,7 @@ func main() {
 	db.AutoMigrate(&Build{})
 
 	db.Create(&Account{GithubID: "campgareth", Email: "max.siegieda@reconfigure.io"})
+
 
 	r := gin.Default()
 
