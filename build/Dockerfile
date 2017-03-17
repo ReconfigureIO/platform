@@ -3,3 +3,4 @@ RUN apt-get update && apt-get install -y
 RUN curl https://glide.sh/get | sh
 RUN go get github.com/gin-gonic/gin
 RUN go get -u github.com/jinzhu/gorm
+RUN go get github.com/lib/pq
