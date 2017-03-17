@@ -4,12 +4,12 @@ services:
     image: postgres
   web:
     build: build
-    command: bash -c "glide install && go build main.go && ./main"
+    command: bash -c "glide install && gin --bin main --appPort 8080"
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
     ports:
-      - "8080:8080"
+      - "8080:3000"
     depends_on:
       - db
     links:
