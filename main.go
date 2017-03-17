@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"github.com/jinzhu/gorm"
     _ "github.com/jinzhu/gorm/dialects/sqlite"
 )
@@ -26,6 +25,7 @@ type Email struct {
 type Team struct {
 	gorm.Model
 	Users []User
+	Name string
 }
 
 type Project struct {
@@ -48,7 +48,6 @@ type Build struct {
   	UserID int
   	InputArtifact string
   	OutputArtifact string
-  	CreatedTime string
   	OutputStream string
 }
 
@@ -66,7 +65,11 @@ func main() {
 	db.AutoMigrate(&AuthToken{})
 	db.AutoMigrate(&Build{})
 
-	db.Create(&Account{GithubID: "campgareth", Email: "max.siegieda@reconfigure.io"})
+	//now for some test data
+	db.Create(&User{GithubID: "campgareth", TeamID: 1})
+	db.Create(&Email{UserID: 1, Email: "max.siegieda@reconfigure.io"})
+	db.Create(&Team{Name: "reconfigure.io"})
+	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done"})
 
 
 	r := gin.Default()
