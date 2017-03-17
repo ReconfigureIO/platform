@@ -54,7 +54,7 @@ type Build struct {
 
 func main() {
 
-	db, err := gorm.Open("postgres", "host=127.0.0.1 user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
+	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
 	if err != nil {
 		fmt.Println(err)
     	panic("failed to connect database")

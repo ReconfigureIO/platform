@@ -1,0 +1,16 @@
+version: '2'
+services:
+  db:
+    image: postgres
+  web:
+    build: build
+    command: bash -c "go build main.go && ./main"
+    working_dir: /go/src/github.com/ReconfigureIO/platform
+    volumes:
+      - .:/go/src/github.com/ReconfigureIO/platform
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    links:
+      - db
