@@ -9,22 +9,27 @@ import (
 
 type Account struct {
   gorm.Model
+  AccountID int
   GithubID string
   Email string
+  TeamID
 }
 
 type Project struct {
   gorm.Model
+  ProjectID int
   Name string
 }
 
 type AuthToken struct {
   gorm.Model
+  TokenID int
   Token string
 }
 
 type Build struct {
   gorm.Model
+  BuildID int
   InputArtifact string
   OutputArtifact string
   CreatedTime string
