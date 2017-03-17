@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-    _ "github.com/jinzhu/gorm/dialects/sqlite"
+    _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type User struct {
@@ -53,11 +53,9 @@ type Build struct {
 
 func main() {
 
-  	db, err := gorm.Open("sqlite3", "test.db")
-	if err != nil {
-	panic("failed to connect database")
-	}
+	db, err := gorm.Open("postgres", "host=127.0.0.1 user=gorm dbname=gorm sslmode=disable password=mypassword")
 	defer db.Close()
+
 
 	// Migrate the schema
 	db.AutoMigrate(&Account{})
