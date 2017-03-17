@@ -58,7 +58,9 @@ func main() {
 
 
 	// Migrate the schema
-	db.AutoMigrate(&Account{})
+	db.AutoMigrate(&User{})
+	db.AutoMigrate(&Email{})
+	db.AutoMigrate(&Team{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&AuthToken{})
 	db.AutoMigrate(&Build{})
