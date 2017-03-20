@@ -31,6 +31,7 @@ pipeline {
         stage('install') {
             steps {
                 sh 'docker build -t "reco-api-builder:latest" build'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" glide install'
             }
         }
 
