@@ -1,4 +1,6 @@
 version: '2'
+env_file:
+  - dev.env
 services:
   db:
     image: postgres
