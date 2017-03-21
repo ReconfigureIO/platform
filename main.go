@@ -82,6 +82,14 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
+	r.GET("/users", func(c *gin.Context) {
+	allUsers := []User{}
+	db.Find(&allUsers) 
+	c.JSON(200, gin.H{
+		"users": allUsers,
+	})
+})
+
 	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
 }
