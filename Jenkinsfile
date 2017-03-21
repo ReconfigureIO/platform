@@ -31,6 +31,7 @@ pipeline {
         stage('install') {
             steps {
                 sh 'docker build -t "reco-api-builder:latest" build'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" glide install'
             }
         }
 
@@ -42,22 +43,22 @@ pipeline {
             }
         }
 
-        stage ('deploy') {
+//        stage ('deploy') {
 //            when {
 //                expression { env.BRANCH_NAME in ["master"] }
 //            }
-            steps {
-                sh '$(aws ecr get-login --region us-east-1)'
-                script {
-                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
-                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
-                    }
-                }
-                dir('EB'){
-                    sh 'eb config put production'
-                    sh 'eb deploy'
-                }
-            }
-        }
+//            steps {
+//                sh '$(aws ecr get-login --region us-east-1)'
+//                script {
+//                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
+//                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
+//                    }
+//                }
+//                dir('EB'){
+//                    sh 'eb config put production'
+//                    sh 'eb deploy'
+//                }
+//            }
+//        }
     }
 }

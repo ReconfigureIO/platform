@@ -1,0 +1,16 @@
+version: '2'
+services:
+  db:
+    image: postgres
+  web:
+    build: build
+    command: bash -c "glide install && gin --bin main --appPort 8080"
+    working_dir: /go/src/github.com/ReconfigureIO/platform
+    volumes:
+      - .:/go/src/github.com/ReconfigureIO/platform
+    ports:
+      - "8080:3000"
+    depends_on:
+      - db
+    links:
+      - db
