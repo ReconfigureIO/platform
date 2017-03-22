@@ -82,11 +82,11 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	r.GET("/users", func(c *gin.Context) {
-	allUsers := []User{}
-	db.Find(&allUsers) 
+	r.GET("/builds", func(c *gin.Context) {
+	allBuilds := []Build{}
+	db.Find(&allBuilds) 
 	c.JSON(200, gin.H{
-		"users": allUsers,
+		"builds": allBuilds,
 	})
 })
 
