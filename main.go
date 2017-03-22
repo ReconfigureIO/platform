@@ -84,7 +84,7 @@ func main() {
 
 	r.GET("/builds", func(c *gin.Context) {
 		allBuilds := []Build{}
-		db.Find(&allBuilds) 
+		db.Find(&allBuilds)
 		c.JSON(200, gin.H{
 			"builds": allBuilds,
 		})
@@ -92,53 +92,60 @@ func main() {
 
 	r.GET("/users", func(c *gin.Context) {
 		allUsers := []User{}
-		db.Find(&allUsers) 
+		db.Find(&allUsers)
 		c.JSON(200, gin.H{
 			"users": allUsers,
 		})
 	})
 
-
 	r.GET("/users/:githubid", func(c *gin.Context) {
 		GithubID := c.Param("githubid")
 		userdetails := User{}
-		fmt.Println(GithubID)
 		db.Where(&User{GithubID: GithubID}).First(&userdetails)
 		c.JSON(200, gin.H{
 			"user": userdetails,
-		})	
+		})
+	})
+
+	r.GET("/users/:githubid/projects", func(c *gin.Context) {
+		GithubID := c.Param("githubid")
+		userdetails := User{}
+		db.Where(&User{GithubID: GithubID}).First(&userdetails)
+		c.JSON(200, gin.H{
+			"user": userdetails,
+		})
 	})
 
 	// r.GET("/users/:id/projects", func(c *gin.Context) {
-	// 	id := c.Param("id")	
-	// })	
+	// 	id := c.Param("id")
+	// })
 
 	// r.GET("/users/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// r.GET("/projects", func(c *gin.Context) {
-	// 	//is user logged in?	
+	// 	//is user logged in?
 	// })
 
 	// r.GET("/projects/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// r.GET("/projects/:id/builds", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// r.GET("/users/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// r.GET("/builds/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// r.GET("/builds/:id/status", func(c *gin.Context) {
-	// 	id := c.Param("id")	
+	// 	id := c.Param("id")
 	// })
 
 	// Listen and Server in 0.0.0.0:8080
