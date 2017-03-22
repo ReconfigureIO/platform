@@ -88,6 +88,43 @@ func main() {
 	c.JSON(200, gin.H{
 		"builds": allBuilds,
 	})
+
+	r.GET("/users/:id", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/users/:id/projects", func(c *gin.Context) {
+		id := c.Param("id")	
+	})	
+
+	r.GET("/users/:id", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/projects", func(c *gin.Context) {
+		//is user logged in?	
+	})
+
+	r.GET("/projects/:id", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/projects/:id/builds", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/users/:id", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/builds/:id", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
+	r.GET("/builds/:id/status", func(c *gin.Context) {
+		id := c.Param("id")	
+	})
+
 })
 
 	// Listen and Server in 0.0.0.0:8080
