@@ -10,29 +10,14 @@ import (
 type User struct {
 	gorm.Model
 	GithubID   string
-	Emails     []Email //User has many Emails, Email.UserID is key
-	Team       Team    // User belongs to Team, TeamID is foreign key
-	TeamID     int
+	Email      string      `gorm:"type:varchar(100);unique_index"`
 	AuthTokens []AuthToken //User has many AuthTokens
-}
-
-type Email struct {
-	gorm.Model
-	User   User //Email belongs to User, UserID is foreign key
-	UserID int
-	Email  string `gorm:"type:varchar(100);unique_index"` // `type` set sql type, `unique_index` will create unique index for this column
-}
-
-type Team struct {
-	gorm.Model
-	Users []User
-	Name  string
 }
 
 type Project struct {
 	gorm.Model
-	Team   Team //Project belongs to Team
-	TeamID int
+	User   User //Project belongs to User
+	UserID int
 	Name   string
 	Builds []Build
 }
@@ -63,17 +48,14 @@ func main() {
 
 	// Migrate the schema
 	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Email{})
-	db.AutoMigrate(&Team{})
 	db.AutoMigrate(&Project{})
 	db.AutoMigrate(&AuthToken{})
 	db.AutoMigrate(&Build{})
 
 	//now for some test data
-	db.Create(&User{GithubID: "campgareth", TeamID: 1})
-	db.Create(&Email{UserID: 1, Email: "max.siegieda@reconfigure.io"})
-	db.Create(&Team{Name: "reconfigure.io"})
+	db.Create(&User{GithubID: "campgareth"})
 	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done"})
+	db.Create(&Project{UserID: 1, Name: "parallel-histogram"})
 
 	r := gin.Default()
 
@@ -107,22 +89,24 @@ func main() {
 		})
 	})
 
-	r.GET("/users/:githubid/projects", func(c *gin.Context) {
-		GithubID := c.Param("githubid")
-		userdetails := User{}
-		db.Where(&User{GithubID: GithubID}).First(&userdetails)
+	// r.GET("/users/:githubid/projects", func(c *gin.Context) {
+	// 	GithubID := c.Param("githubid")
+	// 	db.Table("users").Select("users.githubid, projects.userid").Joins("left join projects on projects.userid = users.id").Scan(&results)
+
+	// 	projects := []Project{}
+	// 	db.Where(&User{GithubID: GithubID}).First(&userdetails)
+	// 	c.JSON(200, gin.H{
+	// 		"user": userdetails,
+	// 	})
+	// })
+
+	r.GET("/projects", func(c *gin.Context) {
+		allProjects := []Project{}
+		db.Find(&allProjects)
 		c.JSON(200, gin.H{
-			"user": userdetails,
+			"projects": allProjects,
 		})
 	})
-
-	// r.GET("/users/:id/projects", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
-
-	// r.GET("/users/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
 
 	// r.GET("/projects", func(c *gin.Context) {
 	// 	//is user logged in?
