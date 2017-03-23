@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -15,7 +16,7 @@ type User struct {
 }
 
 type Project struct {
-	gorm.Model
+	ID 	   int `gorm:"primary_key"`
 	User   User //Project belongs to User
 	UserID int
 	Name   string
@@ -82,10 +83,10 @@ func main() {
 
 	r.GET("/users/:githubid", func(c *gin.Context) {
 		GithubID := c.Param("githubid")
-		userdetails := User{}
-		db.Where(&User{GithubID: GithubID}).First(&userdetails)
+		userdets := User{}
+		db.Where(&User{GithubID: GithubID}).First(&userdets)
 		c.JSON(200, gin.H{
-			"user": userdetails,
+			"user": userdets,
 		})
 	})
 
@@ -108,9 +109,14 @@ func main() {
 		})
 	})
 
-	// r.GET("/projects", func(c *gin.Context) {
-	// 	//is user logged in?
-	// })
+	r.GET("/projects/:id", func(c *gin.Context) {
+		ProjectID, _ := strconv.Atoi(c.Param("id"))
+		ProjectDets := Project{}
+		db.Where(&Project{ID: ProjectID}).First(&ProjectDets)
+		c.JSON(200, gin.H{
+			"Project": ProjectDets,
+		})
+	})
 
 	// r.GET("/projects/:id", func(c *gin.Context) {
 	// 	id := c.Param("id")
