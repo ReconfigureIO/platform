@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"strconv"
 )
 
 type User struct {
@@ -16,7 +16,7 @@ type User struct {
 }
 
 type Project struct {
-	ID 	   int `gorm:"primary_key"`
+	ID     int  `gorm:"primary_key"`
 	User   User //Project belongs to User
 	UserID int
 	Name   string
@@ -30,9 +30,11 @@ type AuthToken struct {
 }
 
 type Build struct {
-	gorm.Model
+	ID             int  `gorm:"primary_key"`
 	User           User //Build belongs to User, UserID is foreign key
 	UserID         int
+	Project        Project
+	ProjectID      int
 	InputArtifact  string
 	OutputArtifact string
 	OutputStream   string
@@ -72,6 +74,19 @@ func main() {
 			"builds": allBuilds,
 		})
 	})
+
+	r.GET("/builds/:id", func(c *gin.Context) {
+		BuildID, _ := strconv.Atoi(c.Param("id"))
+		builddets := Build{}
+		db.Where(&Build{ID: BuildID}).First(&builddets)
+		c.JSON(200, gin.H{
+			"build": builddets,
+		})
+	})
+
+	// r.GET("/builds/:id/status", func(c *gin.Context) {
+	// 	id := c.Param("id")
+	// })
 
 	r.GET("/users", func(c *gin.Context) {
 		allUsers := []User{}
@@ -118,25 +133,14 @@ func main() {
 		})
 	})
 
-	// r.GET("/projects/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
-
-	// r.GET("/projects/:id/builds", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
-
-	// r.GET("/users/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
-
-	// r.GET("/builds/:id", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
-
-	// r.GET("/builds/:id/status", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
+	r.GET("/projects/:id/builds", func(c *gin.Context) {
+		ProjectID, _ := strconv.Atoi(c.Param("id"))
+		Builds := Build{}
+		db.Where(&Build{ProjectID: ProjectID}).First(&Builds)
+		c.JSON(200, gin.H{
+			"Builds": Builds,
+		})
+	})
 
 	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
