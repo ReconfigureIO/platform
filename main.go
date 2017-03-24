@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	ID         int `gorm:"primary_key"`
+	ID         uuid `gorm:"primary_key"`
 	GithubID   string
 	Email      string      `gorm:"type:varchar(100);unique_index"`
 	AuthTokens []AuthToken //User has many AuthTokens
@@ -49,17 +49,6 @@ func main() {
 		panic("failed to connect database")
 	}
 	defer db.Close()
-
-	// Migrate the schema
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Project{})
-	db.AutoMigrate(&AuthToken{})
-	db.AutoMigrate(&Build{})
-
-	//now for some test data
-	db.Create(&User{GithubID: "campgareth"})
-	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done", Status: "COMPLETED"})
-	db.Create(&Project{UserID: 1, Name: "parallel-histogram"})
 
 	r := gin.Default()
 
