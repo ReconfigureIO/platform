@@ -1,12 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"strconv"
 )
+
+var NOT_FOUND = errors.New("Not Found")
 
 type User struct {
 	ID         int `gorm:"primary_key"`
@@ -66,7 +69,10 @@ func main() {
 	})
 
 	r.GET("/builds/:id", func(c *gin.Context) {
-		BuildID := stringToInt(c.Param("id"))
+		BuildID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		builddets := Build{}
 		db.Where(&Build{ID: BuildID}).First(&builddets)
 		c.JSON(200, gin.H{
@@ -75,7 +81,10 @@ func main() {
 	})
 
 	r.GET("/builds/:id/status", func(c *gin.Context) {
-		BuildID := stringToInt(c.Param("id"))
+		BuildID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		buildstatus := Build{}
 		db.Where(&Build{ID: BuildID}).First(&buildstatus)
 		c.JSON(200, gin.H{
@@ -92,7 +101,10 @@ func main() {
 	})
 
 	r.GET("/users/:id", func(c *gin.Context) {
-		UserID := stringToInt(c.Param("id"))
+		UserID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		userdets := User{}
 		db.Where(&User{ID: UserID}).First(&userdets)
 		c.JSON(200, gin.H{
@@ -101,7 +113,10 @@ func main() {
 	})
 
 	r.GET("/users/:id/projects", func(c *gin.Context) {
-		UserID := stringToInt(c.Param("id"))
+		UserID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		projects := []Project{}
 		db.Where(&Project{UserID: UserID}).Find(&projects)
 		c.JSON(200, gin.H{
@@ -118,7 +133,10 @@ func main() {
 	})
 
 	r.GET("/projects/:id", func(c *gin.Context) {
-		ProjectID := stringToInt(c.Param("id"))
+		ProjectID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		ProjectDets := Project{}
 		db.Where(&Project{ID: ProjectID}).First(&ProjectDets)
 		c.JSON(200, gin.H{
@@ -127,7 +145,10 @@ func main() {
 	})
 
 	r.GET("/projects/:id/builds", func(c *gin.Context) {
-		ProjectID := stringToInt(c.Param("id"))
+		ProjectID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
 		Builds := Build{}
 		db.Where(&Build{ProjectID: ProjectID}).Find(&Builds)
 		c.JSON(200, gin.H{
@@ -139,10 +160,12 @@ func main() {
 	r.Run(":8080")
 }
 
-func stringToInt(s string) int {
+func stringToInt(s string, c *gin.Context) (int, error) {
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		fmt.Println(err)
+		c.AbortWithStatus(404)
+		return 0, NOT_FOUND
+	} else {
+		return i, nil
 	}
-	return i
 }
