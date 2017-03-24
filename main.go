@@ -66,7 +66,7 @@ func main() {
 	})
 
 	r.GET("/builds/:id", func(c *gin.Context) {
-		BuildID, _ := strconv.Atoi(c.Param("id"))
+		BuildID := stringToInt(c.Param("id"))
 		builddets := Build{}
 		db.Where(&Build{ID: BuildID}).First(&builddets)
 		c.JSON(200, gin.H{
@@ -75,7 +75,7 @@ func main() {
 	})
 
 	r.GET("/builds/:id/status", func(c *gin.Context) {
-		BuildID, _ := strconv.Atoi(c.Param("id"))
+		BuildID := stringToInt(c.Param("id"))
 		buildstatus := Build{}
 		db.Where(&Build{ID: BuildID}).First(&buildstatus)
 		c.JSON(200, gin.H{
@@ -92,7 +92,7 @@ func main() {
 	})
 
 	r.GET("/users/:id", func(c *gin.Context) {
-		UserID, _ := strconv.Atoi(c.Param("id"))
+		UserID := stringToInt(c.Param("id"))
 		userdets := User{}
 		db.Where(&User{ID: UserID}).First(&userdets)
 		c.JSON(200, gin.H{
@@ -101,7 +101,7 @@ func main() {
 	})
 
 	r.GET("/users/:id/projects", func(c *gin.Context) {
-		UserID, _ := strconv.Atoi(c.Param("id"))
+		UserID := stringToInt(c.Param("id"))
 		projects := []Project{}
 		db.Where(&Project{UserID: UserID}).Find(&projects)
 		c.JSON(200, gin.H{
@@ -118,7 +118,7 @@ func main() {
 	})
 
 	r.GET("/projects/:id", func(c *gin.Context) {
-		ProjectID, _ := strconv.Atoi(c.Param("id"))
+		ProjectID := stringToInt(c.Param("id"))
 		ProjectDets := Project{}
 		db.Where(&Project{ID: ProjectID}).First(&ProjectDets)
 		c.JSON(200, gin.H{
@@ -127,7 +127,7 @@ func main() {
 	})
 
 	r.GET("/projects/:id/builds", func(c *gin.Context) {
-		ProjectID, _ := strconv.Atoi(c.Param("id"))
+		ProjectID := stringToInt(c.Param("id"))
 		Builds := Build{}
 		db.Where(&Build{ProjectID: ProjectID}).Find(&Builds)
 		c.JSON(200, gin.H{
@@ -137,4 +137,11 @@ func main() {
 
 	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
+}
+
+func stringToInt(s string) {
+	i, err := strconv.Atoi(c.Param("s"))
+	if err != nil {
+		fmt.Println(err)
+	}
 }
