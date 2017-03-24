@@ -60,6 +60,13 @@ type PostBuild struct {
 	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
+var secrets = gin.H{
+	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
+	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
+	"lena":   gin.H{"email": "lena@guapa.com", "phone": "523443"},
+	"user":   gin.H{"email": "user@email.com", "phone": "yes"},
+}
+
 func main() {
 
 	gormConnDets := os.Getenv("DATABASE_URL")
@@ -92,6 +99,27 @@ func main() {
 		newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
 		db.Create(&newBuild)
 		c.JSON(201, newBuild)
+
+	// Group using gin.BasicAuth() middleware
+	// gin.Accounts is a shortcut for map[string]string
+	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
+		"foo":    "bar",
+		"austin": "1234",
+		"lena":   "hello2",
+		"manu":   "4321",
+		"user":   "password",
+	}))
+
+	// /admin/secrets endpoint
+	// hit "localhost:8080/admin/secrets
+	authorized.GET("/secretpong", func(c *gin.Context) {
+		// get user, it was set by the BasicAuth middleware
+		user := c.MustGet(gin.AuthUserKey).(string)
+		if secret, ok := secrets[user]; ok {
+			c.JSON(200, gin.H{"user": user, "secret": secret})
+		} else {
+			c.JSON(200, gin.H{"user": user, "secret": "NO SECRET :("})
+		}
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
