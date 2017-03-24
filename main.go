@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	gorm.Model
+	ID         int `gorm:"primary_key"`
 	GithubID   string
 	Email      string      `gorm:"type:varchar(100);unique_index"`
 	AuthTokens []AuthToken //User has many AuthTokens
@@ -38,6 +38,7 @@ type Build struct {
 	InputArtifact  string
 	OutputArtifact string
 	OutputStream   string
+	Status         string
 }
 
 func main() {
@@ -57,7 +58,7 @@ func main() {
 
 	//now for some test data
 	db.Create(&User{GithubID: "campgareth"})
-	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done"})
+	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done", Status: "COMPLETED"})
 	db.Create(&Project{UserID: 1, Name: "parallel-histogram"})
 
 	r := gin.Default()
@@ -84,9 +85,14 @@ func main() {
 		})
 	})
 
-	// r.GET("/builds/:id/status", func(c *gin.Context) {
-	// 	id := c.Param("id")
-	// })
+	r.GET("/builds/:id/status", func(c *gin.Context) {
+		BuildID, _ := strconv.Atoi(c.Param("id"))
+		buildstatus := Build{}
+		db.Where(&Build{ID: BuildID}).First(&buildstatus)
+		c.JSON(200, gin.H{
+			"status": buildstatus.Status,
+		})
+	})
 
 	r.GET("/users", func(c *gin.Context) {
 		allUsers := []User{}
@@ -96,25 +102,23 @@ func main() {
 		})
 	})
 
-	r.GET("/users/:githubid", func(c *gin.Context) {
-		GithubID := c.Param("githubid")
+	r.GET("/users/:id", func(c *gin.Context) {
+		UserID, _ := strconv.Atoi(c.Param("id"))
 		userdets := User{}
-		db.Where(&User{GithubID: GithubID}).First(&userdets)
+		db.Where(&User{ID: UserID}).First(&userdets)
 		c.JSON(200, gin.H{
 			"user": userdets,
 		})
 	})
 
-	// r.GET("/users/:githubid/projects", func(c *gin.Context) {
-	// 	GithubID := c.Param("githubid")
-	// 	db.Table("users").Select("users.githubid, projects.userid").Joins("left join projects on projects.userid = users.id").Scan(&results)
-
-	// 	projects := []Project{}
-	// 	db.Where(&User{GithubID: GithubID}).First(&userdetails)
-	// 	c.JSON(200, gin.H{
-	// 		"user": userdetails,
-	// 	})
-	// })
+	r.GET("/users/:id/projects", func(c *gin.Context) {
+		UserID, _ := strconv.Atoi(c.Param("id"))
+		projects := []Project{}
+		db.Where(&Project{UserID: UserID}).Find(&projects)
+		c.JSON(200, gin.H{
+			"projects": projects,
+		})
+	})
 
 	r.GET("/projects", func(c *gin.Context) {
 		allProjects := []Project{}
@@ -136,7 +140,7 @@ func main() {
 	r.GET("/projects/:id/builds", func(c *gin.Context) {
 		ProjectID, _ := strconv.Atoi(c.Param("id"))
 		Builds := Build{}
-		db.Where(&Build{ProjectID: ProjectID}).First(&Builds)
+		db.Where(&Build{ProjectID: ProjectID}).Find(&Builds)
 		c.JSON(200, gin.H{
 			"Builds": Builds,
 		})
