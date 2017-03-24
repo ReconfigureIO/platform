@@ -139,9 +139,10 @@ func main() {
 	r.Run(":8080")
 }
 
-func stringToInt(s string) {
-	i, err := strconv.Atoi(c.Param("s"))
+func stringToInt(s string) int {
+	i, err := strconv.Atoi(s)
 	if err != nil {
 		fmt.Println(err)
 	}
+	return i
 }
