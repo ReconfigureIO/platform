@@ -9,7 +9,7 @@ import (
 )
 
 type User struct {
-	ID         uuid `gorm:"primary_key"`
+	ID         int `gorm:"primary_key"`
 	GithubID   string
 	Email      string      `gorm:"type:varchar(100);unique_index"`
 	AuthTokens []AuthToken //User has many AuthTokens
