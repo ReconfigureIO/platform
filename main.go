@@ -64,18 +64,25 @@ func main() {
 		id := c.DefaultQuery("id", "")
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
-		if id != "" {
-			BuildID, err := stringToInt(id, c)
-			if err != nil {
+		if id != "" && project != "" {
+			BuildID, errb := stringToInt(id, c)
+			ProjID, errp := stringToInt(project, c)
+			if errb != nil || errp != nil {
 				return
 			}
-			db.Where(&Build{ID: BuildID}).First(&Builds)
+			db.Where(&Build{ID: BuildID}).Where(&Build{ProjectID: ProjID}).First(&Builds)
 		} else if project != "" {
 			ProjID, err := stringToInt(project, c)
 			if err != nil {
 				return
 			}
 			db.Where(&Build{ProjectID: ProjID}).Find(&Builds)
+		} else if id != "" {
+			BuildID, err := stringToInt(id, c)
+			if err != nil {
+				return
+			}
+			db.Where(&Build{ID: BuildID}).Find(&Builds)
 		} else {
 			db.Find(&Builds)
 		}
