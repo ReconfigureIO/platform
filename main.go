@@ -62,6 +62,7 @@ func main() {
 
 	r.GET("/builds", func(c *gin.Context) {
 		id := c.DefaultQuery("id", "")
+		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
 		if id != "" {
 			BuildID, err := stringToInt(id, c)
@@ -69,6 +70,12 @@ func main() {
 				return
 			}
 			db.Where(&Build{ID: BuildID}).First(&Builds)
+		} else if project != "" {
+			ProjID, err := stringToInt(project, c)
+			if err != nil {
+				return
+			}
+			db.Where(&Build{ProjectID: ProjID}).Find(&Builds)
 		} else {
 			db.Find(&Builds)
 		}
@@ -79,34 +86,20 @@ func main() {
 	})
 
 	r.GET("/projects", func(c *gin.Context) {
-		allProjects := []Project{}
-		db.Find(&allProjects)
-		c.JSON(200, gin.H{
-			"projects": allProjects,
-		})
-	})
+		id := c.DefaultQuery("id", "")
 
-	r.GET("/projects/:id", func(c *gin.Context) {
-		ProjectID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
+		Projects := []Project{}
+		if id != "" {
+			ProjID, err := stringToInt(id, c)
+			if err != nil {
+				return
+			}
+			db.Where(&Project{ID: ProjID}).First(&Projects)
+		} else {
+			db.Find(&Projects)
 		}
-		ProjectDets := Project{}
-		db.Where(&Project{ID: ProjectID}).First(&ProjectDets)
 		c.JSON(200, gin.H{
-			"Project": ProjectDets,
-		})
-	})
-
-	r.GET("/projects/:id/builds", func(c *gin.Context) {
-		ProjectID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
-		}
-		Builds := Build{}
-		db.Where(&Build{ProjectID: ProjectID}).Find(&Builds)
-		c.JSON(200, gin.H{
-			"Builds": Builds,
+			"projects": Projects,
 		})
 	})
 
