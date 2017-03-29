@@ -61,34 +61,20 @@ func main() {
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
-		allBuilds := []Build{}
-		db.Find(&allBuilds)
-		c.JSON(200, gin.H{
-			"builds": allBuilds,
-		})
-	})
-
-	r.GET("/builds/:id", func(c *gin.Context) {
-		BuildID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
+		id := c.DefaultQuery("id", "")
+		Builds := []Build{}
+		if id != "" {
+			BuildID, err := stringToInt(id, c)
+			if err != nil {
+				return
+			}
+			db.Where(&Build{ID: BuildID}).First(&Builds)
+		} else {
+			db.Find(&Builds)
 		}
-		builddets := Build{}
-		db.Where(&Build{ID: BuildID}).First(&builddets)
-		c.JSON(200, gin.H{
-			"build": builddets,
-		})
-	})
 
-	r.GET("/builds/:id/status", func(c *gin.Context) {
-		BuildID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
-		}
-		buildstatus := Build{}
-		db.Where(&Build{ID: BuildID}).First(&buildstatus)
 		c.JSON(200, gin.H{
-			"status": buildstatus.Status,
+			"builds": Builds,
 		})
 	})
 
