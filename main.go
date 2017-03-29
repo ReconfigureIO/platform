@@ -12,36 +12,36 @@ import (
 var NOT_FOUND = errors.New("Not Found")
 
 type User struct {
-	ID         int `gorm:"primary_key"`
-	GithubID   string
-	Email      string      `gorm:"type:varchar(100);unique_index"`
-	AuthTokens []AuthToken //User has many AuthTokens
+	ID         int         `gorm:"primary_key" json:"id"`
+	GithubID   string      `json:"github_id"`
+	Email      string      `gorm:"type:varchar(100);unique_index" json:"email"`
+	AuthTokens []AuthToken `json:"auth_token"` //User has many AuthTokens
 }
 
 type Project struct {
-	ID     int  `gorm:"primary_key"`
-	User   User //Project belongs to User
-	UserID int
-	Name   string
-	Builds []Build
+	ID     int     `gorm:"primary_key" json:"id"`
+	User   User    `json:"user"` //Project belongs to User
+	UserID int     `json:"user_id"`
+	Name   string  `json:"name"`
+	Builds []Build `json:"builds"`
 }
 
 type AuthToken struct {
 	gorm.Model
-	Token  string
-	UserID int
+	Token  string `json:"token"`
+	UserID int    `json:"user_id"`
 }
 
 type Build struct {
-	ID             int  `gorm:"primary_key"`
-	User           User //Build belongs to User, UserID is foreign key
-	UserID         int
-	Project        Project
-	ProjectID      int
-	InputArtifact  string
-	OutputArtifact string
-	OutputStream   string
-	Status         string
+	ID             int     `gorm:"primary_key" json:"id"`
+	User           User    `json:"user"` //Build belongs to User, UserID is foreign key
+	UserID         int     `json:"user_id"`
+	Project        Project `json:"project"`
+	ProjectID      int     `json:"project_id"`
+	InputArtifact  string  `json:"input_artifact"`
+	OutputArtifact string  `json:"output_artifact"`
+	OutputStream   string  `json:"outout_stream"`
+	Status         string  `json:"status"`
 }
 
 func main() {
