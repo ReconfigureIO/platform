@@ -78,38 +78,6 @@ func main() {
 		})
 	})
 
-	r.GET("/users", func(c *gin.Context) {
-		allUsers := []User{}
-		db.Find(&allUsers)
-		c.JSON(200, gin.H{
-			"users": allUsers,
-		})
-	})
-
-	r.GET("/users/:id", func(c *gin.Context) {
-		UserID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
-		}
-		userdets := User{}
-		db.Where(&User{ID: UserID}).First(&userdets)
-		c.JSON(200, gin.H{
-			"user": userdets,
-		})
-	})
-
-	r.GET("/users/:id/projects", func(c *gin.Context) {
-		UserID, err := stringToInt(c.Param("id"), c)
-		if err != nil {
-			return
-		}
-		projects := []Project{}
-		db.Where(&Project{UserID: UserID}).Find(&projects)
-		c.JSON(200, gin.H{
-			"projects": projects,
-		})
-	})
-
 	r.GET("/projects", func(c *gin.Context) {
 		allProjects := []Project{}
 		db.Find(&allProjects)
