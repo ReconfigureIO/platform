@@ -36,20 +36,31 @@ curl -X GET localhost:8080/projects
 
 Create a new project
 
+Projects have a UserID and a Name
+
+```
+curl -X POST -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects
+```
+
+You can expect this to return a HTTP `201` code with the newly created project including ID
+
 <TODO> Describe format, return codes (201)
 
-#### GET /projects?id={project_id}
+#### GET /projects/{project_id}
 
 To view one project's details, specify the `ID` of that project:
 ```
-curl -X GET localhost:8080/projects?id=3
-{"projects":[{"id":3,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null}]}
+curl -X GET localhost:8080/projects/3
+{"id":3,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null}
 ```
 
-#### PUT /projects?id={project_id}
+#### PUT /projects/{project_id}
 
-Update a project
+Change the name of a project, assign project to another user(? useful for organisations but not right now)
 
+```
+curl -X PUT -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects/{project_id}
+```
 <TODO> Describe format, return codes (204)
 
 ### Builds
@@ -59,18 +70,17 @@ Update a project
 
 ```
 curl -X GET localhost:8080/builds
-<<<<<<< HEAD
 {"builds":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
 
 ```
 
-#### GET /builds?id={build_id}
+#### GET /builds/{build_id}
 
 To view one particular build's details:
 
 ```
-curl -X GET localhost:8080/builds?id=1
-{"builds":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
+curl -X GET localhost:8080/builds/1
+{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}
 ```
 
 #### GET /builds?project={project_id}
@@ -81,12 +91,24 @@ curl -X GET localhost:8080/builds?project=0
 {"builds":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
 ```
 
-#### POST /builds?project={project_id}
+#### POST /builds
 
-Create a build for a project
+Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
-<TODO> Describe format, return codes (201)
+```
+curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'status=SUBMITTED' http://localhost:8080/projects
+```
 
+You can expect this to return a HTTP `202` code with the newly created build including ID
+
+#### PUT /builds/{id}
+
+You can update a Build for instance when its status changes or the output artifact needs setting.
+
+```
+curl -X PUT -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/projects
+```
+You can expect this to return a HTTP `204` code
 
 #### GET /builds/{build_id}/logs
 
