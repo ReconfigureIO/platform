@@ -30,7 +30,6 @@ YYYY-MM-DDTHH:MM:SSZ
 ```
 curl -X GET localhost:8080/projects
 {"projects":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null},{"id":2,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null},{"id":3,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null},{"id":4,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null},{"id":5,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null},{"id":6,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"name":"parallel-histogram","builds":null}]}
-
 ```
 
 #### POST /projects
@@ -60,6 +59,7 @@ Update a project
 
 ```
 curl -X GET localhost:8080/builds
+<<<<<<< HEAD
 {"builds":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
 
 ```
@@ -87,6 +87,12 @@ Create a build for a project
 
 <TODO> Describe format, return codes (201)
 
+
+#### GET /builds/{build_id}/logs
+
+Stream the logs for a given build
+
+<TODO> Describe format, termination
 
 #### GET /builds/{build_id}/logs
 
