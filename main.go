@@ -6,14 +6,19 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
 	"io"
+<<<<<<< 6cb203b765112e82e603987aa0e7d0d4f1905b18
 	"os"
 	"strconv"
+=======
+	"log"
+>>>>>>> some work on ending log stream.
 )
 
 var NOT_FOUND = errors.New("Not Found")
@@ -199,8 +204,56 @@ func main() {
 	})
 
 	// Log streaming test
-	r.GET("/logs", func(c *gin.Context) {
+	r.GET("/build/:id/logs", func(c *gin.Context) {
+		id := c.Params.ByName("id")
 		cwLogs := cloudwatchlogs.New(awsSession)
+		batchSession := batch.New(awsSession)
+
+		getJobStatus := func() (*batch.JobDetail, error) {
+			inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
+			resp, err := batchSession.DescribeJobs(inp)
+			if err != nil {
+				return nil, err
+			}
+			if len(resp.Jobs) == 0 {
+				return nil, nil
+			}
+			return resp.Jobs[0], nil
+		}
+
+		job, err := getJobStatus()
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+		if job == nil {
+			c.AbortWithStatus(404)
+			return
+		}
+
+		log.Printf("found job:  %+v", *job)
+
+		searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
+			LogGroupName:        aws.String("/aws/batch/job"), // Required
+			Descending:          aws.Bool(true),
+			Limit:               aws.Int64(1),
+			LogStreamNamePrefix: aws.String("example/" + id),
+		}
+		resp, err := cwLogs.DescribeLogStreams(searchParams)
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		if len(resp.LogStreams) == 0 {
+			c.AbortWithStatus(404)
+			return
+		}
+		logStream := resp.LogStreams[0]
+		log.Printf("opening log stream: %s", *logStream.LogStreamName)
+
 		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
 		// Stop streaming as soon as we get a stop
@@ -211,7 +264,7 @@ func main() {
 
 		params := (&cloudwatchlogs.GetLogEventsInput{}).
 			SetLogGroupName("/aws/batch/job").
-			SetLogStreamName("example/16e34cd9-1115-4ce8-91b8-64ffbc5c24f0/9508b2f2-e6bf-4cb1-93e4-82f4b81425a0").
+			SetLogStreamName(*logStream.LogStreamName).
 			SetStartFromHead(true)
 
 		go func() {
@@ -240,6 +293,9 @@ func main() {
 						c.Error(err)
 						return false
 					}
+				}
+				if len(log.Events) == 0 && (*job.Status) == "FAILED" {
+					return false
 				}
 			}
 			return ok
