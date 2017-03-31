@@ -142,3 +142,19 @@ Note: Unnecessary use of -X or --request, GET is already inferred.
 <
 * Connection #0 to host localhost left intact
 ```
+
+#### POST /build/
+
+Uploading a new build, and start processing it
+```
+curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/build/
+{"JobId":"3c9993d3-ab32-4e7b-96c7-e026fb0e1489","JobName":"example"}
+```
+
+#### GET /build/{build_id}/logs
+
+Stream plain text logs for the build
+
+```
+curl http://localhost:8080/build/3c9993d3-ab32-4e7b-96c7-e026fb0e1489/logs
+```
