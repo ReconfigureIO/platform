@@ -61,28 +61,14 @@ func main() {
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
-		id := c.DefaultQuery("id", "")
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
-		if id != "" && project != "" {
-			BuildID, errb := stringToInt(id, c)
-			ProjID, errp := stringToInt(project, c)
-			if errb != nil || errp != nil {
-				return
-			}
-			db.Where(&Build{ID: BuildID}).Where(&Build{ProjectID: ProjID}).First(&Builds)
-		} else if project != "" {
+		if project != "" {
 			ProjID, err := stringToInt(project, c)
 			if err != nil {
 				return
 			}
 			db.Where(&Build{ProjectID: ProjID}).Find(&Builds)
-		} else if id != "" {
-			BuildID, err := stringToInt(id, c)
-			if err != nil {
-				return
-			}
-			db.Where(&Build{ID: BuildID}).Find(&Builds)
 		} else {
 			db.Find(&Builds)
 		}
@@ -90,6 +76,18 @@ func main() {
 		c.JSON(200, gin.H{
 			"builds": Builds,
 		})
+	})
+
+	r.GET("/builds/:id", func(c *gin.Context) {
+		outputbuild := []Build{}
+		if c.Param("id") != "" {
+			BuildID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			db.Where(&Build{ID: BuildID}).First(&outputbuild)
+		}
+		c.JSON(200, outputbuild)
 	})
 
 	r.POST("/form_post", func(c *gin.Context) {
