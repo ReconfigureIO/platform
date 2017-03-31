@@ -90,22 +90,23 @@ func main() {
 		c.JSON(200, outputbuild)
 	})
 
-	r.POST("/form_post", func(c *gin.Context) {
-		message := c.PostForm("message")
-		nick := c.DefaultPostForm("nick", "anonymous")
-
-		c.JSON(200, gin.H{
-			"status":  "posted",
-			"message": message,
-			"nick":    nick,
-		})
+	r.POST("/projects", func(c *gin.Context) {
+		id := c.PostForm("user_id")
+		name := c.PostForm("name")
+		userID, err := stringToInt(id, c)
+		if err != nil {
+			return
+		}
+		newProject := Project{UserID: userID, Name: name}
+		db.Create(&newProject)
+		c.JSON(201, newProject)
 	})
 
 	r.GET("/projects", func(c *gin.Context) {
-		Projects := []Project{}
-		db.Find(&Projects)
+		projects := []Project{}
+		db.Find(&projects)
 		c.JSON(200, gin.H{
-			"projects": Projects,
+			"projects": projects,
 		})
 	})
 
