@@ -40,8 +40,8 @@ type Build struct {
 	ProjectID      int     `json:"project_id"`
 	InputArtifact  string  `json:"input_artifact"`
 	OutputArtifact string  `json:"output_artifact"`
-	OutputStream   string  `json:"outout_stream"`
-	Status         string  `json:"status"`
+	OutputStream   string  `json:"output_stream"`
+	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 func main() {
@@ -58,6 +58,21 @@ func main() {
 	// Ping test
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong pong")
+	})
+
+	r.POST("/builds", func(c *gin.Context) {
+		userid := c.PostForm("user_id")
+		projid := c.PostForm("project_id")
+		input := c.PostForm("input_artifact")
+
+		userID, erru := stringToInt(userid, c)
+		projID, errp := stringToInt(projid, c)
+		if erru != nil || errp != nil {
+			return
+		}
+		newBuild := Build{UserID: userID, ProjectID: projID, InputArtifact: input}
+		db.Create(&newBuild)
+		c.JSON(201, newBuild)
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
