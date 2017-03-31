@@ -92,6 +92,17 @@ func main() {
 		})
 	})
 
+	r.POST("/form_post", func(c *gin.Context) {
+		message := c.PostForm("message")
+		nick := c.DefaultPostForm("nick", "anonymous")
+
+		c.JSON(200, gin.H{
+			"status":  "posted",
+			"message": message,
+			"nick":    nick,
+		})
+	})
+
 	r.GET("/projects", func(c *gin.Context) {
 		id := c.DefaultQuery("id", "")
 
@@ -108,6 +119,18 @@ func main() {
 		c.JSON(200, gin.H{
 			"projects": Projects,
 		})
+	})
+
+	r.GET("/projects/:id", func(c *gin.Context) {
+		outputproj := []Project{}
+		if c.Param("id") != "" {
+			ProjID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			db.Where(&Project{ID: ProjID}).First(&outputproj)
+		}
+		c.JSON(200, outputproj)
 	})
 
 	// Listen and Server in 0.0.0.0:8080
