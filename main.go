@@ -8,17 +8,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
 	"io"
-<<<<<<< 6cb203b765112e82e603987aa0e7d0d4f1905b18
+	"log"
 	"os"
 	"strconv"
-=======
-	"log"
->>>>>>> some work on ending log stream.
 )
 
 var NOT_FOUND = errors.New("Not Found")
@@ -201,6 +199,28 @@ func main() {
 			db.Where(&Project{ID: ProjID}).First(&outputproj)
 		}
 		c.JSON(200, outputproj)
+	})
+
+	r.POST("/build/", func(c *gin.Context) {
+		session := s3.New(awsSession)
+		//		batchSession := batch.New(awsSession)
+
+		// This is bad and buffers the entire body in memory :(
+		body := bytes.Buffer{}
+		body.ReadFrom(c.Request.Body)
+
+		putParams := &s3.PutObjectInput{
+			Bucket:        aws.String("reconfigureio-builds"), // Required
+			Key:           aws.String("bundle.tar.gz"),        // Required
+			Body:          bytes.NewReader(body.Bytes()),
+			ContentLength: aws.Int64(c.Request.ContentLength),
+		}
+		_, err := session.PutObject(putParams)
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
 	})
 
 	// Log streaming test
