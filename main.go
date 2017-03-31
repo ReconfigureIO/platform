@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 var NOT_FOUND = errors.New("Not Found")
@@ -326,6 +327,9 @@ func main() {
 				case logs <- page:
 					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
 						return false
+					}
+					if len(page.Events) == 0 {
+						time.Sleep(10 * time.Second)
 					}
 					return true
 				case <-stop:
