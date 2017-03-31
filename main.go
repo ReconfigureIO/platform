@@ -104,18 +104,8 @@ func main() {
 	})
 
 	r.GET("/projects", func(c *gin.Context) {
-		id := c.DefaultQuery("id", "")
-
 		Projects := []Project{}
-		if id != "" {
-			ProjID, err := stringToInt(id, c)
-			if err != nil {
-				return
-			}
-			db.Where(&Project{ID: ProjID}).First(&Projects)
-		} else {
-			db.Find(&Projects)
-		}
+		db.Find(&Projects)
 		c.JSON(200, gin.H{
 			"projects": Projects,
 		})
