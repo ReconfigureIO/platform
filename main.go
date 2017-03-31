@@ -203,7 +203,7 @@ func main() {
 
 	r.POST("/build/", func(c *gin.Context) {
 		session := s3.New(awsSession)
-		//		batchSession := batch.New(awsSession)
+		batchSession := batch.New(awsSession)
 
 		// This is bad and buffers the entire body in memory :(
 		body := bytes.Buffer{}
@@ -221,6 +221,36 @@ func main() {
 			c.Error(err)
 			return
 		}
+
+		params := &batch.SubmitJobInput{
+			JobDefinition: aws.String("sdaccel-builder-build"), // Required
+			JobName:       aws.String("example"),               // Required
+			JobQueue:      aws.String("build-jobs"),            // Required
+			ContainerOverrides: &batch.ContainerOverrides{
+				Environment: []*batch.KeyValuePair{
+					{
+						Name:  aws.String("PART"),
+						Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+					},
+					{
+						Name:  aws.String("PART_FAMILY"),
+						Value: aws.String("virtexuplus"),
+					},
+					{
+						Name:  aws.String("INPUT_URL"),
+						Value: aws.String("s3://reconfigureio-builds/bundle.tar.gz"),
+					},
+				},
+			},
+		}
+		resp, err := batchSession.SubmitJob(params)
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		c.JSON(200, resp)
 	})
 
 	// Log streaming test
