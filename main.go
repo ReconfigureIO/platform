@@ -274,7 +274,10 @@ func main() {
 			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 				select {
 				case logs <- page:
-					return !lastPage
+					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
+						return false
+					}
+					return true
 				case <-stop:
 					return false
 				}
@@ -293,9 +296,6 @@ func main() {
 						c.Error(err)
 						return false
 					}
-				}
-				if len(log.Events) == 0 && (*job.Status) == "FAILED" {
-					return false
 				}
 			}
 			return ok
