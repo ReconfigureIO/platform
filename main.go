@@ -75,6 +75,24 @@ func main() {
 		c.JSON(201, newBuild)
 	})
 
+	//curl -X PUT -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/builds/1
+
+	r.PUT("/builds/:id", func(c *gin.Context) {
+		outputbuild := Build{}
+		if c.Param("id") != "" {
+			BuildID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			db.Where(&Build{ID: BuildID}).First(&outputbuild)
+			outputbuild.OutputArtifact = c.PostForm("output_artifact")
+			outputbuild.Status = c.PostForm("status")
+			db.Save(&outputbuild)
+		}
+
+		c.JSON(201, outputbuild)
+	})
+
 	r.GET("/builds", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
