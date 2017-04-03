@@ -106,7 +106,7 @@ You can expect this to return a HTTP `202` code with the newly created build inc
 You can update a Build for instance when its status changes or the output artifact needs setting.
 
 ```
-curl -X PUT -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/projects
+curl -X PUT -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/builds/1
 ```
 You can expect this to return a HTTP `204` code
 
