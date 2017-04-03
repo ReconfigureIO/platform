@@ -75,8 +75,6 @@ func main() {
 		c.JSON(201, newBuild)
 	})
 
-	//curl -X PUT -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/builds/1
-
 	r.PUT("/builds/:id", func(c *gin.Context) {
 		outputbuild := Build{}
 		if c.Param("id") != "" {
