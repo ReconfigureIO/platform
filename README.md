@@ -96,10 +96,24 @@ curl -X GET localhost:8080/builds?project=0
 Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'status=SUBMITTED' http://localhost:8080/builds
+curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'status=PENDING' http://localhost:8080/builds
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
+
+## POST /builds/{id}/upload
+
+To upload an input artifact for a build do the following:
+
+```
+curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/build/1/upload
+```
+
+You can expect this to return  a HTTP `204` code.
+
+After this a `curl -X PUT -F 'status=SUBMITTED' /builds/{id}` will queue a build with the backend
+
+<TODO> differentiate builds, simulates, maybe `/builds/{id}/run`?
 
 #### PUT /builds/{id}
 
