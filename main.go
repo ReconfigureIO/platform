@@ -117,6 +117,28 @@ func main() {
 		c.JSON(201, newProject)
 	})
 
+	r.PUT("/projects/:id", func(c *gin.Context) {
+		userid := c.PostForm("user_id")
+		userID, err := stringToInt(userid, c)
+		outputproj := Project{}
+		if err != nil {
+			return
+		}
+		if c.Param("id") != "" {
+			ProjID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			db.Where(&Project{ID: ProjID}).First(&outputproj)
+			outputproj.Name = c.PostForm("name")
+			outputproj.UserID = userID
+			db.Save(&outputproj)
+
+		}
+
+		c.JSON(201, outputproj)
+	})
+
 	r.GET("/projects", func(c *gin.Context) {
 		projects := []Project{}
 		db.Find(&projects)
