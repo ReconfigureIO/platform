@@ -96,7 +96,7 @@ curl -X GET localhost:8080/builds?project=0
 Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'status=SUBMITTED' http://localhost:8080/projects
+curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'status=SUBMITTED' http://localhost:8080/builds
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
