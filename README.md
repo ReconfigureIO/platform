@@ -101,19 +101,42 @@ curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'status=PENDING' http://localho
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
 
-## POST /builds/{id}/upload
+#### POST /builds/{id}/upload
 
 To upload an input artifact for a build do the following:
 
 ```
-curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/build/1/upload
+curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/upload
 ```
 
 You can expect this to return  a HTTP `204` code.
 
-After this a `curl -X PUT -F 'status=SUBMITTED' /builds/{id}` will queue a build with the backend
+#### PUT /builds/{id}/build
 
-<TODO> differentiate builds, simulates, maybe `/builds/{id}/run`?
+To trigger a full run of the build system do the following:
+
+```
+curl -v -X PUT http://localhost:8080/builds/1/build
+```
+<TODO> return code
+
+#### PUT /builds/{id}/run
+
+To load a completed build into an FPGA do the following:
+
+```
+curl -v -X PUT http://localhost:8080/builds/1/run
+```
+<TODO> Return from this command
+
+#### PUT /builds/{id}/simulate
+
+To run the build process as far as simulation (quick build and run)
+
+```
+curl -v -X PUT http://localhost:8080/builds/1/simulate
+```
+<TODO> return from this command
 
 #### PUT /builds/{id}
 
