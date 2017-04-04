@@ -93,61 +93,57 @@ curl -X GET localhost:8080/builds?project=0
 
 #### POST /builds
 
+Creates a new build in an "AWAITING_INPUT" status
+
 Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'status=PENDING' http://localhost:8080/builds
-```
+curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1}' http://localhost:8080/builds
+{"id": 1, "logs_url": "http://localhost:8080/build/1/logs", "input_url": "http://localhost:8080/build/1/input", "status": "AWAITING_INPUT"}
+``
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
 
-#### POST /builds/{id}/upload
+#### PUT  {{ build.input_url }}
 
-To upload an input artifact for a build do the following:
+Attached the enclosed input to a build, moving it to "QUEUED" status
 
 ```
-curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/upload
+curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/input
 ```
 
 You can expect this to return  a HTTP `204` code.
 
-#### PUT /builds/{id}/build
+#### PUT /simulation
 
-To trigger a full run of the build system do the following:
+Creates a new simulation in an "AWAITING_INPUT" status
 
-```
-curl -v -X PUT http://localhost:8080/builds/1/build
-```
-
-This can be expected to return a HTTP `202` code and details of the build including its queued status
-<TODO> return a link to the output stream?
-
-#### PUT /builds/{id}/run
-
-To load a completed build into an FPGA do the following:
+Simulations have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -v -X PUT http://localhost:8080/builds/1/run
-```
-<TODO> Return from this command, 201 with URI of machine maybe?
+curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulation
+{"id": 1, "logs_url": "http://localhost:8080/simulation/1/logs", "input_url": "http://localhost:8080/simulation/1/input", "status": "AWAITING_INPUT"}
+``
 
-#### PUT /builds/{id}/simulate
+You can expect this to return a HTTP `202` code with the newly created build including ID
 
-To run the build process as far as simulation (quick build and run)
+#### PUT  {{ simulation.input_url }}
 
-```
-curl -v -X PUT http://localhost:8080/builds/1/simulate
-```
-
-This can be expected to return a HTTP `202` code
-<TODO> return a link to the output stream?
-
-#### PUT /builds/{id}
-
-You can update a Build for instance when its status changes or the output artifact needs setting.
+Attached the enclosed input to a simulation, moving it to "QUEUED" status
 
 ```
-curl -X PUT -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/builds/1
+curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/input
+```
+
+You can expect this to return  a HTTP `204` code.
+
+
+#### PATCH /builds/{id}
+
+Internal use: can update the status of a build
+
+```
+curl -X PUT -H "Content-Type: application/json"  -d '{"status": "PROCESSING"}' http://localhost:8080/builds/1
 ```
 You can expect this to return a HTTP `204` code
 
@@ -157,11 +153,6 @@ Stream the logs for a given build
 
 <TODO> Describe format, termination
 
-#### GET /builds/{build_id}/logs
-
-Stream the logs for a given build
-
-<TODO> Describe format, termination
 
 ## What to expect
 In the event of an invalid ID we can expect to receive a `404` response from the API:
