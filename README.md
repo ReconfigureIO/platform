@@ -118,7 +118,9 @@ To trigger a full run of the build system do the following:
 ```
 curl -v -X PUT http://localhost:8080/builds/1/build
 ```
-<TODO> return code
+
+This can be expected to return a HTTP `202` code and details of the build including its queued status
+<TODO> return a link to the output stream?
 
 #### PUT /builds/{id}/run
 
@@ -127,7 +129,7 @@ To load a completed build into an FPGA do the following:
 ```
 curl -v -X PUT http://localhost:8080/builds/1/run
 ```
-<TODO> Return from this command
+<TODO> Return from this command, 201 with URI of machine maybe?
 
 #### PUT /builds/{id}/simulate
 
@@ -136,7 +138,9 @@ To run the build process as far as simulation (quick build and run)
 ```
 curl -v -X PUT http://localhost:8080/builds/1/simulate
 ```
-<TODO> return from this command
+
+This can be expected to return a HTTP `202` code
+<TODO> return a link to the output stream?
 
 #### PUT /builds/{id}
 
