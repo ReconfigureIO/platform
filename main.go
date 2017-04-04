@@ -74,16 +74,15 @@ func main() {
 	r.POST("/builds", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
+
 		if errs := validator.Validate(&post); errs != nil {
 			c.AbortWithStatus(404)
 			return
 		} else {
 			newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
-			c.BindJSON(&newBuild)
 			db.Create(&newBuild)
 			c.JSON(201, newBuild)
 		}
-
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
