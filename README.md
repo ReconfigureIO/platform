@@ -100,7 +100,7 @@ Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and
 ```
 curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1}' http://localhost:8080/builds
 {"id": 1, "logs_url": "http://localhost:8080/build/1/logs", "input_url": "http://localhost:8080/build/1/input", "status": "AWAITING_INPUT"}
-``
+```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
 
