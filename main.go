@@ -44,6 +44,18 @@ type Build struct {
 	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
+type PostBuild struct {
+	ID             int     `gorm:"primary_key" json:"id"`
+	User           User    `json:"user"` //Build belongs to User, UserID is foreign key
+	UserID         int     `json:"user_id"`
+	Project        Project `json:"project"`
+	ProjectID      int     `json:"project_id"`
+	InputArtifact  string  `json:"input_artifact"`
+	OutputArtifact string  `json:"output_artifact"`
+	OutputStream   string  `json:"output_stream"`
+	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
 func main() {
 
 	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
@@ -61,16 +73,8 @@ func main() {
 	})
 
 	r.POST("/builds", func(c *gin.Context) {
-		userid := c.PostForm("user_id")
-		projid := c.PostForm("project_id")
-		input := c.PostForm("input_artifact")
-
-		userID, erru := stringToInt(userid, c)
-		projID, errp := stringToInt(projid, c)
-		if erru != nil || errp != nil {
-			return
-		}
-		newBuild := Build{UserID: userID, ProjectID: projID, InputArtifact: input}
+		newBuild := Build{}
+		c.BindJSON(&newBuild)
 		db.Create(&newBuild)
 		c.JSON(201, newBuild)
 	})
