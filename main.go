@@ -75,8 +75,7 @@ func main() {
 		post := PostBuild{}
 		c.BindJSON(&post)
 
-		if errs := validator.Validate(&post); errs != nil {
-			c.AbortWithStatus(404)
+		if err := validateBuild(post, c); err != nil {
 			return
 		} else {
 			newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
@@ -198,3 +197,11 @@ func stringToInt(s string, c *gin.Context) (int, error) {
 		return i, nil
 	}
 }
+
+func validateBuild(postb PostBuild, c *gin.Context) (error) {
+	if err := validator.Validate(&postb); err != nil {
+		c.AbortWithStatus(404)
+		return err
+	} else {
+		return nil
+	}
