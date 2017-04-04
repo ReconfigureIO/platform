@@ -14,5 +14,5 @@ services:
       - db
     links:
       - db
-    env_file:
-      - dev.env
+    environment:
+      DATABASE_URL: host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword

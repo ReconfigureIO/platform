@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"log"
+	"os"
 )
 
 type User struct {
@@ -55,7 +56,8 @@ type Build struct {
 
 func main() {
 
-	gormConnDets := "host=" + os.Getenv("DATABASE_URL") + " user=" + os.Getenv("USER") + " dbname=" + os.Getenv("DBNAME") + " sslmode=disable" + " password=" + os.Getenv("PASSWORD")
+	gormConnDets := os.Getenv("DATABASE_URL")
+	log.Printf("connecting to %s\n", gormConnDets)
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		fmt.Println(err)
