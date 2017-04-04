@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"os"
 )
 
 type User struct {
@@ -54,26 +55,18 @@ type Build struct {
 
 func main() {
 
-	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
+	gormConnDets := os.Getenv("DATABASE_URL")
+	port, found := os.LookupEnv("PORT")
+	if !found {
+		port = "8080"
+	}
+
+	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
 	defer db.Close()
-
-	// Migrate the schema
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Email{})
-	db.AutoMigrate(&Team{})
-	db.AutoMigrate(&Project{})
-	db.AutoMigrate(&AuthToken{})
-	db.AutoMigrate(&Build{})
-
-	//now for some test data
-	db.Create(&User{GithubID: "campgareth", TeamID: 1})
-	db.Create(&Email{UserID: 1, Email: "max.siegieda@reconfigure.io"})
-	db.Create(&Team{Name: "reconfigure.io"})
-	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done"})
 
 	r := gin.Default()
 
@@ -82,6 +75,6 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8080")
+	// Listen and Server in 0.0.0.0:$PORT
+	r.Run(":" + port)
 }
