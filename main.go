@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"gopkg.in/validator.v2"
 	"strconv"
 )
 
@@ -45,16 +46,14 @@ type Build struct {
 }
 
 type PostBuild struct {
-	ID             int     `gorm:"primary_key" json:"id"`
-	User           User    `json:"user"` //Build belongs to User, UserID is foreign key
-	UserID         int     `json:"user_id"`
-	Project        Project `json:"project"`
-	ProjectID      int     `json:"project_id"`
-	InputArtifact  string  `json:"input_artifact"`
-	OutputArtifact string  `json:"output_artifact"`
-	OutputStream   string  `json:"output_stream"`
-	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
+	UserID    int `json:"user_id" validate:"min=1"`
+	ProjectID int `json:"project_id" validate:"min=1"`
 }
+
+// nur := NewUserRequest{Username: "something", Age: 20}
+// if errs := validator.Validate(nur); errs != nil {
+// 	 values not valid, deal with errors here
+// }
 
 func main() {
 
@@ -73,10 +72,18 @@ func main() {
 	})
 
 	r.POST("/builds", func(c *gin.Context) {
-		newBuild := Build{}
-		c.BindJSON(&newBuild)
-		db.Create(&newBuild)
-		c.JSON(201, newBuild)
+		post := PostBuild{}
+		c.BindJSON(&post)
+		if errs := validator.Validate(&post); errs != nil {
+			c.AbortWithStatus(404)
+			return
+		} else {
+			newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
+			c.BindJSON(&newBuild)
+			db.Create(&newBuild)
+			c.JSON(201, newBuild)
+		}
+
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
