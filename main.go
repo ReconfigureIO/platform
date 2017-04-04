@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"log"
 	"os"
 )
 
@@ -62,27 +61,12 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("connecting to %s\n", gormConnDets)
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
 	defer db.Close()
-
-	// Migrate the schema
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Email{})
-	db.AutoMigrate(&Team{})
-	db.AutoMigrate(&Project{})
-	db.AutoMigrate(&AuthToken{})
-	db.AutoMigrate(&Build{})
-
-	//now for some test data
-	db.Create(&User{GithubID: "campgareth", TeamID: 1})
-	db.Create(&Email{UserID: 1, Email: "max.siegieda@reconfigure.io"})
-	db.Create(&Team{Name: "reconfigure.io"})
-	db.Create(&Build{UserID: 1, InputArtifact: "golang code", OutputArtifact: ".bin file", OutputStream: "working working done"})
 
 	r := gin.Default()
 
