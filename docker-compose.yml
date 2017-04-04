@@ -16,3 +16,4 @@ services:
       - db
     environment:
       DATABASE_URL: host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
+      PORT: 8080

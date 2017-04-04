@@ -57,6 +57,11 @@ type Build struct {
 func main() {
 
 	gormConnDets := os.Getenv("DATABASE_URL")
+	port, found := os.LookupEnv("PORT")
+	if !found {
+		port = "8080"
+	}
+
 	log.Printf("connecting to %s\n", gormConnDets)
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
@@ -86,6 +91,6 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8080")
+	// Listen and Server in 0.0.0.0:$PORT
+	r.Run(":" + port)
 }
