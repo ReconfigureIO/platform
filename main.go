@@ -46,8 +46,12 @@ type Build struct {
 }
 
 type PostBuild struct {
-	UserID    int `json:"user_id" validate:"min=1"`
-	ProjectID int `json:"project_id" validate:"min=1"`
+	UserID         int    `json:"user_id" validate:"min=1"`
+	ProjectID      int    `json:"project_id" validate:"min=1"`
+	InputArtifact  string `json:"input_artifact"`
+	OutputArtifact string `json:"output_artifact"`
+	OutputStream   string `json:"output_stream"`
+	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 func main() {
@@ -80,19 +84,21 @@ func main() {
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
-		outputbuild := Build{}
+		post := PostBuild{}
+		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
+			if err := validateBuild(post, c); err != nil {
+				return
+			}
+			outputbuild := Build{}
 			db.Where(&Build{ID: BuildID}).First(&outputbuild)
-			outputbuild.OutputArtifact = c.PostForm("output_artifact")
-			outputbuild.Status = c.PostForm("status")
-			db.Save(&outputbuild)
+			db.Model(&outputbuild).Updates(Build{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, OutputArtifact: post.OutputArtifact, OutputStream: post.OutputStream, Status: post.Status})
+			c.JSON(201, outputbuild)
 		}
-
-		c.JSON(201, outputbuild)
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
