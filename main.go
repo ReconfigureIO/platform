@@ -27,6 +27,11 @@ type Project struct {
 	Builds []Build `json:"builds"`
 }
 
+type PostProject struct {
+	UserID int    `json:"user_id"`
+	Name   string `json:"name"`
+}
+
 type AuthToken struct {
 	gorm.Model
 	Token  string `json:"token"`
@@ -132,15 +137,15 @@ func main() {
 	})
 
 	r.POST("/projects", func(c *gin.Context) {
-		id := c.PostForm("user_id")
-		name := c.PostForm("name")
-		userID, err := stringToInt(id, c)
-		if err != nil {
+		post := PostProject{}
+		c.BindJSON(&post)
+		if err := validateProject(post, c); err != nil {
 			return
+		} else {
+			newProject := Project{UserID: post.UserID, Name: post.Name}
+			db.Create(&newProject)
+			c.JSON(201, newProject)
 		}
-		newProject := Project{UserID: userID, Name: name}
-		db.Create(&newProject)
-		c.JSON(201, newProject)
 	})
 
 	r.PUT("/projects/:id", func(c *gin.Context) {
@@ -201,6 +206,15 @@ func stringToInt(s string, c *gin.Context) (int, error) {
 
 func validateBuild(postb PostBuild, c *gin.Context) error {
 	if err := validator.Validate(&postb); err != nil {
+		c.AbortWithStatus(404)
+		return err
+	} else {
+		return nil
+	}
+}
+
+func validateProject(postp PostProject, c *gin.Context) error {
+	if err := validator.Validate(&postp); err != nil {
 		c.AbortWithStatus(404)
 		return err
 	} else {
