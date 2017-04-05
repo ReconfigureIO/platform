@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+  "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
 	"strconv"
+	"os"
 )
 
 var NOT_FOUND = errors.New("Not Found")
@@ -61,7 +62,13 @@ type PostBuild struct {
 
 func main() {
 
-	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
+	gormConnDets := os.Getenv("DATABASE_URL")
+	port, found := os.LookupEnv("PORT")
+	if !found {
+		port = "8080"
+	}
+
+	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		fmt.Println(err)
 		panic("failed to connect database")
@@ -184,8 +191,8 @@ func main() {
 		c.JSON(200, outputproj)
 	})
 
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8080")
+	// Listen and Server in 0.0.0.0:$PORT
+	r.Run(":" + port)
 }
 
 func stringToInt(s string, c *gin.Context) (int, error) {
