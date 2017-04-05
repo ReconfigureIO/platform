@@ -50,11 +50,6 @@ type PostBuild struct {
 	ProjectID int `json:"project_id" validate:"min=1"`
 }
 
-// nur := NewUserRequest{Username: "something", Age: 20}
-// if errs := validator.Validate(nur); errs != nil {
-// 	 values not valid, deal with errors here
-// }
-
 func main() {
 
 	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
@@ -198,10 +193,11 @@ func stringToInt(s string, c *gin.Context) (int, error) {
 	}
 }
 
-func validateBuild(postb PostBuild, c *gin.Context) (error) {
+func validateBuild(postb PostBuild, c *gin.Context) error {
 	if err := validator.Validate(&postb); err != nil {
 		c.AbortWithStatus(404)
 		return err
 	} else {
 		return nil
 	}
+}
