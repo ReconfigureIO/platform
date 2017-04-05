@@ -39,7 +39,7 @@ Create a new project
 Projects have a UserID and a Name
 
 ```
-curl -X POST -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects
+curl -H "Content-Type: application/json" -X POST -d '{"name":"addition", "user_id":1}' http://localhost:8080/projects
 ```
 
 You can expect this to return a HTTP `201` code with the newly created project including ID
@@ -59,7 +59,7 @@ curl -X GET localhost:8080/projects/3
 Change the name of a project, assign project to another user(? useful for organisations but not right now)
 
 ```
-curl -X PUT -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects/{project_id}
+curl -H "Content-Type: application/json" -X PUT -d '{"name":"addition", "user_id":1}' http://localhost:8080/projects/1
 ```
 <TODO> Describe format, return codes (204)
 
@@ -96,7 +96,7 @@ curl -X GET localhost:8080/builds?project=0
 Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -X POST -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'status=SUBMITTED' http://localhost:8080/builds
+curl -v -H "Content-Type: application/json" -X POST -d '{"user_id":1, "project_id":1}' http://localhost:8080/builds
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
@@ -106,7 +106,7 @@ You can expect this to return a HTTP `202` code with the newly created build inc
 You can update a Build for instance when its status changes or the output artifact needs setting.
 
 ```
-curl -X PUT -F 'user_id=1' -F 'project_id=1' -F 'input_artifact=s3://somefile.tar.gz' -F 'output_artifact=s3://somefile.tar.gz' -F 'status=COMPLETE' http://localhost:8080/builds/1
+curl -H "Content-Type: application/json" -X PUT -d '{"status":"PROCESSING", "user_id":1, "project_id":1, "output_artifact":"some files"}' http://localhost:8080/builds/1
 ```
 You can expect this to return a HTTP `204` code
 
