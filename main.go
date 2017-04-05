@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-  "github.com/jinzhu/gorm/dialects/postgres"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
-	"strconv"
 	"os"
+	"strconv"
 )
 
 var NOT_FOUND = errors.New("Not Found")
