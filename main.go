@@ -81,11 +81,10 @@ func main() {
 
 		if err := validateBuild(post, c); err != nil {
 			return
-		} else {
-			newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
-			db.Create(&newBuild)
-			c.JSON(201, newBuild)
 		}
+		newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
+		db.Create(&newBuild)
+		c.JSON(201, newBuild)
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
@@ -141,11 +140,10 @@ func main() {
 		c.BindJSON(&post)
 		if err := validateProject(post, c); err != nil {
 			return
-		} else {
-			newProject := Project{UserID: post.UserID, Name: post.Name}
-			db.Create(&newProject)
-			c.JSON(201, newProject)
 		}
+		newProject := Project{UserID: post.UserID, Name: post.Name}
+		db.Create(&newProject)
+		c.JSON(201, newProject)
 	})
 
 	r.PUT("/projects/:id", func(c *gin.Context) {
