@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
+	"io"
 	"os"
 	"strconv"
 )
@@ -74,6 +79,8 @@ func main() {
 		panic("failed to connect database")
 	}
 	defer db.Close()
+
+	awsSession := session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 
 	r := gin.Default()
 
@@ -189,6 +196,54 @@ func main() {
 			db.Where(&Project{ID: ProjID}).First(&outputproj)
 		}
 		c.JSON(200, outputproj)
+	})
+
+	// Log streaming test
+	r.GET("/logs", func(c *gin.Context) {
+		cwLogs := cloudwatchlogs.New(awsSession)
+		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
+
+		// Stop streaming as soon as we get a stop
+		stop := make(chan struct{}, 1)
+		defer func() {
+			stop <- struct{}{}
+		}()
+
+		params := (&cloudwatchlogs.GetLogEventsInput{}).
+			SetLogGroupName("/aws/batch/job").
+			SetLogStreamName("example/16e34cd9-1115-4ce8-91b8-64ffbc5c24f0/9508b2f2-e6bf-4cb1-93e4-82f4b81425a0").
+			SetStartFromHead(true)
+
+		go func() {
+			defer func() {
+				close(logs)
+			}()
+			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
+				select {
+				case logs <- page:
+					return !lastPage
+				case <-stop:
+					return false
+				}
+			})
+			if err != nil {
+				c.Error(err)
+			}
+		}()
+
+		c.Stream(func(w io.Writer) bool {
+			log, ok := <-logs
+			if ok {
+				for _, e := range log.Events {
+					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
+					if err != nil {
+						c.Error(err)
+						return false
+					}
+				}
+			}
+			return ok
+		})
 	})
 
 	// Listen and Server in 0.0.0.0:$PORT
