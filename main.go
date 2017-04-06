@@ -61,8 +61,8 @@ type Build struct {
 }
 
 type PostBuild struct {
-	UserID         int    `json:"user_id" validate:"min=1"`
-	ProjectID      int    `json:"project_id" validate:"min=1"`
+	UserID         int    `json:"user_id"`
+	ProjectID      int    `json:"project_id"`
 	InputArtifact  string `json:"input_artifact"`
 	OutputArtifact string `json:"output_artifact"`
 	OutputStream   string `json:"output_stream"`
@@ -179,6 +179,24 @@ func main() {
 			}
 
 			c.JSON(200, resp)
+		}
+	})
+
+	r.PATCH("/builds/:id", func(c *gin.Context) {
+		patch := PostBuild{}
+		c.BindJSON(&patch)
+		if c.Param("id") != "" {
+			BuildID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			if err := validateBuild(patch, c); err != nil {
+				return
+			}
+			outputbuild := Build{}
+			db.Where(&Build{ID: BuildID}).First(&outputbuild)
+			db.Model(&outputbuild).Updates(Build{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputArtifact: patch.OutputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+			c.JSON(201, outputbuild)
 		}
 	})
 
