@@ -60,13 +60,6 @@ type PostBuild struct {
 	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
-var secrets = gin.H{
-	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
-	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
-	"lena":   gin.H{"email": "lena@guapa.com", "phone": "523443"},
-	"user":   gin.H{"email": "user@email.com", "phone": "yes"},
-}
-
 func main() {
 
 	gormConnDets := os.Getenv("DATABASE_URL")
@@ -89,7 +82,15 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	r.POST("/builds", func(c *gin.Context) {
+	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
+		"reco-test": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+	}))
+
+	authorized.GET("/secretping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "successful authentication"})
+	})
+
+	authorized.POST("/builds", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
 
@@ -99,30 +100,9 @@ func main() {
 		newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
 		db.Create(&newBuild)
 		c.JSON(201, newBuild)
-
-	// Group using gin.BasicAuth() middleware
-	// gin.Accounts is a shortcut for map[string]string
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		"foo":    "bar",
-		"austin": "1234",
-		"lena":   "hello2",
-		"manu":   "4321",
-		"user":   "password",
-	}))
-
-	// /admin/secrets endpoint
-	// hit "localhost:8080/admin/secrets
-	authorized.GET("/secretpong", func(c *gin.Context) {
-		// get user, it was set by the BasicAuth middleware
-		user := c.MustGet(gin.AuthUserKey).(string)
-		if secret, ok := secrets[user]; ok {
-			c.JSON(200, gin.H{"user": user, "secret": secret})
-		} else {
-			c.JSON(200, gin.H{"user": user, "secret": "NO SECRET :("})
-		}
 	})
 
-	r.PUT("/builds/:id", func(c *gin.Context) {
+	authorized.PUT("/builds/:id", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
@@ -140,7 +120,7 @@ func main() {
 		}
 	})
 
-	r.GET("/builds", func(c *gin.Context) {
+	authorized.GET("/builds", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
 		if project != "" {
@@ -158,7 +138,7 @@ func main() {
 		})
 	})
 
-	r.GET("/builds/:id", func(c *gin.Context) {
+	authorized.GET("/builds/:id", func(c *gin.Context) {
 		outputbuild := []Build{}
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
@@ -170,7 +150,7 @@ func main() {
 		c.JSON(200, outputbuild)
 	})
 
-	r.POST("/projects", func(c *gin.Context) {
+	authorized.POST("/projects", func(c *gin.Context) {
 		post := PostProject{}
 		c.BindJSON(&post)
 		if err := validateProject(post, c); err != nil {
@@ -181,7 +161,7 @@ func main() {
 		c.JSON(201, newProject)
 	})
 
-	r.PUT("/projects/:id", func(c *gin.Context) {
+	authorized.PUT("/projects/:id", func(c *gin.Context) {
 		post := PostProject{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
@@ -199,7 +179,7 @@ func main() {
 		}
 	})
 
-	r.GET("/projects", func(c *gin.Context) {
+	authorized.GET("/projects", func(c *gin.Context) {
 		projects := []Project{}
 		db.Find(&projects)
 		c.JSON(200, gin.H{
@@ -207,7 +187,7 @@ func main() {
 		})
 	})
 
-	r.GET("/projects/:id", func(c *gin.Context) {
+	authorized.GET("/projects/:id", func(c *gin.Context) {
 		outputproj := []Project{}
 		if c.Param("id") != "" {
 			ProjID, err := stringToInt(c.Param("id"), c)
