@@ -1,5 +1,5 @@
-hash: b31d3ca8e9ef4ffcb5509feb8fd7a410e0712a5ab678d7fb292ba86dad67bc44
-updated: 2017-03-17T20:17:33.719937076Z
+hash: 58fb1817935e4374cbbed5899cb67f86f9046b094bd07a85b1b1ca1d9b08840d
+updated: 2017-04-04T15:36:48.51952032Z
 imports:
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
@@ -35,6 +35,8 @@ imports:
   - unix
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/validator.v2
+  version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: gopkg.in/yaml.v2
   version: a3f3340b5840cee44f372bddb5880fcbc419b46a
 testImports: []

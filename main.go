@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"gopkg.in/validator.v2"
+	"os"
 	"strconv"
 )
 
@@ -26,6 +28,11 @@ type Project struct {
 	Builds []Build `json:"builds"`
 }
 
+type PostProject struct {
+	UserID int    `json:"user_id"`
+	Name   string `json:"name"`
+}
+
 type AuthToken struct {
 	gorm.Model
 	Token  string `json:"token"`
@@ -44,9 +51,24 @@ type Build struct {
 	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
+type PostBuild struct {
+	UserID         int    `json:"user_id" validate:"min=1"`
+	ProjectID      int    `json:"project_id" validate:"min=1"`
+	InputArtifact  string `json:"input_artifact"`
+	OutputArtifact string `json:"output_artifact"`
+	OutputStream   string `json:"output_stream"`
+	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
 func main() {
 
-	db, err := gorm.Open("postgres", "host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword")
+	gormConnDets := os.Getenv("DATABASE_URL")
+	port, found := os.LookupEnv("PORT")
+	if !found {
+		port = "8080"
+	}
+
+	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		fmt.Println(err)
 		panic("failed to connect database")
@@ -61,34 +83,33 @@ func main() {
 	})
 
 	r.POST("/builds", func(c *gin.Context) {
-		userid := c.PostForm("user_id")
-		projid := c.PostForm("project_id")
-		input := c.PostForm("input_artifact")
+		post := PostBuild{}
+		c.BindJSON(&post)
 
-		userID, erru := stringToInt(userid, c)
-		projID, errp := stringToInt(projid, c)
-		if erru != nil || errp != nil {
+		if err := validateBuild(post, c); err != nil {
 			return
 		}
-		newBuild := Build{UserID: userID, ProjectID: projID, InputArtifact: input}
+		newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
 		db.Create(&newBuild)
 		c.JSON(201, newBuild)
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
-		outputbuild := Build{}
+		post := PostBuild{}
+		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
+			if err := validateBuild(post, c); err != nil {
+				return
+			}
+			outputbuild := Build{}
 			db.Where(&Build{ID: BuildID}).First(&outputbuild)
-			outputbuild.OutputArtifact = c.PostForm("output_artifact")
-			outputbuild.Status = c.PostForm("status")
-			db.Save(&outputbuild)
+			db.Model(&outputbuild).Updates(Build{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, OutputArtifact: post.OutputArtifact, OutputStream: post.OutputStream, Status: post.Status})
+			c.JSON(201, outputbuild)
 		}
-
-		c.JSON(201, outputbuild)
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
@@ -122,37 +143,32 @@ func main() {
 	})
 
 	r.POST("/projects", func(c *gin.Context) {
-		id := c.PostForm("user_id")
-		name := c.PostForm("name")
-		userID, err := stringToInt(id, c)
-		if err != nil {
+		post := PostProject{}
+		c.BindJSON(&post)
+		if err := validateProject(post, c); err != nil {
 			return
 		}
-		newProject := Project{UserID: userID, Name: name}
+		newProject := Project{UserID: post.UserID, Name: post.Name}
 		db.Create(&newProject)
 		c.JSON(201, newProject)
 	})
 
 	r.PUT("/projects/:id", func(c *gin.Context) {
-		userid := c.PostForm("user_id")
-		userID, err := stringToInt(userid, c)
-		outputproj := Project{}
-		if err != nil {
-			return
-		}
+		post := PostProject{}
+		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			ProjID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
+			if err := validateProject(post, c); err != nil {
+				return
+			}
+			outputproj := Project{}
 			db.Where(&Project{ID: ProjID}).First(&outputproj)
-			outputproj.Name = c.PostForm("name")
-			outputproj.UserID = userID
-			db.Save(&outputproj)
-
+			db.Model(&outputproj).Updates(Project{UserID: post.UserID, Name: post.Name})
+			c.JSON(201, outputproj)
 		}
-
-		c.JSON(201, outputproj)
 	})
 
 	r.GET("/projects", func(c *gin.Context) {
@@ -175,8 +191,8 @@ func main() {
 		c.JSON(200, outputproj)
 	})
 
-	// Listen and Server in 0.0.0.0:8080
-	r.Run(":8080")
+	// Listen and Server in 0.0.0.0:$PORT
+	r.Run(":" + port)
 }
 
 func stringToInt(s string, c *gin.Context) (int, error) {
@@ -186,5 +202,23 @@ func stringToInt(s string, c *gin.Context) (int, error) {
 		return 0, NOT_FOUND
 	} else {
 		return i, nil
+	}
+}
+
+func validateBuild(postb PostBuild, c *gin.Context) error {
+	if err := validator.Validate(&postb); err != nil {
+		c.AbortWithStatus(404)
+		return err
+	} else {
+		return nil
+	}
+}
+
+func validateProject(postp PostProject, c *gin.Context) error {
+	if err := validator.Validate(&postp); err != nil {
+		c.AbortWithStatus(404)
+		return err
+	} else {
+		return nil
 	}
 }
