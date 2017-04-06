@@ -114,25 +114,25 @@ curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http:
 
 You can expect this to return  a HTTP `204` code.
 
-#### PUT /simulation
+#### POST /simulations
 
 Creates a new simulation in an "AWAITING_INPUT" status
 
 Simulations have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
-curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulation
-{"id": 1, "logs_url": "http://localhost:8080/simulation/1/logs", "input_url": "http://localhost:8080/simulation/1/input", "status": "AWAITING_INPUT"}
+curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulations
+{"id": 1, "logs_url": "http://localhost:8080/simulations/1/logs", "input_url": "http://localhost:8080/simulations/1/input", "status": "AWAITING_INPUT"}
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
 
-#### PUT  {{ simulation.input_url }}
+#### PUT  {{ simulations.input_url }}
 
 Attached the enclosed input to a simulation, moving it to "QUEUED" status
 
 ```
-curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/input
+curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/simulations/1/input
 ```
 
 You can expect this to return  a HTTP `204` code.
@@ -146,6 +146,16 @@ Internal use: can update the status of a build
 curl -X PUT -H "Content-Type: application/json"  -d '{"status": "PROCESSING"}' http://localhost:8080/builds/1
 ```
 You can expect this to return a HTTP `204` code
+
+#### PUT /simulations/{id}
+
+#### PATCH /simulations/{id}
+
+#### GET /simulations
+
+#### GET /simulations/{id}
+
+#### GET /simulations/{id}/logs
 
 #### GET /builds/{build_id}/logs
 
