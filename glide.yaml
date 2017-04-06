@@ -1,6 +1,7 @@
 package: github.com/ReconfigureIO/platform
 import:
 - package: github.com/gin-gonic/gin
+- package: gopkg.in/validator.v2
 - package: github.com/jinzhu/gorm
   subpackages:
   - dialects/postgres

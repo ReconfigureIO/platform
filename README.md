@@ -39,7 +39,7 @@ Create a new project
 Projects have a UserID and a Name
 
 ```
-curl -X POST -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects
+curl -H "Content-Type: application/json" -X POST -d '{"name":"addition", "user_id":1}' http://localhost:8080/projects
 ```
 
 You can expect this to return a HTTP `201` code with the newly created project including ID
@@ -59,7 +59,7 @@ curl -X GET localhost:8080/projects/3
 Change the name of a project, assign project to another user(? useful for organisations but not right now)
 
 ```
-curl -X PUT -F 'name=project-name' -F 'user_id=1' http://localhost:8080/projects/{project_id}
+curl -H "Content-Type: application/json" -X PUT -d '{"name":"addition", "user_id":1}' http://localhost:8080/projects/1
 ```
 <TODO> Describe format, return codes (204)
 
