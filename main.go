@@ -123,6 +123,65 @@ func main() {
 		}
 	})
 
+	r.PUT("/builds/:id/input", func(c *gin.Context) {
+		session := s3.New(awsSession)
+		batchSession := batch.New(awsSession)
+
+		if c.Param("id") != "" {
+			_, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+
+			// This is bad and buffers the entire body in memory :(
+			body := bytes.Buffer{}
+			body.ReadFrom(c.Request.Body)
+
+			putParams := &s3.PutObjectInput{
+				Bucket:        aws.String("reconfigureio-builds"),           // Required
+				Key:           aws.String(c.Param("id") + "/bundle.tar.gz"), // Required
+				Body:          bytes.NewReader(body.Bytes()),
+				ContentLength: aws.Int64(c.Request.ContentLength),
+			}
+			_, err = session.PutObject(putParams)
+			if err != nil {
+				c.AbortWithStatus(500)
+				c.Error(err)
+				return
+			}
+
+			params := &batch.SubmitJobInput{
+				JobDefinition: aws.String("sdaccel-builder-build"), // Required
+				JobName:       aws.String("example"),               // Required
+				JobQueue:      aws.String("build-jobs"),            // Required
+				ContainerOverrides: &batch.ContainerOverrides{
+					Environment: []*batch.KeyValuePair{
+						{
+							Name:  aws.String("PART"),
+							Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+						},
+						{
+							Name:  aws.String("PART_FAMILY"),
+							Value: aws.String("virtexuplus"),
+						},
+						{
+							Name:  aws.String("INPUT_URL"),
+							Value: aws.String("s3://reconfigureio-builds/" + c.Param("id") + "/bundle.tar.gz"),
+						},
+					},
+				},
+			}
+			resp, err := batchSession.SubmitJob(params)
+			if err != nil {
+				c.AbortWithStatus(500)
+				c.Error(err)
+				return
+			}
+
+			c.JSON(200, resp)
+		}
+	})
+
 	r.GET("/builds", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
