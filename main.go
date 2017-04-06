@@ -82,6 +82,18 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
+	r.Use(gin.BasicAuth(gin.Accounts{
+		"reco-test": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+	}))
+
+	r.GET("/secretping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "successful authentication"})
+	})
+
+	r.GET("/secretpong", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "successful authentication"})
+	})
+
 	r.POST("/builds", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
