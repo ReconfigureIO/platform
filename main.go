@@ -82,15 +82,19 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
+	r.Use(gin.BasicAuth(gin.Accounts{
 		"reco-test": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
 	}))
 
-	authorized.GET("/secretping", func(c *gin.Context) {
+	r.GET("/secretping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "successful authentication"})
 	})
 
-	authorized.POST("/builds", func(c *gin.Context) {
+	r.GET("/secretpong", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "successful authentication"})
+	})
+
+	r.POST("/builds", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
 
@@ -102,7 +106,7 @@ func main() {
 		c.JSON(201, newBuild)
 	})
 
-	authorized.PUT("/builds/:id", func(c *gin.Context) {
+	r.PUT("/builds/:id", func(c *gin.Context) {
 		post := PostBuild{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
@@ -120,7 +124,7 @@ func main() {
 		}
 	})
 
-	authorized.GET("/builds", func(c *gin.Context) {
+	r.GET("/builds", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
 		Builds := []Build{}
 		if project != "" {
@@ -138,7 +142,7 @@ func main() {
 		})
 	})
 
-	authorized.GET("/builds/:id", func(c *gin.Context) {
+	r.GET("/builds/:id", func(c *gin.Context) {
 		outputbuild := []Build{}
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
@@ -150,7 +154,7 @@ func main() {
 		c.JSON(200, outputbuild)
 	})
 
-	authorized.POST("/projects", func(c *gin.Context) {
+	r.POST("/projects", func(c *gin.Context) {
 		post := PostProject{}
 		c.BindJSON(&post)
 		if err := validateProject(post, c); err != nil {
@@ -161,7 +165,7 @@ func main() {
 		c.JSON(201, newProject)
 	})
 
-	authorized.PUT("/projects/:id", func(c *gin.Context) {
+	r.PUT("/projects/:id", func(c *gin.Context) {
 		post := PostProject{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
@@ -179,7 +183,7 @@ func main() {
 		}
 	})
 
-	authorized.GET("/projects", func(c *gin.Context) {
+	r.GET("/projects", func(c *gin.Context) {
 		projects := []Project{}
 		db.Find(&projects)
 		c.JSON(200, gin.H{
@@ -187,7 +191,7 @@ func main() {
 		})
 	})
 
-	authorized.GET("/projects/:id", func(c *gin.Context) {
+	r.GET("/projects/:id", func(c *gin.Context) {
 		outputproj := []Project{}
 		if c.Param("id") != "" {
 			ProjID, err := stringToInt(c.Param("id"), c)
