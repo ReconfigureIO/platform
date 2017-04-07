@@ -43,6 +43,24 @@ type Build struct {
 	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
+func (b *Build) HasStarted() bool {
+	for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
+		if b.Status == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Build) HasFinished() bool {
+	for _, v := range []string{"COMPLETED", "ERRORED"} {
+		if b.Status == v {
+			return true
+		}
+	}
+	return false
+}
+
 type PostBuild struct {
 	UserID         int    `json:"user_id"`
 	ProjectID      int    `json:"project_id"`
@@ -63,6 +81,24 @@ type Simulation struct {
 	OutputStream  string  `json:"output_stream"`
 	BatchId       string  `json:"-"`
 	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+func (s *Simulation) HasStarted() bool {
+	for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
+		if s.Status == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Simulation) HasFinished() bool {
+	for _, v := range []string{"COMPLETED", "ERRORED"} {
+		if s.Status == v {
+			return true
+		}
+	}
+	return false
 }
 
 type PostSimulation struct {

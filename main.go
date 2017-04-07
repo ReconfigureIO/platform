@@ -1,16 +1,15 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/validator.v2"
-	"io"
 	"log"
 	"os"
 	"strconv"
@@ -147,40 +146,12 @@ func main() {
 		// check for error here
 		db.First(&build, id)
 
-		hasStarted := func(s string) bool {
-			for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
-				if s == v {
-					return true
-				}
-			}
-			return false
-		}
-
-		hasFinished := func(s string) bool {
-			for _, v := range []string{"COMPLETED", "ERRORED"} {
-				if s == v {
-					return true
-				}
-			}
-			return false
-		}
-
-		for !hasStarted(build.Status) {
+		for !build.HasStarted() {
 			time.Sleep(time.Second)
 			db.First(&build, id)
 		}
 
 		buildId := build.BatchId
-
-		job, err := awsSession.GetJobDetail(buildId)
-
-		if err != nil {
-			c.AbortWithStatus(500)
-			c.Error(err)
-			return
-		}
-
-		log.Printf("found job:  %+v", *job)
 
 		logStream, err := awsSession.GetJobStream(buildId)
 
@@ -192,37 +163,17 @@ func main() {
 
 		log.Printf("opening log stream: %s", *logStream.LogStreamName)
 
-		stream := awsSession.NewStream(*logStream)
-
-		defer stream.Stop()
-		go func() {
-			err := stream.Run()
-			if err != nil {
-				c.Error(err)
-			}
-		}()
+		lstream := awsSession.NewStream(*logStream)
 
 		go func() {
-			for !hasFinished(build.Status) {
+			for !build.HasFinished() {
 				time.Sleep(10 * time.Second)
 				db.First(&build, id)
 			}
-			stream.Ended = true
+			lstream.Ended = true
 		}()
 
-		c.Stream(func(w io.Writer) bool {
-			log, ok := <-stream.Events
-			if ok {
-				for _, e := range log.Events {
-					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
-					if err != nil {
-						c.Error(err)
-						return false
-					}
-				}
-			}
-			return ok
-		})
+		stream.Stream(lstream, c)
 	})
 
 	r.PATCH("/builds/:id", func(c *gin.Context) {
@@ -438,107 +389,46 @@ func main() {
 		c.JSON(200, outputsim)
 	})
 
-	//	// Log streaming test
-	//	r.GET("/simulations/:id/logs", func(c *gin.Context) {
-	//		id := c.Params.ByName("id")
-	//		cwLogs := cloudwatchlogs.New(awsSession)
-	//		batchSession := batch.New(awsSession)
-	//
-	//		getJobStatus := func() (*batch.JobDetail, error) {
-	//			inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
-	//			resp, err := batchSession.DescribeJobs(inp)
-	//			if err != nil {
-	//				return nil, err
-	//			}
-	//			if len(resp.Jobs) == 0 {
-	//				return nil, nil
-	//			}
-	//			return resp.Jobs[0], nil
-	//		}
-	//
-	//		job, err := getJobStatus()
-	//		if err != nil {
-	//			c.AbortWithStatus(500)
-	//			c.Error(err)
-	//			return
-	//		}
-	//		if job == nil {
-	//			c.AbortWithStatus(404)
-	//			return
-	//		}
-	//
-	//		log.Printf("found job:  %+v", *job)
-	//
-	//		searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
-	//			LogGroupName:        aws.String("/aws/batch/job"), // Required
-	//			Descending:          aws.Bool(true),
-	//			Limit:               aws.Int64(1),
-	//			LogStreamNamePrefix: aws.String("example/" + id),
-	//		}
-	//		resp, err := cwLogs.DescribeLogStreams(searchParams)
-	//		if err != nil {
-	//			c.AbortWithStatus(500)
-	//			c.Error(err)
-	//			return
-	//		}
-	//
-	//		if len(resp.LogStreams) == 0 {
-	//			c.AbortWithStatus(404)
-	//			return
-	//		}
-	//		logStream := resp.LogStreams[0]
-	//		log.Printf("opening log stream: %s", *logStream.LogStreamName)
-	//
-	//		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
-	//
-	//		// Stop streaming as soon as we get a stop
-	//		stop := make(chan struct{}, 1)
-	//		defer func() {
-	//			stop <- struct{}{}
-	//		}()
-	//
-	//		params := (&cloudwatchlogs.GetLogEventsInput{}).
-	//			SetLogGroupName("/aws/batch/job").
-	//			SetLogStreamName(*logStream.LogStreamName).
-	//			SetStartFromHead(true)
-	//
-	//		go func() {
-	//			defer func() {
-	//				close(logs)
-	//			}()
-	//			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
-	//				select {
-	//				case logs <- page:
-	//					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
-	//						return false
-	//					}
-	//					if len(page.Events) == 0 {
-	//						time.Sleep(10 * time.Second)
-	//					}
-	//					return true
-	//				case <-stop:
-	//					return false
-	//				}
-	//			})
-	//			if err != nil {
-	//				c.Error(err)
-	//			}
-	//		}()
-	//
-	//		c.Stream(func(w io.Writer) bool {
-	//			log, ok := <-logs
-	//			if ok {
-	//				for _, e := range log.Events {
-	//					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
-	//					if err != nil {
-	//						c.Error(err)
-	//						return false
-	//					}
-	//				}
-	//			}
-	//			return ok
-	//		})
-	//	})
+	// Log streaming test
+	r.GET("/simulations/:id/logs", func(c *gin.Context) {
+		id, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
+
+		sim := models.Simulation{}
+		// check for error here
+		db.First(&sim, id)
+
+		for !sim.HasStarted() {
+			time.Sleep(time.Second)
+			db.First(&sim, id)
+		}
+
+		simId := sim.BatchId
+
+		logStream, err := awsSession.GetJobStream(simId)
+
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		log.Printf("opening log stream: %s", *logStream.LogStreamName)
+
+		lstream := awsSession.NewStream(*logStream)
+
+		go func() {
+			for !sim.HasFinished() {
+				time.Sleep(10 * time.Second)
+				db.First(&sim, id)
+			}
+			lstream.Ended = true
+		}()
+
+		stream.Stream(lstream, c)
+	})
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
