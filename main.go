@@ -397,8 +397,8 @@ func main() {
 			body.ReadFrom(c.Request.Body)
 
 			putParams := &s3.PutObjectInput{
-				Bucket:        aws.String("reconfigureio-simulations"),      // Required
-				Key:           aws.String(c.Param("id") + "/bundle.tar.gz"), // Required
+				Bucket:        aws.String("reconfigureio-builds"),                            // Required
+				Key:           aws.String("simulations/" + c.Param("id") + "/bundle.tar.gz"), // Required
 				Body:          bytes.NewReader(body.Bytes()),
 				ContentLength: aws.Int64(c.Request.ContentLength),
 			}
@@ -412,7 +412,7 @@ func main() {
 			params := &batch.SubmitJobInput{
 				JobDefinition: aws.String("sdaccel-builder-build"), // Required
 				JobName:       aws.String("example"),               // Required
-				JobQueue:      aws.String("simulation-jobs"),       // Required
+				JobQueue:      aws.String("build-jobs"),            // Required
 				ContainerOverrides: &batch.ContainerOverrides{
 					Environment: []*batch.KeyValuePair{
 						{
