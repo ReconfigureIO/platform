@@ -61,6 +61,7 @@ type Simulation struct {
 	InputArtifact string  `json:"input_artifact"`
 	Command       string  `json:"command"`
 	OutputStream  string  `json:"output_stream"`
+	BatchId       string  `json:"-"`
 	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 

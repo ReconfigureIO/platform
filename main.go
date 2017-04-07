@@ -352,134 +352,92 @@ func main() {
 		}
 	})
 
-	//	r.PUT("/simulations/:id/input", func(c *gin.Context) {
-	//		session := s3.New(awsSession)
-	//		batchSession := batch.New(awsSession)
-	//
-	//		if c.Param("id") != "" {
-	//			id, err := stringToInt(c.Param("id"), c)
-	//			if err != nil {
-	//				return
-	//			}
-	//
-	//			cursim := models.Simulation{}
-	//			db.Where(&models.Simulation{ID: id}).First(&cursim)
-	//
-	//			// This is bad and buffers the entire body in memory :(
-	//			body := bytes.Buffer{}
-	//			body.ReadFrom(c.Request.Body)
-	//
-	//			const bucket = "reconfigureio-builds"
-	//			key := "simulations/" + c.Param("id") + "/bundle.tar.gz"
-	//
-	//			putParams := &s3.PutObjectInput{
-	//				Bucket:        aws.String(bucket), // Required
-	//				Key:           aws.String(key),    // Required
-	//				Body:          bytes.NewReader(body.Bytes()),
-	//				ContentLength: aws.Int64(c.Request.ContentLength),
-	//			}
-	//			_, err = session.PutObject(putParams)
-	//			if err != nil {
-	//				c.AbortWithStatus(500)
-	//				c.Error(err)
-	//				return
-	//			}
-	//
-	//			params := &batch.SubmitJobInput{
-	//				JobDefinition: aws.String("sdaccel-builder-build"), // Required
-	//				JobName:       aws.String("example"),               // Required
-	//				JobQueue:      aws.String("build-jobs"),            // Required
-	//				ContainerOverrides: &batch.ContainerOverrides{
-	//					Command: []*string{
-	//						aws.String("/opt/simulate.sh"),
-	//					},
-	//					Environment: []*batch.KeyValuePair{
-	//						{
-	//							Name:  aws.String("PART"),
-	//							Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
-	//						},
-	//						{
-	//							Name:  aws.String("PART_FAMILY"),
-	//							Value: aws.String("virtexuplus"),
-	//						},
-	//						{
-	//							Name:  aws.String("INPUT_URL"),
-	//							Value: aws.String("s3://" + bucket + "/" + key),
-	//						},
-	//						{
-	//							Name:  aws.String("CMD"),
-	//							Value: aws.String(cursim.Command),
-	//						},
-	//						{
-	//							Name:  aws.String("DEVICE"),
-	//							Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
-	//						},
-	//						{
-	//							Name:  aws.String("DEVICE_FULL"),
-	//							Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
-	//						},
-	//					},
-	//				},
-	//			}
-	//			resp, err := batchSession.SubmitJob(params)
-	//			if err != nil {
-	//				c.AbortWithStatus(500)
-	//				c.Error(err)
-	//				return
-	//			}
-	//
-	//			c.JSON(200, resp)
-	//		}
-	//	})
-	//
-	//	r.PATCH("/simulations/:id", func(c *gin.Context) {
-	//		patch := models.PostSimulation{}
-	//		c.BindJSON(&patch)
-	//		if c.Param("id") != "" {
-	//			SimID, err := stringToInt(c.Param("id"), c)
-	//			if err != nil {
-	//				return
-	//			}
-	//			if err := validateSimulation(patch, c); err != nil {
-	//				return
-	//			}
-	//			outputsim := models.Simulation{}
-	//			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
-	//			db.Model(&outputsim).Updates(models.Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
-	//			c.JSON(201, outputsim)
-	//		}
-	//	})
-	//
-	//	r.GET("/simulations", func(c *gin.Context) {
-	//		project := c.DefaultQuery("project", "")
-	//		Simulations := []models.Simulation{}
-	//		if project != "" {
-	//			ProjID, err := stringToInt(project, c)
-	//			if err != nil {
-	//				return
-	//			}
-	//			db.Where(&models.Simulation{ProjectID: ProjID}).Find(&Simulations)
-	//		} else {
-	//			db.Find(&Simulations)
-	//		}
-	//
-	//		c.JSON(200, gin.H{
-	//			"simulations": Simulations,
-	//		})
-	//	})
-	//
-	//	r.GET("/simulations/:id", func(c *gin.Context) {
-	//		outputsim := []models.Simulation{}
-	//		if c.Param("id") != "" {
-	//			simulationID, err := stringToInt(c.Param("id"), c)
-	//			if err != nil {
-	//				return
-	//			}
-	//			db.Where(&models.Simulation{ID: simulationID}).First(&outputsim)
-	//		}
-	//		c.JSON(200, outputsim)
-	//	})
-	//
+	r.PUT("/simulations/:id/input", func(c *gin.Context) {
+		id, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
+
+		sim := models.Simulation{}
+		db.First(&sim, id)
+
+		if sim.Status != "SUBMITTED" {
+			c.JSON(400, ApiError{
+				Error: fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status),
+			})
+			return
+		}
+
+		key := fmt.Sprintf("simulation/%d/simulation.tar.gz", id)
+
+		s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
+
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		simId, err := awsSession.RunSimulation(s3Url, sim.Command)
+
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		db.Model(&sim).Updates(models.Simulation{BatchId: simId, Status: "QUEUED"})
+		c.JSON(200, sim)
+	})
+
+	r.PATCH("/simulations/:id", func(c *gin.Context) {
+		patch := models.PostSimulation{}
+		c.BindJSON(&patch)
+		if c.Param("id") != "" {
+			SimID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			if err := validateSimulation(patch, c); err != nil {
+				return
+			}
+			outputsim := models.Simulation{}
+			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
+			db.Model(&outputsim).Updates(models.Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+			c.JSON(201, outputsim)
+		}
+	})
+
+	r.GET("/simulations", func(c *gin.Context) {
+		project := c.DefaultQuery("project", "")
+		Simulations := []models.Simulation{}
+		if project != "" {
+			ProjID, err := stringToInt(project, c)
+			if err != nil {
+				return
+			}
+			db.Where(&models.Simulation{ProjectID: ProjID}).Find(&Simulations)
+		} else {
+			db.Find(&Simulations)
+		}
+
+		c.JSON(200, gin.H{
+			"simulations": Simulations,
+		})
+	})
+
+	r.GET("/simulations/:id", func(c *gin.Context) {
+		outputsim := []models.Simulation{}
+		if c.Param("id") != "" {
+			simulationID, err := stringToInt(c.Param("id"), c)
+			if err != nil {
+				return
+			}
+			db.Where(&models.Simulation{ID: simulationID}).First(&outputsim)
+		}
+		c.JSON(200, outputsim)
+	})
+
 	//	// Log streaming test
 	//	r.GET("/simulations/:id/logs", func(c *gin.Context) {
 	//		id := c.Params.ByName("id")
