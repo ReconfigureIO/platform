@@ -195,19 +195,19 @@ func main() {
 	r.PATCH("/builds/:id", func(c *gin.Context) {
 		patch := models.PostBuild{}
 		c.BindJSON(&patch)
-		if c.Param("id") != "" {
-			BuildID, err := stringToInt(c.Param("id"), c)
-			if err != nil {
-				return
-			}
-			if err := validateBuild(patch, c); err != nil {
-				return
-			}
-			outputbuild := models.Build{}
-			db.Where(&models.Build{ID: BuildID}).First(&outputbuild)
-			db.Model(&outputbuild).Updates(models.Build{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputArtifact: patch.OutputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
-			c.JSON(201, outputbuild)
+		if err := validateBuild(patch, c); err != nil {
+			return
 		}
+
+		BuildID, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
+
+		outputbuild := models.Build{}
+		db.Where(&models.Build{ID: BuildID}).First(&outputbuild)
+		db.Model(&outputbuild).Updates(models.Build{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputArtifact: patch.OutputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+		c.JSON(201, outputbuild)
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
