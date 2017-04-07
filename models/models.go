@@ -39,6 +39,7 @@ type Build struct {
 	InputArtifact  string  `json:"input_artifact"`
 	OutputArtifact string  `json:"output_artifact"`
 	OutputStream   string  `json:"output_stream"`
+	BatchId        string  `json:"-"`
 	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
 

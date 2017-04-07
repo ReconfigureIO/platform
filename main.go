@@ -5,11 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/batch"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -18,10 +14,13 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 )
 
 var NOT_FOUND = errors.New("Not Found")
+
+type ApiError struct {
+	Error string `json:"error"`
+}
 
 func main() {
 
@@ -39,8 +38,15 @@ func main() {
 	defer db.Close()
 
 	db.AutoMigrate(&models.Simulation{})
+	db.AutoMigrate(&models.Build{})
+	db.AutoMigrate(&models.Project{})
+	db.AutoMigrate(&models.User{})
 
-	awsSession := session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
+	awsSession := aws.New(aws.ServiceConfig{
+		Bucket:        "reconfigureio-builds",
+		Queue:         "build-jobs",
+		JobDefinition: "sdaccel-builder-build",
+	})
 
 	r := gin.Default()
 
@@ -92,153 +98,87 @@ func main() {
 	})
 
 	r.PUT("/builds/:id/input", func(c *gin.Context) {
-		session := s3.New(awsSession)
-		batchSession := batch.New(awsSession)
-
-		if c.Param("id") != "" {
-			_, err := stringToInt(c.Param("id"), c)
-			if err != nil {
-				return
-			}
-
-			// This is bad and buffers the entire body in memory :(
-			body := bytes.Buffer{}
-			body.ReadFrom(c.Request.Body)
-
-			putParams := &s3.PutObjectInput{
-				Bucket:        aws.String("reconfigureio-builds"),           // Required
-				Key:           aws.String(c.Param("id") + "/bundle.tar.gz"), // Required
-				Body:          bytes.NewReader(body.Bytes()),
-				ContentLength: aws.Int64(c.Request.ContentLength),
-			}
-			_, err = session.PutObject(putParams)
-			if err != nil {
-				c.AbortWithStatus(500)
-				c.Error(err)
-				return
-			}
-
-			params := &batch.SubmitJobInput{
-				JobDefinition: aws.String("sdaccel-builder-build"), // Required
-				JobName:       aws.String("example"),               // Required
-				JobQueue:      aws.String("build-jobs"),            // Required
-				ContainerOverrides: &batch.ContainerOverrides{
-					Environment: []*batch.KeyValuePair{
-						{
-							Name:  aws.String("PART"),
-							Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
-						},
-						{
-							Name:  aws.String("PART_FAMILY"),
-							Value: aws.String("virtexuplus"),
-						},
-						{
-							Name:  aws.String("INPUT_URL"),
-							Value: aws.String("s3://reconfigureio-builds/" + c.Param("id") + "/bundle.tar.gz"),
-						},
-					},
-				},
-			}
-			resp, err := batchSession.SubmitJob(params)
-			if err != nil {
-				c.AbortWithStatus(500)
-				c.Error(err)
-				return
-			}
-
-			c.JSON(200, resp)
-		}
-	})
-
-	// Log streaming test
-	r.GET("/builds/:id/logs", func(c *gin.Context) {
-		id := c.Params.ByName("id")
-		cwLogs := cloudwatchlogs.New(awsSession)
-		batchSession := batch.New(awsSession)
-
-		getJobStatus := func() (*batch.JobDetail, error) {
-			inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
-			resp, err := batchSession.DescribeJobs(inp)
-			if err != nil {
-				return nil, err
-			}
-			if len(resp.Jobs) == 0 {
-				return nil, nil
-			}
-			return resp.Jobs[0], nil
+		id, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
 		}
 
-		job, err := getJobStatus()
+		build := models.Build{}
+		db.First(&build, id)
+
+		if build.Status != "SUBMITTED" {
+			c.JSON(400, ApiError{
+				Error: fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status),
+			})
+			return
+		}
+
+		key := fmt.Sprintf("builds/%d/simulation.tar.gz", id)
+
+		s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
+
 		if err != nil {
 			c.AbortWithStatus(500)
 			c.Error(err)
 			return
 		}
-		if job == nil {
-			c.AbortWithStatus(404)
+
+		buildId, err := awsSession.RunBuild(s3Url)
+
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
+			return
+		}
+
+		db.Model(&build).Updates(models.Build{BatchId: buildId, Status: "QUEUED"})
+		c.JSON(200, build)
+	})
+
+	// Log streaming test
+	r.GET("/builds/:id/logs", func(c *gin.Context) {
+		id, err := stringToInt(c.Param("id"), c)
+		if err != nil {
+			return
+		}
+
+		build := models.Build{}
+		db.First(&build, id)
+
+		buildId := build.BatchId
+
+		job, err := awsSession.GetJobDetail(buildId)
+
+		if err != nil {
+			c.AbortWithStatus(500)
+			c.Error(err)
 			return
 		}
 
 		log.Printf("found job:  %+v", *job)
 
-		searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
-			LogGroupName:        aws.String("/aws/batch/job"), // Required
-			Descending:          aws.Bool(true),
-			Limit:               aws.Int64(1),
-			LogStreamNamePrefix: aws.String("example/" + id),
-		}
-		resp, err := cwLogs.DescribeLogStreams(searchParams)
+		logStream, err := awsSession.GetJobStream(buildId)
+
 		if err != nil {
 			c.AbortWithStatus(500)
 			c.Error(err)
 			return
 		}
 
-		if len(resp.LogStreams) == 0 {
-			c.AbortWithStatus(404)
-			return
-		}
-		logStream := resp.LogStreams[0]
 		log.Printf("opening log stream: %s", *logStream.LogStreamName)
 
-		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
+		stream := awsSession.NewStream(*logStream)
 
-		// Stop streaming as soon as we get a stop
-		stop := make(chan struct{}, 1)
-		defer func() {
-			stop <- struct{}{}
-		}()
-
-		params := (&cloudwatchlogs.GetLogEventsInput{}).
-			SetLogGroupName("/aws/batch/job").
-			SetLogStreamName(*logStream.LogStreamName).
-			SetStartFromHead(true)
-
+		defer stream.Stop()
 		go func() {
-			defer func() {
-				close(logs)
-			}()
-			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
-				select {
-				case logs <- page:
-					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
-						return false
-					}
-					if len(page.Events) == 0 {
-						time.Sleep(10 * time.Second)
-					}
-					return true
-				case <-stop:
-					return false
-				}
-			})
+			err := stream.Run()
 			if err != nil {
 				c.Error(err)
 			}
 		}()
 
 		c.Stream(func(w io.Writer) bool {
-			log, ok := <-logs
+			log, ok := <-stream.Events
 			if ok {
 				for _, e := range log.Events {
 					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
@@ -379,235 +319,235 @@ func main() {
 		}
 	})
 
-	r.PUT("/simulations/:id/input", func(c *gin.Context) {
-		session := s3.New(awsSession)
-		batchSession := batch.New(awsSession)
-
-		if c.Param("id") != "" {
-			id, err := stringToInt(c.Param("id"), c)
-			if err != nil {
-				return
-			}
-
-			cursim := models.Simulation{}
-			db.Where(&models.Simulation{ID: id}).First(&cursim)
-
-			// This is bad and buffers the entire body in memory :(
-			body := bytes.Buffer{}
-			body.ReadFrom(c.Request.Body)
-
-			const bucket = "reconfigureio-builds"
-			key := "simulations/" + c.Param("id") + "/bundle.tar.gz"
-
-			putParams := &s3.PutObjectInput{
-				Bucket:        aws.String(bucket), // Required
-				Key:           aws.String(key),    // Required
-				Body:          bytes.NewReader(body.Bytes()),
-				ContentLength: aws.Int64(c.Request.ContentLength),
-			}
-			_, err = session.PutObject(putParams)
-			if err != nil {
-				c.AbortWithStatus(500)
-				c.Error(err)
-				return
-			}
-
-			params := &batch.SubmitJobInput{
-				JobDefinition: aws.String("sdaccel-builder-build"), // Required
-				JobName:       aws.String("example"),               // Required
-				JobQueue:      aws.String("build-jobs"),            // Required
-				ContainerOverrides: &batch.ContainerOverrides{
-					Command: []*string{
-						aws.String("/opt/simulate.sh"),
-					},
-					Environment: []*batch.KeyValuePair{
-						{
-							Name:  aws.String("PART"),
-							Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
-						},
-						{
-							Name:  aws.String("PART_FAMILY"),
-							Value: aws.String("virtexuplus"),
-						},
-						{
-							Name:  aws.String("INPUT_URL"),
-							Value: aws.String("s3://" + bucket + "/" + key),
-						},
-						{
-							Name:  aws.String("CMD"),
-							Value: aws.String(cursim.Command),
-						},
-						{
-							Name:  aws.String("DEVICE"),
-							Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
-						},
-						{
-							Name:  aws.String("DEVICE_FULL"),
-							Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
-						},
-					},
-				},
-			}
-			resp, err := batchSession.SubmitJob(params)
-			if err != nil {
-				c.AbortWithStatus(500)
-				c.Error(err)
-				return
-			}
-
-			c.JSON(200, resp)
-		}
-	})
-
-	r.PATCH("/simulations/:id", func(c *gin.Context) {
-		patch := models.PostSimulation{}
-		c.BindJSON(&patch)
-		if c.Param("id") != "" {
-			SimID, err := stringToInt(c.Param("id"), c)
-			if err != nil {
-				return
-			}
-			if err := validateSimulation(patch, c); err != nil {
-				return
-			}
-			outputsim := models.Simulation{}
-			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
-			db.Model(&outputsim).Updates(models.Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
-			c.JSON(201, outputsim)
-		}
-	})
-
-	r.GET("/simulations", func(c *gin.Context) {
-		project := c.DefaultQuery("project", "")
-		Simulations := []models.Simulation{}
-		if project != "" {
-			ProjID, err := stringToInt(project, c)
-			if err != nil {
-				return
-			}
-			db.Where(&models.Simulation{ProjectID: ProjID}).Find(&Simulations)
-		} else {
-			db.Find(&Simulations)
-		}
-
-		c.JSON(200, gin.H{
-			"simulations": Simulations,
-		})
-	})
-
-	r.GET("/simulations/:id", func(c *gin.Context) {
-		outputsim := []models.Simulation{}
-		if c.Param("id") != "" {
-			simulationID, err := stringToInt(c.Param("id"), c)
-			if err != nil {
-				return
-			}
-			db.Where(&models.Simulation{ID: simulationID}).First(&outputsim)
-		}
-		c.JSON(200, outputsim)
-	})
-
-	// Log streaming test
-	r.GET("/simulations/:id/logs", func(c *gin.Context) {
-		id := c.Params.ByName("id")
-		cwLogs := cloudwatchlogs.New(awsSession)
-		batchSession := batch.New(awsSession)
-
-		getJobStatus := func() (*batch.JobDetail, error) {
-			inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
-			resp, err := batchSession.DescribeJobs(inp)
-			if err != nil {
-				return nil, err
-			}
-			if len(resp.Jobs) == 0 {
-				return nil, nil
-			}
-			return resp.Jobs[0], nil
-		}
-
-		job, err := getJobStatus()
-		if err != nil {
-			c.AbortWithStatus(500)
-			c.Error(err)
-			return
-		}
-		if job == nil {
-			c.AbortWithStatus(404)
-			return
-		}
-
-		log.Printf("found job:  %+v", *job)
-
-		searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
-			LogGroupName:        aws.String("/aws/batch/job"), // Required
-			Descending:          aws.Bool(true),
-			Limit:               aws.Int64(1),
-			LogStreamNamePrefix: aws.String("example/" + id),
-		}
-		resp, err := cwLogs.DescribeLogStreams(searchParams)
-		if err != nil {
-			c.AbortWithStatus(500)
-			c.Error(err)
-			return
-		}
-
-		if len(resp.LogStreams) == 0 {
-			c.AbortWithStatus(404)
-			return
-		}
-		logStream := resp.LogStreams[0]
-		log.Printf("opening log stream: %s", *logStream.LogStreamName)
-
-		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
-
-		// Stop streaming as soon as we get a stop
-		stop := make(chan struct{}, 1)
-		defer func() {
-			stop <- struct{}{}
-		}()
-
-		params := (&cloudwatchlogs.GetLogEventsInput{}).
-			SetLogGroupName("/aws/batch/job").
-			SetLogStreamName(*logStream.LogStreamName).
-			SetStartFromHead(true)
-
-		go func() {
-			defer func() {
-				close(logs)
-			}()
-			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
-				select {
-				case logs <- page:
-					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
-						return false
-					}
-					if len(page.Events) == 0 {
-						time.Sleep(10 * time.Second)
-					}
-					return true
-				case <-stop:
-					return false
-				}
-			})
-			if err != nil {
-				c.Error(err)
-			}
-		}()
-
-		c.Stream(func(w io.Writer) bool {
-			log, ok := <-logs
-			if ok {
-				for _, e := range log.Events {
-					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
-					if err != nil {
-						c.Error(err)
-						return false
-					}
-				}
-			}
-			return ok
-		})
-	})
+	//	r.PUT("/simulations/:id/input", func(c *gin.Context) {
+	//		session := s3.New(awsSession)
+	//		batchSession := batch.New(awsSession)
+	//
+	//		if c.Param("id") != "" {
+	//			id, err := stringToInt(c.Param("id"), c)
+	//			if err != nil {
+	//				return
+	//			}
+	//
+	//			cursim := models.Simulation{}
+	//			db.Where(&models.Simulation{ID: id}).First(&cursim)
+	//
+	//			// This is bad and buffers the entire body in memory :(
+	//			body := bytes.Buffer{}
+	//			body.ReadFrom(c.Request.Body)
+	//
+	//			const bucket = "reconfigureio-builds"
+	//			key := "simulations/" + c.Param("id") + "/bundle.tar.gz"
+	//
+	//			putParams := &s3.PutObjectInput{
+	//				Bucket:        aws.String(bucket), // Required
+	//				Key:           aws.String(key),    // Required
+	//				Body:          bytes.NewReader(body.Bytes()),
+	//				ContentLength: aws.Int64(c.Request.ContentLength),
+	//			}
+	//			_, err = session.PutObject(putParams)
+	//			if err != nil {
+	//				c.AbortWithStatus(500)
+	//				c.Error(err)
+	//				return
+	//			}
+	//
+	//			params := &batch.SubmitJobInput{
+	//				JobDefinition: aws.String("sdaccel-builder-build"), // Required
+	//				JobName:       aws.String("example"),               // Required
+	//				JobQueue:      aws.String("build-jobs"),            // Required
+	//				ContainerOverrides: &batch.ContainerOverrides{
+	//					Command: []*string{
+	//						aws.String("/opt/simulate.sh"),
+	//					},
+	//					Environment: []*batch.KeyValuePair{
+	//						{
+	//							Name:  aws.String("PART"),
+	//							Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+	//						},
+	//						{
+	//							Name:  aws.String("PART_FAMILY"),
+	//							Value: aws.String("virtexuplus"),
+	//						},
+	//						{
+	//							Name:  aws.String("INPUT_URL"),
+	//							Value: aws.String("s3://" + bucket + "/" + key),
+	//						},
+	//						{
+	//							Name:  aws.String("CMD"),
+	//							Value: aws.String(cursim.Command),
+	//						},
+	//						{
+	//							Name:  aws.String("DEVICE"),
+	//							Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
+	//						},
+	//						{
+	//							Name:  aws.String("DEVICE_FULL"),
+	//							Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
+	//						},
+	//					},
+	//				},
+	//			}
+	//			resp, err := batchSession.SubmitJob(params)
+	//			if err != nil {
+	//				c.AbortWithStatus(500)
+	//				c.Error(err)
+	//				return
+	//			}
+	//
+	//			c.JSON(200, resp)
+	//		}
+	//	})
+	//
+	//	r.PATCH("/simulations/:id", func(c *gin.Context) {
+	//		patch := models.PostSimulation{}
+	//		c.BindJSON(&patch)
+	//		if c.Param("id") != "" {
+	//			SimID, err := stringToInt(c.Param("id"), c)
+	//			if err != nil {
+	//				return
+	//			}
+	//			if err := validateSimulation(patch, c); err != nil {
+	//				return
+	//			}
+	//			outputsim := models.Simulation{}
+	//			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
+	//			db.Model(&outputsim).Updates(models.Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+	//			c.JSON(201, outputsim)
+	//		}
+	//	})
+	//
+	//	r.GET("/simulations", func(c *gin.Context) {
+	//		project := c.DefaultQuery("project", "")
+	//		Simulations := []models.Simulation{}
+	//		if project != "" {
+	//			ProjID, err := stringToInt(project, c)
+	//			if err != nil {
+	//				return
+	//			}
+	//			db.Where(&models.Simulation{ProjectID: ProjID}).Find(&Simulations)
+	//		} else {
+	//			db.Find(&Simulations)
+	//		}
+	//
+	//		c.JSON(200, gin.H{
+	//			"simulations": Simulations,
+	//		})
+	//	})
+	//
+	//	r.GET("/simulations/:id", func(c *gin.Context) {
+	//		outputsim := []models.Simulation{}
+	//		if c.Param("id") != "" {
+	//			simulationID, err := stringToInt(c.Param("id"), c)
+	//			if err != nil {
+	//				return
+	//			}
+	//			db.Where(&models.Simulation{ID: simulationID}).First(&outputsim)
+	//		}
+	//		c.JSON(200, outputsim)
+	//	})
+	//
+	//	// Log streaming test
+	//	r.GET("/simulations/:id/logs", func(c *gin.Context) {
+	//		id := c.Params.ByName("id")
+	//		cwLogs := cloudwatchlogs.New(awsSession)
+	//		batchSession := batch.New(awsSession)
+	//
+	//		getJobStatus := func() (*batch.JobDetail, error) {
+	//			inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
+	//			resp, err := batchSession.DescribeJobs(inp)
+	//			if err != nil {
+	//				return nil, err
+	//			}
+	//			if len(resp.Jobs) == 0 {
+	//				return nil, nil
+	//			}
+	//			return resp.Jobs[0], nil
+	//		}
+	//
+	//		job, err := getJobStatus()
+	//		if err != nil {
+	//			c.AbortWithStatus(500)
+	//			c.Error(err)
+	//			return
+	//		}
+	//		if job == nil {
+	//			c.AbortWithStatus(404)
+	//			return
+	//		}
+	//
+	//		log.Printf("found job:  %+v", *job)
+	//
+	//		searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
+	//			LogGroupName:        aws.String("/aws/batch/job"), // Required
+	//			Descending:          aws.Bool(true),
+	//			Limit:               aws.Int64(1),
+	//			LogStreamNamePrefix: aws.String("example/" + id),
+	//		}
+	//		resp, err := cwLogs.DescribeLogStreams(searchParams)
+	//		if err != nil {
+	//			c.AbortWithStatus(500)
+	//			c.Error(err)
+	//			return
+	//		}
+	//
+	//		if len(resp.LogStreams) == 0 {
+	//			c.AbortWithStatus(404)
+	//			return
+	//		}
+	//		logStream := resp.LogStreams[0]
+	//		log.Printf("opening log stream: %s", *logStream.LogStreamName)
+	//
+	//		logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
+	//
+	//		// Stop streaming as soon as we get a stop
+	//		stop := make(chan struct{}, 1)
+	//		defer func() {
+	//			stop <- struct{}{}
+	//		}()
+	//
+	//		params := (&cloudwatchlogs.GetLogEventsInput{}).
+	//			SetLogGroupName("/aws/batch/job").
+	//			SetLogStreamName(*logStream.LogStreamName).
+	//			SetStartFromHead(true)
+	//
+	//		go func() {
+	//			defer func() {
+	//				close(logs)
+	//			}()
+	//			err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
+	//				select {
+	//				case logs <- page:
+	//					if lastPage || (len(page.Events) == 0 && (*job.Status) == "FAILED") {
+	//						return false
+	//					}
+	//					if len(page.Events) == 0 {
+	//						time.Sleep(10 * time.Second)
+	//					}
+	//					return true
+	//				case <-stop:
+	//					return false
+	//				}
+	//			})
+	//			if err != nil {
+	//				c.Error(err)
+	//			}
+	//		}()
+	//
+	//		c.Stream(func(w io.Writer) bool {
+	//			log, ok := <-logs
+	//			if ok {
+	//				for _, e := range log.Events {
+	//					_, err := bytes.NewBufferString((*e.Message) + "\n").WriteTo(w)
+	//					if err != nil {
+	//						c.Error(err)
+	//						return false
+	//					}
+	//				}
+	//			}
+	//			return ok
+	//		})
+	//	})
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
