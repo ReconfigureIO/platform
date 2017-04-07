@@ -142,7 +142,7 @@ Simulations have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStrea
 
 ```
 curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulations
-{"id": 1, "logs_url": "http://localhost:8080/simulations/1/logs", "input_url": "http://localhost:8080/simulations/1/input", "status": "AWAITING_INPUT"}
+{"id": 1, "logs_url": "http://localhost:8080/simulations/1/logs", "input_url": "http://localhost:8080/simulations/1/input", "command": "test-addition" "status": "AWAITING_INPUT"}
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
@@ -171,7 +171,7 @@ curl -H "Content-Type: application/json" -X PUT -d '{"project_id":"1"}' http://l
 Change details of a simulation. 
 
 ```
-curl -H "Content-Type: application/json" -X PATCH -d '{"project_id":"1"}' http://localhost:8080/simulations/1
+curl -H "Content-Type: application/json" -X PATCH -d '{"command":"test-addition"}' http://localhost:8080/simulations/1
 ```
 
 #### GET /simulations/{id}
@@ -180,7 +180,7 @@ To view one particular simulation's details:
 
 ```
 curl -X GET localhost:8080/simulation/1
-{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","outout_stream":"working working done","status":""}
+{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","command":"test-addition",outout_stream":"working working done","status":""}
 ```
 
 #### GET /simulations/{id}/logs
