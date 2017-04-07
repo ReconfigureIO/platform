@@ -414,6 +414,9 @@ func main() {
 				JobName:       aws.String("example"),               // Required
 				JobQueue:      aws.String("build-jobs"),            // Required
 				ContainerOverrides: &batch.ContainerOverrides{
+					Command: []*string{
+						aws.String("/opt/simulate.sh"),
+					},
 					Environment: []*batch.KeyValuePair{
 						{
 							Name:  aws.String("PART"),
