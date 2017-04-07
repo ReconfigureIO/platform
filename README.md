@@ -93,6 +93,8 @@ curl -u $USER:$PASS -H GET localhost:8080/builds?project=0
 
 #### POST /builds
 
+Creates a new build in an "AWAITING_INPUT" status
+
 Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
 
 ```
@@ -101,26 +103,98 @@ curl -u $USER:$PASS -H "Content-Type: application/json" -X POST -d '{"user_id":1
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
 
-#### PUT /builds/{id}
+#### PUT  {{ build.input_url }}
 
-You can update a Build for instance when its status changes or the output artifact needs setting.
+Attached the enclosed input to a build, moving it to "QUEUED" status
 
 ```
-curl -u $USER:$PASS -H "Content-Type: application/json" -X PUT -d '{"status":"PROCESSING", "user_id":1, "project_id":1, "output_artifact":"some files"}' http://localhost:8080/builds/1
+curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/input
+```
+
+You can expect this to return  a HTTP `204` code.
+
+#### PATCH /builds/{id}
+
+Internal use: can update the status of a build
+
+```
+curl -u $USER:$PASS -H "Content-Type: application/json" -X PATCH -d '{"status":"PROCESSING"}' http://localhost:8080/builds/1
 ```
 You can expect this to return a HTTP `204` code
 
+### Simulations
+`Simulations` are one run of user files through our compiler. They have input artifacts and output streams along with a status, they never have output artifacts. To list all simulations:
+
+#### GET /simulations
+Gets a list of all simulations, can be filtered by project ID.
+
+```
+curl -X GET localhost:8080/simulations
+{"simulations":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","outout_stream":"working working done","status":""}]}
+
+```
+
+#### POST /simulations
+
+Creates a new simulation in an "AWAITING_INPUT" status
+
+Simulations have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
+
+```
+curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulations
+{"id": 1, "logs_url": "http://localhost:8080/simulations/1/logs", "input_url": "http://localhost:8080/simulations/1/input", "status": "AWAITING_INPUT"}
+```
+
+You can expect this to return a HTTP `202` code with the newly created build including ID
+
+#### PUT  {{ simulations.input_url }}
+
+Attached the enclosed input to a simulation, moving it to "QUEUED" status
+
+```
+curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/simulations/1/input
+```
+
+You can expect this to return  a HTTP `204` code.
+
+#### PUT /simulations/{id}
+
+Change details of a simulation. Will be deprecated in future in favour of PATCH.
+
+```
+curl -H "Content-Type: application/json" -X PUT -d '{"project_id":"1"}' http://localhost:8080/simulations/1
+```
+<TODO> Describe format, return codes (204)
+
+#### PATCH /simulations/{id}
+
+Change details of a simulation. 
+
+```
+curl -H "Content-Type: application/json" -X PATCH -d '{"project_id":"1"}' http://localhost:8080/simulations/1
+```
+
+#### GET /simulations/{id}
+
+To view one particular simulation's details:
+
+```
+curl -X GET localhost:8080/simulation/1
+{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","outout_stream":"working working done","status":""}
+```
+
+#### GET /simulations/{id}/logs
+
+Stream the logs for a given simulation
+
+<TODO> Describe returned values
+
 #### GET /builds/{build_id}/logs
 
 Stream the logs for a given build
 
 <TODO> Describe format, termination
 
-#### GET /builds/{build_id}/logs
-
-Stream the logs for a given build
-
-<TODO> Describe format, termination
 
 ## What to expect
 In the event of an invalid ID we can expect to receive a `404` response from the API:
