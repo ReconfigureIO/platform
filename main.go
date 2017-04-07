@@ -396,9 +396,12 @@ func main() {
 			body := bytes.Buffer{}
 			body.ReadFrom(c.Request.Body)
 
+			const bucket = "reconfigureio-builds"
+			key := "simulations/" + c.Param("id") + "/bundle.tar.gz"
+
 			putParams := &s3.PutObjectInput{
-				Bucket:        aws.String("reconfigureio-builds"),                            // Required
-				Key:           aws.String("simulations/" + c.Param("id") + "/bundle.tar.gz"), // Required
+				Bucket:        aws.String(bucket), // Required
+				Key:           aws.String(key),    // Required
 				Body:          bytes.NewReader(body.Bytes()),
 				ContentLength: aws.Int64(c.Request.ContentLength),
 			}
@@ -428,7 +431,7 @@ func main() {
 						},
 						{
 							Name:  aws.String("INPUT_URL"),
-							Value: aws.String("s3://reconfigureio-simulations/" + c.Param("id") + "/bundle.tar.gz"),
+							Value: aws.String("s3://" + bucket + "/" + key),
 						},
 						{
 							Name:  aws.String("CMD"),
