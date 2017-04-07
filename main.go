@@ -384,10 +384,13 @@ func main() {
 		batchSession := batch.New(awsSession)
 
 		if c.Param("id") != "" {
-			_, err := stringToInt(c.Param("id"), c)
+			id, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
+
+			cursim := models.Simulation{}
+			db.Where(&models.Simulation{ID: id}).First(&cursim)
 
 			// This is bad and buffers the entire body in memory :(
 			body := bytes.Buffer{}
@@ -423,6 +426,18 @@ func main() {
 						{
 							Name:  aws.String("INPUT_URL"),
 							Value: aws.String("s3://reconfigureio-simulations/" + c.Param("id") + "/bundle.tar.gz"),
+						},
+						{
+							Name:  aws.String("CMD"),
+							Value: aws.String(cursim.Command),
+						},
+						{
+							Name:  aws.String("DEVICE"),
+							Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
+						},
+						{
+							Name:  aws.String("DEVICE_FULL"),
+							Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
 						},
 					},
 				},
