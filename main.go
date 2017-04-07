@@ -76,6 +76,7 @@ type Simulation struct {
 	Project       Project `json:"project"`
 	ProjectID     int     `json:"project_id"`
 	InputArtifact string  `json:"input_artifact"`
+	Command       string  `json:"command"`
 	OutputStream  string  `json:"output_stream"`
 	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
 }
@@ -85,6 +86,7 @@ type PostSimulation struct {
 	ProjectID     int    `json:"project_id"`
 	InputArtifact string `json:"input_artifact"`
 	OutputStream  string `json:"output_stream"`
+	Command       string `json:"command"`
 	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
