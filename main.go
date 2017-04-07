@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 var NOT_FOUND = errors.New("Not Found")
@@ -143,7 +144,31 @@ func main() {
 		}
 
 		build := models.Build{}
+		// check for error here
 		db.First(&build, id)
+
+		hasStarted := func(s string) bool {
+			for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
+				if s == v {
+					return true
+				}
+			}
+			return false
+		}
+
+		hasFinished := func(s string) bool {
+			for _, v := range []string{"COMPLETED", "ERRORED"} {
+				if s == v {
+					return true
+				}
+			}
+			return false
+		}
+
+		for !hasStarted(build.Status) {
+			time.Sleep(time.Second)
+			db.First(&build, id)
+		}
 
 		buildId := build.BatchId
 
@@ -175,6 +200,14 @@ func main() {
 			if err != nil {
 				c.Error(err)
 			}
+		}()
+
+		go func() {
+			for !hasFinished(build.Status) {
+				time.Sleep(10 * time.Second)
+				db.First(&build, id)
+			}
+			stream.Ended = true
 		}()
 
 		c.Stream(func(w io.Writer) bool {

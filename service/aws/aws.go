@@ -120,7 +120,7 @@ type Stream struct {
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
 	stop    chan struct{}
-	ended   bool
+	Ended   bool
 }
 
 func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
@@ -149,7 +149,7 @@ func (stream *Stream) Run() error {
 	err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 		select {
 		case stream.Events <- page:
-			if lastPage || (len(page.Events) == 0 && stream.ended) {
+			if lastPage || (len(page.Events) == 0 && stream.Ended) {
 				return false
 			}
 			if len(page.Events) == 0 {
