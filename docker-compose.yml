@@ -6,9 +6,6 @@ services:
     build: build
     command: bash -c "glide install && gin --bin main --appPort 8080"
     working_dir: /go/src/github.com/ReconfigureIO/platform
-    environment:
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
     ports:
@@ -18,5 +15,7 @@ services:
     links:
       - db
     environment:
-      DATABASE_URL: host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
-      PORT: 8080
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
+      - PORT=8080
