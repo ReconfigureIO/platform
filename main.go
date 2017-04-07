@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -22,74 +23,6 @@ import (
 
 var NOT_FOUND = errors.New("Not Found")
 
-type User struct {
-	ID         int         `gorm:"primary_key" json:"id"`
-	GithubID   string      `json:"github_id"`
-	Email      string      `gorm:"type:varchar(100);unique_index" json:"email"`
-	AuthTokens []AuthToken `json:"auth_token"` //User has many AuthTokens
-}
-
-type Project struct {
-	ID     int     `gorm:"primary_key" json:"id"`
-	User   User    `json:"user"` //Project belongs to User
-	UserID int     `json:"user_id"`
-	Name   string  `json:"name"`
-	Builds []Build `json:"builds"`
-}
-
-type PostProject struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-}
-
-type AuthToken struct {
-	gorm.Model
-	Token  string `json:"token"`
-	UserID int    `json:"user_id"`
-}
-
-type Build struct {
-	ID             int     `gorm:"primary_key" json:"id"`
-	User           User    `json:"user"` //Build belongs to User, UserID is foreign key
-	UserID         int     `json:"user_id"`
-	Project        Project `json:"project"`
-	ProjectID      int     `json:"project_id"`
-	InputArtifact  string  `json:"input_artifact"`
-	OutputArtifact string  `json:"output_artifact"`
-	OutputStream   string  `json:"output_stream"`
-	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
-}
-
-type PostBuild struct {
-	UserID         int    `json:"user_id"`
-	ProjectID      int    `json:"project_id"`
-	InputArtifact  string `json:"input_artifact"`
-	OutputArtifact string `json:"output_artifact"`
-	OutputStream   string `json:"output_stream"`
-	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
-}
-
-type Simulation struct {
-	ID            int     `gorm:"primary_key" json:"id"`
-	User          User    `json:"user"` //Build belongs to User, UserID is foreign key
-	UserID        int     `json:"user_id"`
-	Project       Project `json:"project"`
-	ProjectID     int     `json:"project_id"`
-	InputArtifact string  `json:"input_artifact"`
-	Command       string  `json:"command"`
-	OutputStream  string  `json:"output_stream"`
-	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
-}
-
-type PostSimulation struct {
-	UserID        int    `json:"user_id"`
-	ProjectID     int    `json:"project_id"`
-	InputArtifact string `json:"input_artifact"`
-	OutputStream  string `json:"output_stream"`
-	Command       string `json:"command"`
-	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
-}
-
 func main() {
 
 	gormConnDets := os.Getenv("DATABASE_URL")
@@ -105,7 +38,7 @@ func main() {
 	}
 	defer db.Close()
 
-	db.AutoMigrate(&Simulation{})
+	db.AutoMigrate(&models.Simulation{})
 
 	awsSession := session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 
@@ -129,19 +62,19 @@ func main() {
 	})
 
 	r.POST("/builds", func(c *gin.Context) {
-		post := PostBuild{}
+		post := models.PostBuild{}
 		c.BindJSON(&post)
 
 		if err := validateBuild(post, c); err != nil {
 			return
 		}
-		newBuild := Build{UserID: post.UserID, ProjectID: post.ProjectID}
+		newBuild := models.Build{UserID: post.UserID, ProjectID: post.ProjectID}
 		db.Create(&newBuild)
 		c.JSON(201, newBuild)
 	})
 
 	r.PUT("/builds/:id", func(c *gin.Context) {
-		post := PostBuild{}
+		post := models.PostBuild{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
@@ -151,9 +84,9 @@ func main() {
 			if err := validateBuild(post, c); err != nil {
 				return
 			}
-			outputbuild := Build{}
-			db.Where(&Build{ID: BuildID}).First(&outputbuild)
-			db.Model(&outputbuild).Updates(Build{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, OutputArtifact: post.OutputArtifact, OutputStream: post.OutputStream, Status: post.Status})
+			outputbuild := models.Build{}
+			db.Where(&models.Build{ID: BuildID}).First(&outputbuild)
+			db.Model(&outputbuild).Updates(models.Build{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, OutputArtifact: post.OutputArtifact, OutputStream: post.OutputStream, Status: post.Status})
 			c.JSON(201, outputbuild)
 		}
 	})
@@ -320,7 +253,7 @@ func main() {
 	})
 
 	r.PATCH("/builds/:id", func(c *gin.Context) {
-		patch := PostBuild{}
+		patch := models.PostBuild{}
 		c.BindJSON(&patch)
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
@@ -330,22 +263,22 @@ func main() {
 			if err := validateBuild(patch, c); err != nil {
 				return
 			}
-			outputbuild := Build{}
-			db.Where(&Build{ID: BuildID}).First(&outputbuild)
-			db.Model(&outputbuild).Updates(Build{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputArtifact: patch.OutputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+			outputbuild := models.Build{}
+			db.Where(&models.Build{ID: BuildID}).First(&outputbuild)
+			db.Model(&outputbuild).Updates(models.Build{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputArtifact: patch.OutputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
 			c.JSON(201, outputbuild)
 		}
 	})
 
 	r.GET("/builds", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
-		Builds := []Build{}
+		Builds := []models.Build{}
 		if project != "" {
 			ProjID, err := stringToInt(project, c)
 			if err != nil {
 				return
 			}
-			db.Where(&Build{ProjectID: ProjID}).Find(&Builds)
+			db.Where(&models.Build{ProjectID: ProjID}).Find(&Builds)
 		} else {
 			db.Find(&Builds)
 		}
@@ -356,30 +289,30 @@ func main() {
 	})
 
 	r.GET("/builds/:id", func(c *gin.Context) {
-		outputbuild := []Build{}
+		outputbuild := []models.Build{}
 		if c.Param("id") != "" {
 			BuildID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
-			db.Where(&Build{ID: BuildID}).First(&outputbuild)
+			db.Where(&models.Build{ID: BuildID}).First(&outputbuild)
 		}
 		c.JSON(200, outputbuild)
 	})
 
 	r.POST("/projects", func(c *gin.Context) {
-		post := PostProject{}
+		post := models.PostProject{}
 		c.BindJSON(&post)
 		if err := validateProject(post, c); err != nil {
 			return
 		}
-		newProject := Project{UserID: post.UserID, Name: post.Name}
+		newProject := models.Project{UserID: post.UserID, Name: post.Name}
 		db.Create(&newProject)
 		c.JSON(201, newProject)
 	})
 
 	r.PUT("/projects/:id", func(c *gin.Context) {
-		post := PostProject{}
+		post := models.PostProject{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			ProjID, err := stringToInt(c.Param("id"), c)
@@ -389,15 +322,15 @@ func main() {
 			if err := validateProject(post, c); err != nil {
 				return
 			}
-			outputproj := Project{}
-			db.Where(&Project{ID: ProjID}).First(&outputproj)
-			db.Model(&outputproj).Updates(Project{UserID: post.UserID, Name: post.Name})
+			outputproj := models.Project{}
+			db.Where(&models.Project{ID: ProjID}).First(&outputproj)
+			db.Model(&outputproj).Updates(models.Project{UserID: post.UserID, Name: post.Name})
 			c.JSON(201, outputproj)
 		}
 	})
 
 	r.GET("/projects", func(c *gin.Context) {
-		projects := []Project{}
+		projects := []models.Project{}
 		db.Find(&projects)
 		c.JSON(200, gin.H{
 			"projects": projects,
@@ -405,31 +338,31 @@ func main() {
 	})
 
 	r.GET("/projects/:id", func(c *gin.Context) {
-		outputproj := []Project{}
+		outputproj := []models.Project{}
 		if c.Param("id") != "" {
 			ProjID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
-			db.Where(&Project{ID: ProjID}).First(&outputproj)
+			db.Where(&models.Project{ID: ProjID}).First(&outputproj)
 		}
 		c.JSON(200, outputproj)
 	})
 
 	r.POST("/simulations", func(c *gin.Context) {
-		post := PostSimulation{}
+		post := models.PostSimulation{}
 		c.BindJSON(&post)
 
 		if err := validateSimulation(post, c); err != nil {
 			return
 		}
-		newSim := Simulation{UserID: post.UserID, ProjectID: post.ProjectID}
+		newSim := models.Simulation{UserID: post.UserID, ProjectID: post.ProjectID}
 		db.Create(&newSim)
 		c.JSON(201, newSim)
 	})
 
 	r.PUT("/simulations/:id", func(c *gin.Context) {
-		post := PostSimulation{}
+		post := models.PostSimulation{}
 		c.BindJSON(&post)
 		if c.Param("id") != "" {
 			SimID, err := stringToInt(c.Param("id"), c)
@@ -439,9 +372,9 @@ func main() {
 			if err := validateSimulation(post, c); err != nil {
 				return
 			}
-			outputsim := Simulation{}
-			db.Where(&Simulation{ID: SimID}).First(&outputsim)
-			db.Model(&outputsim).Updates(Simulation{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, Command: post.Command, OutputStream: post.OutputStream, Status: post.Status})
+			outputsim := models.Simulation{}
+			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
+			db.Model(&outputsim).Updates(models.Simulation{UserID: post.UserID, ProjectID: post.ProjectID, InputArtifact: post.InputArtifact, OutputStream: post.OutputStream, Status: post.Status})
 			c.JSON(201, outputsim)
 		}
 	})
@@ -456,8 +389,8 @@ func main() {
 				return
 			}
 
-			cursim := Simulation{}
-			db.Where(&Simulation{ID: id}).First(&cursim)
+			cursim := models.Simulation{}
+			db.Where(&models.Simulation{ID: id}).First(&cursim)
 
 			// This is bad and buffers the entire body in memory :(
 			body := bytes.Buffer{}
@@ -521,7 +454,7 @@ func main() {
 	})
 
 	r.PATCH("/simulations/:id", func(c *gin.Context) {
-		patch := PostSimulation{}
+		patch := models.PostSimulation{}
 		c.BindJSON(&patch)
 		if c.Param("id") != "" {
 			SimID, err := stringToInt(c.Param("id"), c)
@@ -531,22 +464,22 @@ func main() {
 			if err := validateSimulation(patch, c); err != nil {
 				return
 			}
-			outputsim := Simulation{}
-			db.Where(&Simulation{ID: SimID}).First(&outputsim)
-			db.Model(&outputsim).Updates(Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
+			outputsim := models.Simulation{}
+			db.Where(&models.Simulation{ID: SimID}).First(&outputsim)
+			db.Model(&outputsim).Updates(models.Simulation{UserID: patch.UserID, ProjectID: patch.ProjectID, InputArtifact: patch.InputArtifact, OutputStream: patch.OutputStream, Status: patch.Status})
 			c.JSON(201, outputsim)
 		}
 	})
 
 	r.GET("/simulations", func(c *gin.Context) {
 		project := c.DefaultQuery("project", "")
-		Simulations := []Simulation{}
+		Simulations := []models.Simulation{}
 		if project != "" {
 			ProjID, err := stringToInt(project, c)
 			if err != nil {
 				return
 			}
-			db.Where(&Simulation{ProjectID: ProjID}).Find(&Simulations)
+			db.Where(&models.Simulation{ProjectID: ProjID}).Find(&Simulations)
 		} else {
 			db.Find(&Simulations)
 		}
@@ -557,13 +490,13 @@ func main() {
 	})
 
 	r.GET("/simulations/:id", func(c *gin.Context) {
-		outputsim := []Simulation{}
+		outputsim := []models.Simulation{}
 		if c.Param("id") != "" {
 			simulationID, err := stringToInt(c.Param("id"), c)
 			if err != nil {
 				return
 			}
-			db.Where(&Simulation{ID: simulationID}).First(&outputsim)
+			db.Where(&models.Simulation{ID: simulationID}).First(&outputsim)
 		}
 		c.JSON(200, outputsim)
 	})
@@ -684,7 +617,7 @@ func stringToInt(s string, c *gin.Context) (int, error) {
 	}
 }
 
-func validateBuild(postb PostBuild, c *gin.Context) error {
+func validateBuild(postb models.PostBuild, c *gin.Context) error {
 	if err := validator.Validate(&postb); err != nil {
 		c.AbortWithStatus(404)
 		return err
@@ -693,7 +626,7 @@ func validateBuild(postb PostBuild, c *gin.Context) error {
 	}
 }
 
-func validateProject(postp PostProject, c *gin.Context) error {
+func validateProject(postp models.PostProject, c *gin.Context) error {
 	if err := validator.Validate(&postp); err != nil {
 		c.AbortWithStatus(404)
 		return err
@@ -702,7 +635,7 @@ func validateProject(postp PostProject, c *gin.Context) error {
 	}
 }
 
-func validateSimulation(posts PostSimulation, c *gin.Context) error {
+func validateSimulation(posts models.PostSimulation, c *gin.Context) error {
 	if err := validator.Validate(&posts); err != nil {
 		c.AbortWithStatus(404)
 		return err
