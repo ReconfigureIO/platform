@@ -33,7 +33,7 @@ func main() {
 
 	r := gin.Default()
 
-	// Ping test
+	// ping test
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong pong")
 	})
@@ -46,10 +46,6 @@ func main() {
 
 	// protected ping test
 	protectedRoute.GET("/secretping", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "successful authentication"})
-	})
-
-	protectedRoute.GET("/secretpong", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "successful authentication"})
 	})
 
