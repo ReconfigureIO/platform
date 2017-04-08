@@ -2,9 +2,10 @@ package stream
 
 import (
 	"bytes"
+	"io"
+
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/gin-gonic/gin"
-	"io"
 )
 
 // start a stream of cloudwatch log events, and stream the messages to

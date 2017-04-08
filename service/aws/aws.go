@@ -3,13 +3,14 @@ package aws
 import (
 	"bytes"
 	"errors"
+	"io"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"io"
-	"time"
 )
 
 var NOT_FOUND = errors.New("Not Found")

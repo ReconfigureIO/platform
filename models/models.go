@@ -44,21 +44,11 @@ type Build struct {
 }
 
 func (b *Build) HasStarted() bool {
-	for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
-		if b.Status == v {
-			return true
-		}
-	}
-	return false
+	return hasStarted(b.Status)
 }
 
 func (b *Build) HasFinished() bool {
-	for _, v := range []string{"COMPLETED", "ERRORED"} {
-		if b.Status == v {
-			return true
-		}
-	}
-	return false
+	return hasFinished(b.Status)
 }
 
 type PostBuild struct {
@@ -84,21 +74,11 @@ type Simulation struct {
 }
 
 func (s *Simulation) HasStarted() bool {
-	for _, v := range []string{"STARTED", "COMPLETED", "ERRORED"} {
-		if s.Status == v {
-			return true
-		}
-	}
-	return false
+	return hasStarted(s.Status)
 }
 
 func (s *Simulation) HasFinished() bool {
-	for _, v := range []string{"COMPLETED", "ERRORED"} {
-		if s.Status == v {
-			return true
-		}
-	}
-	return false
+	return hasFinished(s.Status)
 }
 
 type PostSimulation struct {
@@ -108,4 +88,29 @@ type PostSimulation struct {
 	Command       string `json:"command"`
 	OutputStream  string `json:"output_stream"`
 	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+var statuses = struct {
+	started  []string
+	finished []string
+}{
+	started:  []string{"STARTED", "COMPLETED", "ERRORED"},
+	finished: []string{"COMPLETED", "ERRORED"},
+}
+
+func hasStarted(status string) bool {
+	return inSlice(statuses.started, status)
+}
+
+func hasFinished(status string) bool {
+	return inSlice(statuses.finished, status)
+}
+
+func inSlice(slice []string, val string) bool {
+	for _, v := range slice {
+		if val == v {
+			return true
+		}
+	}
+	return false
 }
