@@ -39,7 +39,16 @@ type Build struct {
 	InputArtifact  string  `json:"input_artifact"`
 	OutputArtifact string  `json:"output_artifact"`
 	OutputStream   string  `json:"output_stream"`
+	BatchId        string  `json:"-"`
 	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+func (b *Build) HasStarted() bool {
+	return hasStarted(b.Status)
+}
+
+func (b *Build) HasFinished() bool {
+	return hasFinished(b.Status)
 }
 
 type PostBuild struct {
@@ -60,7 +69,16 @@ type Simulation struct {
 	InputArtifact string  `json:"input_artifact"`
 	Command       string  `json:"command"`
 	OutputStream  string  `json:"output_stream"`
+	BatchId       string  `json:"-"`
 	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+func (s *Simulation) HasStarted() bool {
+	return hasStarted(s.Status)
+}
+
+func (s *Simulation) HasFinished() bool {
+	return hasFinished(s.Status)
 }
 
 type PostSimulation struct {
@@ -70,4 +88,29 @@ type PostSimulation struct {
 	Command       string `json:"command"`
 	OutputStream  string `json:"output_stream"`
 	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+var statuses = struct {
+	started  []string
+	finished []string
+}{
+	started:  []string{"STARTED", "COMPLETED", "ERRORED"},
+	finished: []string{"COMPLETED", "ERRORED"},
+}
+
+func hasStarted(status string) bool {
+	return inSlice(statuses.started, status)
+}
+
+func hasFinished(status string) bool {
+	return inSlice(statuses.finished, status)
+}
+
+func inSlice(slice []string, val string) bool {
+	for _, v := range slice {
+		if val == v {
+			return true
+		}
+	}
+	return false
 }
