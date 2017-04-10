@@ -104,9 +104,7 @@ curl -u $USER:$PASS -H GET localhost:8080/builds?project=0
 
 #### POST /builds
 
-Creates a new build in an "AWAITING_INPUT" status
-
-Builds have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
+Creates a new build in an `SUBMITTED` status.
 
 ```
 curl -u $USER:$PASS -H "Content-Type: application/json" -X POST -d '{"user_id":1, "project_id":1}' http://localhost:8080/builds
@@ -116,7 +114,7 @@ You can expect this to return a HTTP `202` code with the newly created build inc
 
 #### PUT  {{ build.input_url }}
 
-Attached the enclosed input to a build, moving it to "QUEUED" status
+Attached the enclosed input to a build, moving it to `QUEUED` status
 
 ```
 curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/builds/1/input
@@ -124,14 +122,15 @@ curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http:
 
 You can expect this to return  a HTTP `204` code.
 
-#### PATCH /builds/{id}
+#### POST /builds/1/events
 
-Internal use: can update the status of a build
+Allows creation of events, moving from one state to another.
+
+For users, the most relevent is `TERMINATED`, which will stop any running jobs.
 
 ```
-curl -u $USER:$PASS -H "Content-Type: application/json" -X PATCH -d '{"status":"PROCESSING"}' http://localhost:8080/builds/1
+curl -v -XPOST -H "Content-Type: application/json"  -d '{"status": "TERMINATED"}' http://localhost:8080/builds/1/events
 ```
-You can expect this to return a HTTP `204` code
 
 ### Simulations
 `Simulations` are one run of user files through our compiler. They have input artifacts and output streams along with a status, they never have output artifacts. To list all simulations:
@@ -147,9 +146,9 @@ curl -X GET localhost:8080/simulations
 
 #### POST /simulations
 
-Creates a new simulation in an "AWAITING_INPUT" status
+Creates a new simulation in an `SUBMITTED` status
 
-Simulations have a UserID, ProjectID, InputArtifact, OutputArtifact, OutputStream and a Status. OutputArtifact and OutputStream are optional.
+Simulations have a ProjectID, a Command.
 
 ```
 curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulations
@@ -160,7 +159,7 @@ You can expect this to return a HTTP `202` code with the newly created build inc
 
 #### PUT  {{ simulations.input_url }}
 
-Attached the enclosed input to a simulation, moving it to "QUEUED" status
+Attached the enclosed input to a simulation, moving it to `QUEUED` status
 
 ```
 curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/simulations/1/input
@@ -168,22 +167,6 @@ curl -v -XPUT --data-binary @../examples/addition/.reco-work/bundle.tar.gz http:
 
 You can expect this to return  a HTTP `204` code.
 
-#### PUT /simulations/{id}
-
-Change details of a simulation. Will be deprecated in future in favour of PATCH.
-
-```
-curl -H "Content-Type: application/json" -X PUT -d '{"project_id":"1"}' http://localhost:8080/simulations/1
-```
-<TODO> Describe format, return codes (204)
-
-#### PATCH /simulations/{id}
-
-Change details of a simulation. 
-
-```
-curl -H "Content-Type: application/json" -X PATCH -d '{"command":"test-addition"}' http://localhost:8080/simulations/1
-```
 
 #### GET /simulations/{id}
 
@@ -199,6 +182,17 @@ curl -X GET localhost:8080/simulation/1
 Stream the logs for a given simulation
 
 <TODO> Describe returned values
+
+#### POST /simulations/1/events
+
+Allows creation of events, moving from one state to another.
+
+For users, the most relevent is `TERMINATED`, which will stop any running jobs.
+
+```
+curl -v -XPOST -H "Content-Type: application/json"  -d '{"status": "TERMINATED"}' http://localhost:8080/simulations/1/events
+```
+
 
 #### GET /builds/{build_id}/logs
 
