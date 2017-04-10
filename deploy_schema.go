@@ -1,4 +1,4 @@
-package deploy_schema
+package main
 
 import (
 	"fmt"
