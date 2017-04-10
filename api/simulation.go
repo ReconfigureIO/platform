@@ -20,32 +20,9 @@ func (s Simulation) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newSim := models.Simulation{UserID: post.UserID, ProjectID: post.ProjectID}
+	newSim := models.Simulation{ProjectID: post.ProjectID, Command: post.Command}
 	db.Create(&newSim)
 	successResponse(c, 201, newSim)
-}
-
-func (s Simulation) Update(c *gin.Context) {
-	post := models.PostSimulation{}
-	c.BindJSON(&post)
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	if !validateRequest(c, post) {
-		return
-	}
-	outputsim := models.Simulation{}
-	db.Where(&models.Simulation{ID: id}).First(&outputsim)
-	sim := models.Simulation{
-		UserID:        post.UserID,
-		ProjectID:     post.ProjectID,
-		InputArtifact: post.InputArtifact,
-		OutputStream:  post.OutputStream,
-		Status:        post.Status,
-	}
-	db.Model(&outputsim).Updates(sim)
-	successResponse(c, 200, outputsim)
 }
 
 func (s Simulation) Input(c *gin.Context) {
@@ -56,10 +33,10 @@ func (s Simulation) Input(c *gin.Context) {
 	sim := models.Simulation{}
 	db.First(&sim, id)
 
-	if sim.Status != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
-		return
-	}
+	//	if sim.Status != "SUBMITTED" {
+	//		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
+	//		return
+	//	}
 
 	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", id)
 
@@ -77,7 +54,20 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	db.Model(&sim).Updates(models.Simulation{BatchId: simId, Status: "QUEUED"})
+	tx := db.Begin()
+	if err := tx.Model(&sim).Updates(models.Simulation{BatchId: simId}).Error; err != nil {
+		tx.Rollback()
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
+	}
+	if err := tx.Model(&sim).Association("Events").Append(models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}).Error; err != nil {
+		tx.Rollback()
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
+	}
+	tx.Commit()
 	successResponse(c, 200, sim)
 }
 
@@ -94,12 +84,13 @@ func (s Simulation) List(c *gin.Context) {
 }
 
 func (s Simulation) Get(c *gin.Context) {
-	outputsim := []models.Simulation{}
+	outputsim := models.Simulation{}
 	var id int
 	if !bindId(c, &id) {
 		return
 	}
 	db.Where(&models.Simulation{ID: id}).First(&outputsim)
+	db.Model(&outputsim).Association("Events").Find(&outputsim.Events)
 	successResponse(c, 200, outputsim)
 }
 
@@ -138,4 +129,35 @@ func (s Simulation) Logs(c *gin.Context) {
 	}()
 
 	stream.Stream(lstream, c)
+}
+
+func (s Simulation) CreateEvent(c *gin.Context) {
+	event := models.PostSimulationEvent{}
+	c.BindJSON(&event)
+	var id int
+	if !bindId(c, &id) {
+		return
+	}
+
+	var sim models.Simulation
+	err := db.First(&sim, id).Error
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	if !validateRequest(c, event) {
+		return
+	}
+
+	newSim := models.SimulationEvent{
+		SimulationID: id,
+		Timestamp:    time.Now(),
+		Status:       event.Status,
+		Message:      event.Message,
+		Code:         event.Code,
+	}
+	db.Create(&newSim)
+
+	successResponse(c, 200, newSim)
 }

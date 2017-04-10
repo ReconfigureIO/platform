@@ -47,33 +47,9 @@ func (b Build) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newBuild := models.Build{UserID: post.UserID, ProjectID: post.ProjectID}
+	newBuild := models.Build{ProjectID: post.ProjectID}
 	db.Create(&newBuild)
 	successResponse(c, 201, newBuild)
-}
-
-func (b Build) Update(c *gin.Context) {
-	post := models.PostBuild{}
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	c.BindJSON(&post)
-	if !validateRequest(c, post) {
-		return
-	}
-	outputbuild := models.Build{}
-	db.Where(&models.Build{ID: id}).First(&outputbuild)
-	build := models.Build{
-		UserID:         post.UserID,
-		ProjectID:      post.ProjectID,
-		InputArtifact:  post.InputArtifact,
-		OutputArtifact: post.OutputArtifact,
-		OutputStream:   post.OutputStream,
-		Status:         post.Status,
-	}
-	db.Model(&outputbuild).Updates(build)
-	c.JSON(200, outputbuild)
 }
 
 func (b Build) Input(c *gin.Context) {
@@ -85,10 +61,10 @@ func (b Build) Input(c *gin.Context) {
 	build := models.Build{}
 	db.First(&build, id)
 
-	if build.Status != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
-		return
-	}
+	//	if build.Status != "SUBMITTED" {
+	//		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
+	//		return
+	//	}
 
 	key := fmt.Sprintf("builds/%d/simulation.tar.gz", id)
 
@@ -106,7 +82,10 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	db.Model(&build).Updates(models.Build{BatchId: buildId, Status: "QUEUED"})
+	db.Model(&build).Updates(models.Build{BatchId: buildId})
+	// add buildevent
+	//db.Model(&build).Association("Events").Append(
+
 	successResponse(c, 200, build)
 }
 

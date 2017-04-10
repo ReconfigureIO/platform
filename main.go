@@ -19,6 +19,7 @@ func setupDB() {
 		panic("failed to connect database")
 	}
 	db.AutoMigrate(&models.Simulation{})
+	db.AutoMigrate(&models.SimulationEvent{})
 	db.AutoMigrate(&models.Build{})
 	db.AutoMigrate(&models.Project{})
 	db.AutoMigrate(&models.User{})

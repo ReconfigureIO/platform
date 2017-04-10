@@ -2,6 +2,7 @@ package models
 
 import (
 	"github.com/jinzhu/gorm"
+	"time"
 )
 
 type User struct {
@@ -12,11 +13,12 @@ type User struct {
 }
 
 type Project struct {
-	ID     int     `gorm:"primary_key" json:"id"`
-	User   User    `json:"user"` //Project belongs to User
-	UserID int     `json:"user_id"`
-	Name   string  `json:"name"`
-	Builds []Build `json:"builds"`
+	ID          int     `gorm:"primary_key" json:"id"`
+	User        User    `json:"-" gorm:"ForeignKey:UserID"` //Project belongs to User
+	UserID      int     `json:"-"`
+	Name        string  `json:"name"`
+	Builds      []Build `json:"builds" gorm:"ForeignKey:ProjectID"`
+	Simulations []Build `json:"simulations" gorm:"ForeignKey:ProjectID"`
 }
 
 type PostProject struct {
@@ -31,24 +33,20 @@ type AuthToken struct {
 }
 
 type Build struct {
-	ID             int     `gorm:"primary_key" json:"id"`
-	User           User    `json:"user"` //Build belongs to User, UserID is foreign key
-	UserID         int     `json:"user_id"`
-	Project        Project `json:"project"`
-	ProjectID      int     `json:"project_id"`
-	InputArtifact  string  `json:"input_artifact"`
-	OutputArtifact string  `json:"output_artifact"`
-	OutputStream   string  `json:"output_stream"`
-	BatchId        string  `json:"-"`
-	Status         string  `gorm:"default:'SUBMITTED'" json:"status"`
+	ID        int     `gorm:"primary_key" json:"id"`
+	Project   Project `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID int     `json:"project_id"`
+	BatchId   string  `json:"-"`
 }
 
 func (b *Build) HasStarted() bool {
-	return hasStarted(b.Status)
+	return false
+	//	return hasStarted(b.Status)
 }
 
 func (b *Build) HasFinished() bool {
-	return hasFinished(b.Status)
+	return false
+	//	return hasFinished(b.Status)
 }
 
 type PostBuild struct {
@@ -61,33 +59,46 @@ type PostBuild struct {
 }
 
 type Simulation struct {
-	ID            int     `gorm:"primary_key" json:"id"`
-	User          User    `json:"user"` //Build belongs to User, UserID is foreign key
-	UserID        int     `json:"user_id"`
-	Project       Project `json:"project"`
-	ProjectID     int     `json:"project_id"`
-	InputArtifact string  `json:"input_artifact"`
-	Command       string  `json:"command"`
-	OutputStream  string  `json:"output_stream"`
-	BatchId       string  `json:"-"`
-	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
+	ID        int               `gorm:"primary_key" json:"id"`
+	Token     string            `json:"-"` // Internal Authentication token for service updates
+	User      User              `json:"-" gorm:"ForeignKey:UserID"`
+	UserID    int               `json:"-"`
+	Project   *Project          `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
+	ProjectID int               `json:"-"`
+	Command   string            `json:"command"`
+	BatchId   string            `json:"-"`
+	Events    []SimulationEvent `json:"events" gorm:"ForeignKey:SimulationID"`
+}
+
+type SimulationEvent struct {
+	ID           int       `gorm:"primary_key" json:"-"`
+	SimulationID int       `json:"-"`
+	Timestamp    time.Time `json:"timestamp"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message,omitempty"`
+	Code         int       `json:"code"`
+}
+
+type PostSimulationEvent struct {
+	Status  string `json:"status" validate:"nonzero"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 func (s *Simulation) HasStarted() bool {
-	return hasStarted(s.Status)
+	return false
+	//	return hasStarted(s.Status)
 }
 
 func (s *Simulation) HasFinished() bool {
-	return hasFinished(s.Status)
+	return false
+	//return hasFinished(s.Status)
 }
 
 type PostSimulation struct {
-	UserID        int    `json:"user_id" validate:"nonzero"`
-	ProjectID     int    `json:"project_id" validate:"nonzero"`
-	InputArtifact string `json:"input_artifact"`
-	Command       string `json:"command" validate:"nonzero"`
-	OutputStream  string `json:"output_stream"`
-	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+	ProjectID int    `json:"project_id" validate:"nonzero"`
+	Command   string `json:"command" validate:"nonzero"`
+	Status    string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 var statuses = struct {
@@ -99,11 +110,13 @@ var statuses = struct {
 }
 
 func hasStarted(status string) bool {
-	return inSlice(statuses.started, status)
+	return false
+	//return inSlice(statuses.started, status)
 }
 
 func hasFinished(status string) bool {
-	return inSlice(statuses.finished, status)
+	return false
+	// return inSlice(statuses.finished, status)
 }
 
 func inSlice(slice []string, val string) bool {
