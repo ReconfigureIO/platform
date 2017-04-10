@@ -52,7 +52,7 @@ func main() {
 
 	// setup components
 	setupDB()
-	setupRoutes(protectedRoute)
+	routes.SetupRoutes(protectedRoute)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
