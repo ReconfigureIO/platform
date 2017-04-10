@@ -18,10 +18,6 @@ func setupDB() {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.Simulation{})
-	db.AutoMigrate(&models.Build{})
-	db.AutoMigrate(&models.Project{})
-	db.AutoMigrate(&models.User{})
 	api.DB(db)
 }
 
