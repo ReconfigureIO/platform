@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+const (
+	SUBMITTED  = "SUBMITTED"
+	QUEUED     = "QUEUED"
+	STARTED    = "STARTED"
+	TERMINATED = "TERMINATED"
+	COMPLETED  = "COMPLETED"
+	ERRORED    = "ERRORED"
+)
+
 type User struct {
 	ID         int         `gorm:"primary_key" json:"id"`
 	GithubID   string      `json:"github_id"`
@@ -70,6 +79,15 @@ type Simulation struct {
 	Events    []SimulationEvent `json:"events" gorm:"ForeignKey:SimulationID"`
 }
 
+func (s *Simulation) Status() string {
+	events := s.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return SUBMITTED
+}
+
 type SimulationEvent struct {
 	ID           int       `gorm:"primary_key" json:"-"`
 	SimulationID int       `json:"-"`
@@ -98,25 +116,35 @@ func (s *Simulation) HasFinished() bool {
 type PostSimulation struct {
 	ProjectID int    `json:"project_id" validate:"nonzero"`
 	Command   string `json:"command" validate:"nonzero"`
-	Status    string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{"STARTED", "COMPLETED", "ERRORED"},
-	finished: []string{"COMPLETED", "ERRORED"},
+	started:  []string{STARTED, COMPLETED, ERRORED},
+	finished: []string{COMPLETED, ERRORED, TERMINATED},
 }
 
 func hasStarted(status string) bool {
-	return false
-	//return inSlice(statuses.started, status)
+	return inSlice(statuses.started, status)
 }
 
 func hasFinished(status string) bool {
-	return false
-	// return inSlice(statuses.finished, status)
+	return inSlice(statuses.finished, status)
+}
+
+func CanTransition(current string, next string) bool {
+	switch current {
+	case SUBMITTED:
+		return inSlice([]string{QUEUED, TERMINATED}, next)
+	case QUEUED:
+		return inSlice([]string{STARTED, TERMINATED}, next)
+	case STARTED:
+		return inSlice([]string{TERMINATED, COMPLETED, ERRORED}, next)
+	default:
+		return false
+	}
 }
 
 func inSlice(slice []string, val string) bool {

@@ -136,6 +136,16 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 	return *resp.JobId, nil
 }
 
+func (s *Service) HaltJob(batchId string) error {
+	batchSession := batch.New(s.session)
+	params := &batch.TerminateJobInput{
+		JobId:  aws.String(batchId),        // Required
+		Reason: aws.String("User request"), // Required
+	}
+	_, err := batchSession.TerminateJob(params)
+	return err
+}
+
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}

@@ -20,6 +20,7 @@ func (s Simulation) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
+
 	newSim := models.Simulation{ProjectID: post.ProjectID, Command: post.Command}
 	db.Create(&newSim)
 	successResponse(c, 201, newSim)
@@ -143,6 +144,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	err := db.First(&sim, id).Error
 	if err != nil {
 		c.Error(err)
+		errResponse(c, 500, nil)
 		return
 	}
 
@@ -150,14 +152,33 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newSim := models.SimulationEvent{
+	db.Model(&sim).Association("Events").Find(&sim.Events)
+
+	currentStatus := sim.Status()
+
+	if !models.CanTransition(currentStatus, event.Status) {
+		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		return
+	}
+
+	newEvent := models.SimulationEvent{
 		SimulationID: id,
 		Timestamp:    time.Now(),
 		Status:       event.Status,
 		Message:      event.Message,
 		Code:         event.Code,
 	}
-	db.Create(&newSim)
+	db.Create(&newEvent)
 
-	successResponse(c, 200, newSim)
+	if newEvent.Status == models.TERMINATED && len(sim.BatchId) > 0 {
+		err = awsSession.HaltJob(sim.BatchId)
+
+		if err != nil {
+			c.Error(err)
+			errResponse(c, 500, nil)
+			return
+		}
+	}
+
+	successResponse(c, 200, newEvent)
 }
