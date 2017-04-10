@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/api"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -51,7 +52,7 @@ func main() {
 
 	// setup components
 	setupDB()
-	setupRoutes(protectedRoute)
+	routes.SetupRoutes(protectedRoute)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
