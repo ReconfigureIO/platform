@@ -98,7 +98,9 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	buildId, err := awsSession.RunBuild(s3Url)
+	callbackUrl := fmt.Sprintf("https://%s/builds/%d", c.Request.Host, build.ID)
+
+	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
 		errResponse(c, 500, err)
 		return

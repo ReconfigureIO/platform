@@ -69,7 +69,9 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	simId, err := awsSession.RunSimulation(s3Url, sim.Command)
+	callbackUrl := fmt.Sprintf("https://%s/simulations/%d", c.Request.Host, sim.ID)
+
+	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
 		errResponse(c, 500, err)
 		return
