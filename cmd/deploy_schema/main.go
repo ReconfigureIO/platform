@@ -9,7 +9,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func setupDB() {
+func migrateSchema() {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
@@ -25,5 +25,5 @@ func setupDB() {
 func main() {
 
 	// setup components
-	setupDB()
+	migrateSchema()
 }
