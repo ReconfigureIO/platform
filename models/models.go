@@ -52,8 +52,8 @@ func (b *Build) HasFinished() bool {
 }
 
 type PostBuild struct {
-	UserID         int    `json:"user_id"`
-	ProjectID      int    `json:"project_id"`
+	UserID         int    `json:"user_id" validate:"nonzero"`
+	ProjectID      int    `json:"project_id" validate:"nonzero"`
 	InputArtifact  string `json:"input_artifact"`
 	OutputArtifact string `json:"output_artifact"`
 	OutputStream   string `json:"output_stream"`
@@ -82,10 +82,10 @@ func (s *Simulation) HasFinished() bool {
 }
 
 type PostSimulation struct {
-	UserID        int    `json:"user_id"`
-	ProjectID     int    `json:"project_id"`
+	UserID        int    `json:"user_id" validate:"nonzero"`
+	ProjectID     int    `json:"project_id" validate:"nonzero"`
 	InputArtifact string `json:"input_artifact"`
-	Command       string `json:"command"`
+	Command       string `json:"command" validate:"nonzero"`
 	OutputStream  string `json:"output_stream"`
 	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
 }

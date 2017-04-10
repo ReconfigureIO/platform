@@ -6,11 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	validator "gopkg.in/validator.v2"
-
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	validator "gopkg.in/validator.v2"
 )
 
 var (
