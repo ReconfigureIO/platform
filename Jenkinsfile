@@ -55,7 +55,7 @@ pipeline {
                     }
                 }
                 dir('EB'){
-                    sh 'eb config put production'
+                    sh 'eb config --cfg production'
                     sh 'eb deploy'
                 }
             }
