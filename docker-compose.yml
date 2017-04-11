@@ -4,7 +4,7 @@ services:
     image: postgres:alpine
   web:
     build: build
-    command: bash -c "glide install && compiledaemon -build='go build -o ./main ./main.go' -command='./main'" 
+    command: bash -c "glide install && fresh"
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
@@ -19,3 +19,5 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=8080
+      - RECO_PLATFORM_MIGRATE=1
+
