@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/api"
-	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
