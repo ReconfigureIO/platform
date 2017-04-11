@@ -73,6 +73,14 @@ func (s *Service) RunBuild(inputArtifactUrl string) (string, error) {
 					Name:  aws.String("INPUT_URL"),
 					Value: aws.String(inputArtifactUrl),
 				},
+				{
+					Name:  aws.String("DEVICE"),
+					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
+				},
+				{
+					Name:  aws.String("DEVICE_FULL"),
+					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
+				},
 			},
 		},
 	}
@@ -112,11 +120,11 @@ func (s *Service) RunSimulation(inputArtifactUrl string, command string) (string
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
+					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
+					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
 				},
 			},
 		},
