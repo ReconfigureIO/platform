@@ -104,13 +104,11 @@ type PostSimulationEvent struct {
 }
 
 func (s *Simulation) HasStarted() bool {
-	return false
-	//	return hasStarted(s.Status)
+	return hasStarted(s.Status())
 }
 
 func (s *Simulation) HasFinished() bool {
-	return false
-	//return hasFinished(s.Status)
+	return hasFinished(s.Status())
 }
 
 type PostSimulation struct {

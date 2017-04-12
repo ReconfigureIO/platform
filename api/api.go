@@ -49,6 +49,11 @@ func errResponse(c *gin.Context, code int, err interface{}) {
 	c.JSON(code, apiError{Error: fmt.Sprint(err)})
 }
 
+func internalError(c *gin.Context, err error) {
+	c.Error(err)
+	errResponse(c, 500, nil)
+}
+
 func successResponse(c *gin.Context, code int, value interface{}) {
 	c.JSON(code, apiSuccess{Value: value})
 }

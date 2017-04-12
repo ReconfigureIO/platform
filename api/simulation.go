@@ -110,8 +110,16 @@ func (s Simulation) Logs(c *gin.Context) {
 	}
 
 	sim := models.Simulation{}
-	// check for error here
-	db.First(&sim, id)
+	err := db.First(&sim, id).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+	err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
 
 	w := c.Writer
 	clientGone := w.CloseNotify()
@@ -122,7 +130,11 @@ func (s Simulation) Logs(c *gin.Context) {
 			return
 		default:
 			time.Sleep(time.Second)
-			db.First(&sim, id)
+			err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
+			if err != nil {
+				internalError(c, err)
+				return
+			}
 		}
 	}
 
@@ -141,7 +153,10 @@ func (s Simulation) Logs(c *gin.Context) {
 	go func() {
 		for !sim.HasFinished() {
 			time.Sleep(10 * time.Second)
-			db.First(&sim, id)
+			err := db.First(&sim, id).Error
+			if err != nil {
+				break
+			}
 		}
 		lstream.Ended = true
 	}()
