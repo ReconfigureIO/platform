@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/api"
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -19,12 +19,13 @@ func setupDB() {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.Simulation{})
-	db.AutoMigrate(&models.SimulationEvent{})
-	db.AutoMigrate(&models.Build{})
-	db.AutoMigrate(&models.Project{})
-	db.AutoMigrate(&models.User{})
 	api.DB(db)
+
+	// check migration
+	if os.Getenv("RECO_PLATFORM_MIGRATE") == "1" {
+		fmt.Println("performing migration...")
+		migration.MigrateSchema()
+	}
 }
 
 func main() {
