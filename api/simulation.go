@@ -2,12 +2,10 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -117,53 +115,10 @@ func (s Simulation) Logs(c *gin.Context) {
 		internalError(c, err)
 		return
 	}
-	err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
-	if err != nil {
-		internalError(c, err)
-		return
+	refresh := func() error {
+		return db.Model(&sim).Association("Events").Find(&sim.Events).Error
 	}
-
-	w := c.Writer
-	clientGone := w.CloseNotify()
-
-	for !sim.HasStarted() {
-		select {
-		case <-clientGone:
-			return
-		default:
-			time.Sleep(time.Second)
-			err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
-			if err != nil {
-				internalError(c, err)
-				return
-			}
-		}
-	}
-
-	simId := sim.BatchId
-
-	logStream, err := awsSession.GetJobStream(simId)
-	if err != nil {
-		errResponse(c, 500, err)
-		return
-	}
-
-	log.Printf("opening log stream: %s", *logStream.LogStreamName)
-
-	lstream := awsSession.NewStream(*logStream)
-
-	go func() {
-		for !sim.HasFinished() {
-			time.Sleep(10 * time.Second)
-			err := db.First(&sim, id).Error
-			if err != nil {
-				break
-			}
-		}
-		lstream.Ended = true
-	}()
-
-	stream.Stream(lstream, c)
+	StreamBatchLogs(awsSession, c, &sim, refresh)
 }
 
 func (s Simulation) CreateEvent(c *gin.Context) {

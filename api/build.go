@@ -2,12 +2,10 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -116,33 +114,13 @@ func (b Build) Logs(c *gin.Context) {
 	}
 
 	build := models.Build{}
-	// check for error here
-	db.First(&build, id)
-
-	for !build.HasStarted() {
-		time.Sleep(time.Second)
-		db.First(&build, id)
-	}
-
-	buildId := build.BatchId
-
-	logStream, err := awsSession.GetJobStream(buildId)
+	err := db.First(&build, id).Error
 	if err != nil {
-		errResponse(c, 500, err)
+		internalError(c, err)
 		return
 	}
-
-	log.Printf("opening log stream: %s", *logStream.LogStreamName)
-
-	lstream := awsSession.NewStream(*logStream)
-
-	go func() {
-		for !build.HasFinished() {
-			time.Sleep(10 * time.Second)
-			db.First(&build, id)
-		}
-		lstream.Ended = true
-	}()
-
-	stream.Stream(lstream, c)
+	refresh := func() error {
+		return db.Model(&build).Association("Events").Find(&build.Events).Error
+	}
+	StreamBatchLogs(awsSession, c, &build, refresh)
 }

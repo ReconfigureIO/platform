@@ -58,6 +58,10 @@ type BuildEvent struct {
 	Code      int       `json:"code"`
 }
 
+func (b *Build) GetBatchId() string {
+	return b.BatchId
+}
+
 func (b *Build) Status() string {
 	events := b.Events
 	length := len(events)
@@ -90,6 +94,10 @@ type Simulation struct {
 	Command   string            `json:"command"`
 	BatchId   string            `json:"-"`
 	Events    []SimulationEvent `json:"events" gorm:"ForeignKey:SimulationID"`
+}
+
+func (s *Simulation) GetBatchId() string {
+	return s.BatchId
 }
 
 func (s *Simulation) Status() string {
