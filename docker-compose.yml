@@ -19,3 +19,5 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=8080
+      - RECO_PLATFORM_MIGRATE=1
+
