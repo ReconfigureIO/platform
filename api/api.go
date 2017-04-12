@@ -64,9 +64,10 @@ func bindId(c *gin.Context, id *int) bool {
 }
 
 func validateRequest(c *gin.Context, object interface{}) bool {
-	if err := validator.Validate(object); err == nil {
+	err := validator.Validate(object)
+	if err == nil {
 		return true
 	}
-	errResponse(c, 400, nil)
+	errResponse(c, 400, err)
 	return false
 }

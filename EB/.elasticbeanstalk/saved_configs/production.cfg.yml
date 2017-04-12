@@ -1,7 +1,7 @@
 AWSConfigurationTemplateVersion: 1.1.0.0
 EnvironmentConfigurationMetadata:
-  DateCreated: '1489180327000'
-  DateModified: '1491324551584'
+  DateCreated: '1491849080000'
+  DateModified: '1491850141300'
   Description: Configuration created from the EB CLI using "eb config save".
 EnvironmentTier:
   Name: WebServer
@@ -9,13 +9,15 @@ EnvironmentTier:
 OptionSettings:
   aws:autoscaling:launchconfiguration:
     EC2KeyName: ''
-    IamInstanceProfile: aws-elasticbeanstalk-ec2-role
+    IamInstanceProfile: api-web-server
   aws:autoscaling:updatepolicy:rollingupdate:
     MaxBatchSize: '1'
     MinInstancesInService: '1'
     RollingUpdateEnabled: true
     RollingUpdateType: Health
   aws:elasticbeanstalk:application:environment:
+    DATABASE_URL: host=test-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
+      dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
     GIN_MODE: release
     PORT: '8080'
   aws:elasticbeanstalk:command:
