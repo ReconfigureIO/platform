@@ -33,5 +33,6 @@ func SetupRoutes(r *gin.RouterGroup) {
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
+		simulationRoute.POST("/:id/events", simulation.CreateEvent)
 	}
 }

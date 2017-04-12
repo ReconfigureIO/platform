@@ -100,13 +100,22 @@ func (s Simulation) Logs(c *gin.Context) {
 	if !bindId(c, &id) {
 		return
 	}
+
 	sim := models.Simulation{}
 	// check for error here
 	db.First(&sim, id)
 
+	w := c.Writer
+	clientGone := w.CloseNotify()
+
 	for !sim.HasStarted() {
-		time.Sleep(time.Second)
-		db.First(&sim, id)
+		select {
+		case <-clientGone:
+			return
+		default:
+			time.Sleep(time.Second)
+			db.First(&sim, id)
+		}
 	}
 
 	simId := sim.BatchId
