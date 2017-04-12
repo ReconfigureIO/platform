@@ -9,6 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type Build struct{}

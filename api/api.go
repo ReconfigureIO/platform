@@ -50,8 +50,9 @@ func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 		tx.Rollback()
 		c.Error(err)
 		errResponse(c, 500, nil)
+	} else {
+		tx.Commit()
 	}
-	tx.Commit()
 	return err
 }
 
