@@ -78,7 +78,7 @@ func (d Deployment) Input(c *gin.Context) {
 	successResponse(c, 200, dep)
 }
 
-func (s Deployment) List(c *gin.Context) {
+func (d Deployment) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	Deployments := []models.Deployment{}
 	if id, err := strconv.Atoi(project); err == nil && project != "" {
@@ -90,7 +90,7 @@ func (s Deployment) List(c *gin.Context) {
 	successResponse(c, 200, Deployments)
 }
 
-func (s Deployment) Get(c *gin.Context) {
+func (d Deployment) Get(c *gin.Context) {
 	outputdep := []models.Deployment{}
 	var id int
 	if !bindId(c, &id) {
@@ -100,7 +100,7 @@ func (s Deployment) Get(c *gin.Context) {
 	successResponse(c, 200, outputdep)
 }
 
-func (s Deployment) Logs(c *gin.Context) {
+func (d Deployment) Logs(c *gin.Context) {
 	var id int
 	if !bindId(c, &id) {
 		return
