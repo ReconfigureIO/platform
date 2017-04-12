@@ -9,9 +9,22 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type Simulation struct{}
+
+func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
+	tx := db.Begin()
+	err := ops(tx)
+	if err != nil {
+		tx.Rollback()
+		c.Error(err)
+		errResponse(c, 500, nil)
+	}
+	tx.Commit()
+	return err
+}
 
 func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
@@ -55,21 +68,16 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	tx := db.Begin()
-	if err := tx.Model(&sim).Updates(models.Simulation{BatchId: simId}).Error; err != nil {
-		tx.Rollback()
-		c.Error(err)
-		errResponse(c, 500, nil)
-		return
+	err = Transaction(c, func(tx *gorm.DB) error {
+		err := tx.Model(&sim).Updates(models.Simulation{BatchId: simId}).Error
+		if err != nil {
+			return err
+		}
+		return tx.Model(&sim).Association("Events").Append(models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}).Error
+	})
+	if err != nil {
+		successResponse(c, 200, sim)
 	}
-	if err := tx.Model(&sim).Association("Events").Append(models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}).Error; err != nil {
-		tx.Rollback()
-		c.Error(err)
-		errResponse(c, 500, nil)
-		return
-	}
-	tx.Commit()
-	successResponse(c, 200, sim)
 }
 
 func (s Simulation) List(c *gin.Context) {
