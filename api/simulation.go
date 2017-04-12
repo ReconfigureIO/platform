@@ -122,7 +122,7 @@ func (s Simulation) Logs(c *gin.Context) {
 }
 
 func (s Simulation) CreateEvent(c *gin.Context) {
-	event := models.PostSimulationEvent{}
+	event := models.PostBatchEvent{}
 	c.BindJSON(&event)
 	var id int
 	if !bindId(c, &id) {

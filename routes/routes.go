@@ -14,6 +14,7 @@ func SetupRoutes(r *gin.RouterGroup) {
 		buildRoute.GET("/:id", build.Get)
 		buildRoute.PUT("/:id/input", build.Input)
 		buildRoute.GET("/:id/logs", build.Logs)
+		buildRoute.POST("/:id/events", build.CreateEvent)
 	}
 
 	project := api.Project{}

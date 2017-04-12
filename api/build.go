@@ -124,3 +124,54 @@ func (b Build) Logs(c *gin.Context) {
 	}
 	StreamBatchLogs(awsSession, c, &build, refresh)
 }
+
+func (s Build) CreateEvent(c *gin.Context) {
+	event := models.PostBatchEvent{}
+	c.BindJSON(&event)
+	var id int
+	if !bindId(c, &id) {
+		return
+	}
+
+	var build models.Build
+	err := db.First(&build, id).Error
+	if err != nil {
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
+	}
+
+	if !validateRequest(c, event) {
+		return
+	}
+
+	db.Model(&build).Association("Events").Find(&build.Events)
+
+	currentStatus := build.Status()
+
+	if !models.CanTransition(currentStatus, event.Status) {
+		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		return
+	}
+
+	newEvent := models.BuildEvent{
+		BuildID:   id,
+		Timestamp: time.Now(),
+		Status:    event.Status,
+		Message:   event.Message,
+		Code:      event.Code,
+	}
+	db.Create(&newEvent)
+
+	if newEvent.Status == models.TERMINATED && len(build.BatchId) > 0 {
+		err = awsSession.HaltJob(build.BatchId)
+
+		if err != nil {
+			c.Error(err)
+			errResponse(c, 500, nil)
+			return
+		}
+	}
+
+	successResponse(c, 200, newEvent)
+}

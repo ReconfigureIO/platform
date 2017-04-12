@@ -58,6 +58,12 @@ type BuildEvent struct {
 	Code      int       `json:"code"`
 }
 
+type PostBatchEvent struct {
+	Status  string `json:"status" validate:"nonzero"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 func (b *Build) GetBatchId() string {
 	return b.BatchId
 }
@@ -116,12 +122,6 @@ type SimulationEvent struct {
 	Status       string    `json:"status"`
 	Message      string    `json:"message,omitempty"`
 	Code         int       `json:"code"`
-}
-
-type PostSimulationEvent struct {
-	Status  string `json:"status" validate:"nonzero"`
-	Message string `json:"message"`
-	Code    int    `json:"code"`
 }
 
 func (s *Simulation) HasStarted() bool {
