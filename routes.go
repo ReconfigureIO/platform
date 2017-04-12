@@ -35,4 +35,15 @@ func setupRoutes(r *gin.RouterGroup) {
 		simulationRoute.POST("/:id/events", simulation.CreateEvent)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
+
+	deployment := api.Deployment{}
+	deploymentRoute := r.Group("/deployments")
+	{
+		deploymentRoute.GET("", deployment.List)
+		deploymentRoute.POST("", deployment.Create)
+		deploymentRoute.PUT("/:id", deployment.Update)
+		deploymentRoute.GET("/:id", deployment.Get)
+		deploymentRoute.PUT("/:id/input", deployment.Input)
+		deploymentRoute.GET("/:id/logs", deployment.Logs)
+	}
 }
