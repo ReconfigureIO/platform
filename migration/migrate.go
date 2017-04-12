@@ -16,8 +16,10 @@ func MigrateSchema() {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
+	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.Project{})
 	db.AutoMigrate(&models.Simulation{})
 	db.AutoMigrate(&models.SimulationEvent{})
 	db.AutoMigrate(&models.Build{})
-	db.AutoMigrate(&models.Project{})
+	db.AutoMigrate(&models.BuildEvent{})
 }
