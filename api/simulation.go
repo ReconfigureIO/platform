@@ -14,18 +14,6 @@ import (
 
 type Simulation struct{}
 
-func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
-	tx := db.Begin()
-	err := ops(tx)
-	if err != nil {
-		tx.Rollback()
-		c.Error(err)
-		errResponse(c, 500, nil)
-	}
-	tx.Commit()
-	return err
-}
-
 func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
 	c.BindJSON(&post)
@@ -45,12 +33,23 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 	sim := models.Simulation{}
-	db.First(&sim, id)
 
-	//	if sim.Status != "SUBMITTED" {
-	//		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
-	//		return
-	//	}
+	err := db.First(&sim, id).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	if sim.Status() != "SUBMITTED" {
+		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
+		return
+	}
 
 	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", id)
 
@@ -73,11 +72,14 @@ func (s Simulation) Input(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-		return tx.Model(&sim).Association("Events").Append(models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}).Error
+		newEvent := models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}
+		return tx.Model(&sim).Association("Events").Append(newEvent).Error
 	})
 	if err != nil {
-		successResponse(c, 200, sim)
+		return
 	}
+
+	successResponse(c, 200, sim)
 }
 
 func (s Simulation) List(c *gin.Context) {

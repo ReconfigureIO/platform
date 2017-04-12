@@ -42,29 +42,42 @@ type AuthToken struct {
 }
 
 type Build struct {
-	ID        int     `gorm:"primary_key" json:"id"`
-	Project   Project `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID int     `json:"project_id"`
-	BatchId   string  `json:"-"`
+	ID        int          `gorm:"primary_key" json:"id"`
+	Project   Project      `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID int          `json:"project_id"`
+	BatchId   string       `json:"-"`
+	Events    []BuildEvent `json:"events" gorm:"ForeignKey:BuildID"`
+}
+
+type BuildEvent struct {
+	ID        int       `gorm:"primary_key" json:"-"`
+	BuildID   int       `json:"-"`
+	Timestamp time.Time `json:"timestamp"`
+	Status    string    `json:"status"`
+	Message   string    `json:"message,omitempty"`
+	Code      int       `json:"code"`
+}
+
+func (b *Build) Status() string {
+	events := b.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return SUBMITTED
 }
 
 func (b *Build) HasStarted() bool {
-	return false
-	//	return hasStarted(b.Status)
+	return hasStarted(b.Status())
 }
 
 func (b *Build) HasFinished() bool {
-	return false
-	//	return hasFinished(b.Status)
+	return hasFinished(b.Status())
 }
 
 type PostBuild struct {
-	UserID         int    `json:"user_id" validate:"nonzero"`
-	ProjectID      int    `json:"project_id" validate:"nonzero"`
-	InputArtifact  string `json:"input_artifact"`
-	OutputArtifact string `json:"output_artifact"`
-	OutputStream   string `json:"output_stream"`
-	Status         string `gorm:"default:'SUBMITTED'" json:"status"`
+	UserID    int `json:"user_id" validate:"nonzero"`
+	ProjectID int `json:"project_id" validate:"nonzero"`
 }
 
 type Simulation struct {

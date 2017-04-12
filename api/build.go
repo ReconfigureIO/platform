@@ -59,12 +59,23 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	build := models.Build{}
-	db.First(&build, id)
 
-	//	if build.Status != "SUBMITTED" {
-	//		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
-	//		return
-	//	}
+	err := db.First(&build, id).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	err = db.Model(&build).Association("Events").Find(&build.Events).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
+	if build.Status() != "SUBMITTED" {
+		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
+		return
+	}
 
 	key := fmt.Sprintf("builds/%d/simulation.tar.gz", id)
 
@@ -82,9 +93,17 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	db.Model(&build).Updates(models.Build{BatchId: buildId})
-	// add buildevent
-	//db.Model(&build).Association("Events").Append(
+	err = Transaction(c, func(tx *gorm.DB) error {
+		err := db.Model(&build).Updates(models.Build{BatchId: buildId}).Error
+		if err != nil {
+			return err
+		}
+		newEvent := models.BuildEvent{Timestamp: time.Now(), Status: "QUEUED"}
+		return db.Model(&build).Association("Events").Append(newEvent).Error
+	})
+	if err != nil {
+		return
+	}
 
 	successResponse(c, 200, build)
 }
