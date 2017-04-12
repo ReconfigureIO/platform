@@ -102,6 +102,33 @@ type PostSimulation struct {
 	Command   string `json:"command" validate:"nonzero"`
 }
 
+type Deployment struct {
+	ID            int     `gorm:"primary_key" json:"id"`
+	Project       Project `json:"project"`
+	ProjectID     int     `json:"project_id"`
+	InputArtifact string  `json:"input_artifact"`
+	Command       string  `json:"command"`
+	OutputStream  string  `json:"output_stream"`
+	BatchId       string  `json:"-"`
+	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+func (d *Deployment) HasStarted() bool {
+	return hasStarted(d.Status)
+}
+
+func (d *Deployment) HasFinished() bool {
+	return hasFinished(d.Status)
+}
+
+type PostDeployment struct {
+	ProjectID     int    `json:"project_id" validate:"nonzero"`
+	InputArtifact string `json:"input_artifact"`
+	Command       string `json:"command" validate:"nonzero"`
+	OutputStream  string `json:"output_stream"`
+	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
 var statuses = struct {
 	started  []string
 	finished []string
