@@ -1,9 +1,9 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/gin-gonic/gin"
@@ -11,6 +11,28 @@ import (
 )
 
 type Build struct{}
+
+// Get the first build by ID, 404 if it doesn't exist
+func (b Build) ById(c *gin.Context) (models.Build, error) {
+	build := models.Build{}
+	var id int
+	if !bindId(c, &id) {
+		errResponse(c, 404, nil)
+		return build, nil
+	}
+	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&build, id)
+	err := q.Error
+	if err != nil {
+		internalError(c, err)
+		return build, err
+	}
+	// check if it didn't come back
+	if build.ID == 0 {
+		errResponse(c, 404, nil)
+		return build, errors.New("Not Found")
+	}
+	return build, nil
+}
 
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
@@ -30,12 +52,10 @@ func (b Build) List(c *gin.Context) {
 }
 
 func (b Build) Get(c *gin.Context) {
-	build := models.Build{}
-	var id int
-	if !bindId(c, &id) {
+	build, err := b.ById(c)
+	if err != nil {
 		return
 	}
-	db.Where(&models.Build{ID: id}).First(&build)
 	successResponse(c, 200, build)
 }
 
@@ -52,22 +72,8 @@ func (b Build) Create(c *gin.Context) {
 }
 
 func (b Build) Input(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-
-	build := models.Build{}
-
-	err := db.First(&build, id).Error
+	build, err := b.ById(c)
 	if err != nil {
-		internalError(c, err)
-		return
-	}
-
-	err = db.Model(&build).Association("Events").Find(&build.Events).Error
-	if err != nil {
-		internalError(c, err)
 		return
 	}
 
@@ -76,16 +82,14 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("builds/%d/simulation.tar.gz", id)
+	key := fmt.Sprintf("builds/%d/simulation.tar.gz", build.ID)
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		errResponse(c, 500, err)
 		return
 	}
-
 	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d", c.Request.Host, build.ID)
-
 	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
 		errResponse(c, 500, err)
@@ -93,13 +97,10 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		err := db.Model(&build).Updates(models.Build{BatchId: buildId}).Error
-		if err != nil {
-			return err
-		}
-		newEvent := models.BuildEvent{Timestamp: time.Now(), Status: "QUEUED"}
-		return db.Model(&build).Association("Events").Append(newEvent).Error
+		batchJob := BatchService{}.New(buildId, tx)
+		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
 	})
+
 	if err != nil {
 		return
 	}
@@ -108,44 +109,26 @@ func (b Build) Input(c *gin.Context) {
 }
 
 func (b Build) Logs(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
+	build, err := b.ById(c)
+	if err != nil {
 		return
 	}
 
-	build := models.Build{}
-	err := db.First(&build, id).Error
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	refresh := func() error {
-		return db.Model(&build).Association("Events").Find(&build.Events).Error
-	}
-	StreamBatchLogs(awsSession, c, &build, refresh)
+	StreamBatchLogs(awsSession, c, &build.BatchJob)
 }
 
-func (s Build) CreateEvent(c *gin.Context) {
-	event := models.PostBatchEvent{}
-	c.BindJSON(&event)
-	var id int
-	if !bindId(c, &id) {
+func (b Build) CreateEvent(c *gin.Context) {
+	build, err := b.ById(c)
+	if err != nil {
 		return
 	}
 
-	var build models.Build
-	err := db.First(&build, id).Error
-	if err != nil {
-		c.Error(err)
-		errResponse(c, 500, nil)
-		return
-	}
+	event := models.PostBatchEvent{}
+	c.BindJSON(&event)
 
 	if !validateRequest(c, event) {
 		return
 	}
-
-	db.Model(&build).Association("Events").Find(&build.Events)
 
 	currentStatus := build.Status()
 
@@ -154,24 +137,14 @@ func (s Build) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent := models.BuildEvent{
-		BuildID:   id,
-		Timestamp: time.Now(),
-		Status:    event.Status,
-		Message:   event.Message,
-		Code:      event.Code,
-	}
-	db.Create(&newEvent)
+	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
 
-	if newEvent.Status == models.TERMINATED && len(build.BatchId) > 0 {
-		err = awsSession.HaltJob(build.BatchId)
-
-		if err != nil {
-			c.Error(err)
-			errResponse(c, 500, nil)
-			return
-		}
+	if err != nil {
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
 	}
 
 	successResponse(c, 200, newEvent)
+
 }

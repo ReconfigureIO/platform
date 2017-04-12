@@ -19,7 +19,7 @@ func MigrateSchema() {
 	db.AutoMigrate(&models.User{})
 	db.AutoMigrate(&models.Project{})
 	db.AutoMigrate(&models.Simulation{})
-	db.AutoMigrate(&models.SimulationEvent{})
 	db.AutoMigrate(&models.Build{})
-	db.AutoMigrate(&models.BuildEvent{})
+	db.AutoMigrate(&models.BatchJob{})
+	db.AutoMigrate(&models.BatchJobEvent{})
 }

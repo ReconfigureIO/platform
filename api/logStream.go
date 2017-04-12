@@ -4,23 +4,16 @@ import (
 	"log"
 	"time"
 
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
 )
 
-type HasBatch interface {
-	GetBatchId() string
-	Status() string
-	HasStarted() bool
-	HasFinished() bool
-}
-
-func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b HasBatch, refresh func() error) {
-	err := refresh()
-	if err != nil {
-		internalError(c, err)
-		return
+func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob) {
+	log.Printf("%v\n", *b)
+	refresh := func() error {
+		return db.Model(&b).Association("Events").Find(&b.Events).Error
 	}
 
 	w := c.Writer
@@ -32,7 +25,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b HasBatch, refres
 			return
 		default:
 			time.Sleep(time.Second)
-			err = refresh()
+			err := refresh()
 			if err != nil {
 				internalError(c, err)
 				return
@@ -40,7 +33,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b HasBatch, refres
 		}
 	}
 
-	logStream, err := awsSession.GetJobStream(b.GetBatchId())
+	logStream, err := awsSession.GetJobStream(b.BatchId)
 	if err != nil {
 		errResponse(c, 500, err)
 		return

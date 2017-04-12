@@ -1,9 +1,9 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/gin-gonic/gin"
@@ -11,6 +11,28 @@ import (
 )
 
 type Simulation struct{}
+
+// Get the first simulation by ID, 404 if it doesn't exist
+func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
+	sim := models.Simulation{}
+	var id int
+	if !bindId(c, &id) {
+		errResponse(c, 404, nil)
+		return sim, nil
+	}
+	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&sim, id)
+	err := q.Error
+	if err != nil {
+		internalError(c, err)
+		return sim, err
+	}
+	// check if it didn't come back
+	if sim.ID == 0 {
+		errResponse(c, 404, nil)
+		return sim, errors.New("Not Found")
+	}
+	return sim, nil
+}
 
 func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
@@ -26,21 +48,8 @@ func (s Simulation) Create(c *gin.Context) {
 }
 
 func (s Simulation) Input(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	sim := models.Simulation{}
-
-	err := db.First(&sim, id).Error
+	sim, err := s.ById(c)
 	if err != nil {
-		internalError(c, err)
-		return
-	}
-
-	err = db.Model(&sim).Association("Events").Find(&sim.Events).Error
-	if err != nil {
-		internalError(c, err)
 		return
 	}
 
@@ -49,7 +58,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", id)
+	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", sim.ID)
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
@@ -66,13 +75,10 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		err := tx.Model(&sim).Updates(models.Simulation{BatchId: simId}).Error
-		if err != nil {
-			return err
-		}
-		newEvent := models.SimulationEvent{Timestamp: time.Now(), Status: "QUEUED"}
-		return tx.Model(&sim).Association("Events").Append(newEvent).Error
+		batchJob := BatchService{}.New(simId, tx)
+		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
+
 	if err != nil {
 		return
 	}
@@ -93,55 +99,34 @@ func (s Simulation) List(c *gin.Context) {
 }
 
 func (s Simulation) Get(c *gin.Context) {
-	outputsim := models.Simulation{}
-	var id int
-	if !bindId(c, &id) {
+	sim, err := s.ById(c)
+	if err != nil {
 		return
 	}
-	db.Where(&models.Simulation{ID: id}).First(&outputsim)
-	db.Model(&outputsim).Association("Events").Find(&outputsim.Events)
-	successResponse(c, 200, outputsim)
+	successResponse(c, 200, sim)
 }
 
 func (s Simulation) Logs(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
+	sim, err := s.ById(c)
+	if err != nil {
 		return
 	}
 
-	sim := models.Simulation{}
-	err := db.First(&sim, id).Error
-	if err != nil {
-		internalError(c, err)
-		return
-	}
-	refresh := func() error {
-		return db.Model(&sim).Association("Events").Find(&sim.Events).Error
-	}
-	StreamBatchLogs(awsSession, c, &sim, refresh)
+	StreamBatchLogs(awsSession, c, &sim.BatchJob)
 }
 
 func (s Simulation) CreateEvent(c *gin.Context) {
-	event := models.PostBatchEvent{}
-	c.BindJSON(&event)
-	var id int
-	if !bindId(c, &id) {
+	sim, err := s.ById(c)
+	if err != nil {
 		return
 	}
 
-	var sim models.Simulation
-	err := db.First(&sim, id).Error
-	if err != nil {
-		c.Error(err)
-		errResponse(c, 500, nil)
-		return
-	}
+	event := models.PostBatchEvent{}
+	c.BindJSON(&event)
 
 	if !validateRequest(c, event) {
 		return
 	}
-
-	db.Model(&sim).Association("Events").Find(&sim.Events)
 
 	currentStatus := sim.Status()
 
@@ -150,23 +135,12 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent := models.SimulationEvent{
-		SimulationID: id,
-		Timestamp:    time.Now(),
-		Status:       event.Status,
-		Message:      event.Message,
-		Code:         event.Code,
-	}
-	db.Create(&newEvent)
+	newEvent, err := BatchService{}.AddEvent(&sim.BatchJob, event)
 
-	if newEvent.Status == models.TERMINATED && len(sim.BatchId) > 0 {
-		err = awsSession.HaltJob(sim.BatchId)
-
-		if err != nil {
-			c.Error(err)
-			errResponse(c, 500, nil)
-			return
-		}
+	if err != nil {
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
 	}
 
 	successResponse(c, 200, newEvent)

@@ -42,20 +42,11 @@ type AuthToken struct {
 }
 
 type Build struct {
-	ID        int          `gorm:"primary_key" json:"id"`
-	Project   Project      `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID int          `json:"project_id"`
-	BatchId   string       `json:"-"`
-	Events    []BuildEvent `json:"events" gorm:"ForeignKey:BuildID"`
-}
-
-type BuildEvent struct {
-	ID        int       `gorm:"primary_key" json:"-"`
-	BuildID   int       `json:"-"`
-	Timestamp time.Time `json:"timestamp"`
-	Status    string    `json:"status"`
-	Message   string    `json:"message,omitempty"`
-	Code      int       `json:"code"`
+	ID         int      `gorm:"primary_key" json:"id"`
+	Project    Project  `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID  int      `json:"project_id"`
+	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
+	BatchJobId int64    `json:"-"`
 }
 
 type PostBatchEvent struct {
@@ -64,12 +55,8 @@ type PostBatchEvent struct {
 	Code    int    `json:"code"`
 }
 
-func (b *Build) GetBatchId() string {
-	return b.BatchId
-}
-
 func (b *Build) Status() string {
-	events := b.Events
+	events := b.BatchJob.Events
 	length := len(events)
 	if len(events) > 0 {
 		return events[length-1].Status
@@ -91,45 +78,23 @@ type PostBuild struct {
 }
 
 type Simulation struct {
-	ID        int               `gorm:"primary_key" json:"id"`
-	Token     string            `json:"-"` // Internal Authentication token for service updates
-	User      User              `json:"-" gorm:"ForeignKey:UserID"`
-	UserID    int               `json:"-"`
-	Project   *Project          `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
-	ProjectID int               `json:"-"`
-	Command   string            `json:"command"`
-	BatchId   string            `json:"-"`
-	Events    []SimulationEvent `json:"events" gorm:"ForeignKey:SimulationID"`
-}
-
-func (s *Simulation) GetBatchId() string {
-	return s.BatchId
+	ID         int      `gorm:"primary_key" json:"id"`
+	User       User     `json:"-" gorm:"ForeignKey:UserID"`
+	UserID     int      `json:"-"`
+	Project    *Project `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
+	ProjectID  int      `json:"-"`
+	BatchJobId int64    `json:"-"`
+	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
+	Command    string   `json:"command"`
 }
 
 func (s *Simulation) Status() string {
-	events := s.Events
+	events := s.BatchJob.Events
 	length := len(events)
 	if len(events) > 0 {
 		return events[length-1].Status
 	}
 	return SUBMITTED
-}
-
-type SimulationEvent struct {
-	ID           int       `gorm:"primary_key" json:"-"`
-	SimulationID int       `json:"-"`
-	Timestamp    time.Time `json:"timestamp"`
-	Status       string    `json:"status"`
-	Message      string    `json:"message,omitempty"`
-	Code         int       `json:"code"`
-}
-
-func (s *Simulation) HasStarted() bool {
-	return hasStarted(s.Status())
-}
-
-func (s *Simulation) HasFinished() bool {
-	return hasFinished(s.Status())
 }
 
 type PostSimulation struct {
@@ -143,6 +108,38 @@ var statuses = struct {
 }{
 	started:  []string{STARTED, COMPLETED, ERRORED},
 	finished: []string{COMPLETED, ERRORED, TERMINATED},
+}
+
+type BatchJob struct {
+	ID      int64           `gorm:"primary_key" json:"-"`
+	BatchId string          `json:"-"`
+	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+}
+
+func (b *BatchJob) Status() string {
+	events := b.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return SUBMITTED
+}
+
+func (b *BatchJob) HasStarted() bool {
+	return hasStarted(b.Status())
+}
+
+func (b *BatchJob) HasFinished() bool {
+	return hasFinished(b.Status())
+}
+
+type BatchJobEvent struct {
+	ID         int64     `gorm:"primary_key" json:"-"`
+	BatchJobId int64     `json:"-"`
+	Timestamp  time.Time `json:"timestamp"`
+	Status     string    `json:"status"`
+	Message    string    `json:"message,omitempty"`
+	Code       int       `json:"code"`
 }
 
 func hasStarted(status string) bool {
