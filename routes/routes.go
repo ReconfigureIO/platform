@@ -42,9 +42,7 @@ func SetupRoutes(r *gin.RouterGroup) {
 	{
 		deploymentRoute.GET("", deployment.List)
 		deploymentRoute.POST("", deployment.Create)
-		deploymentRoute.PUT("/:id", deployment.Update)
 		deploymentRoute.GET("/:id", deployment.Get)
-		deploymentRoute.PUT("/:id/input", deployment.Input)
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 }
