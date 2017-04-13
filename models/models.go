@@ -103,14 +103,14 @@ type PostSimulation struct {
 }
 
 type Deployment struct {
-	ID            int     `gorm:"primary_key" json:"id"`
-	Project       Project `json:"project"`
-	ProjectID     int     `json:"project_id"`
-	InputArtifact string  `json:"input_artifact"`
-	Command       string  `json:"command"`
-	OutputStream  string  `json:"output_stream"`
-	BatchId       string  `json:"-"`
-	Status        string  `gorm:"default:'SUBMITTED'" json:"status"`
+	ID            int    `gorm:"primary_key" json:"id"`
+	Build         Build  `json:"build"`
+	BuildID       int    `json:"build_id"`
+	InputArtifact string `json:"input_artifact"`
+	Command       string `json:"command"`
+	OutputStream  string `json:"output_stream"`
+	BatchId       string `json:"-"`
+	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 func (d *Deployment) HasStarted() bool {
@@ -122,7 +122,7 @@ func (d *Deployment) HasFinished() bool {
 }
 
 type PostDeployment struct {
-	ProjectID     int    `json:"project_id" validate:"nonzero"`
+	BuildID       int    `json:"build_id" validate:"nonzero"`
 	InputArtifact string `json:"input_artifact"`
 	Command       string `json:"command" validate:"nonzero"`
 	OutputStream  string `json:"output_stream"`

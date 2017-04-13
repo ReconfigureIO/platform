@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -20,69 +19,29 @@ func (d Deployment) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newDep := models.Deployment{ProjectID: post.ProjectID}
+	parentbuild := models.Build{}
+	db.Where(&models.Build{ID: post.BuildID}).First(&parentbuild)
+
+	newDep := models.Deployment{
+		BuildID:       post.BuildID,
+		InputArtifact: parentbuild.OutputArtifact,
+		Command:       post.Command,
+		Status:        "QUEUED",
+	}
 	db.Create(&newDep)
+	_, err := awsSession.RunDeployment(newDep.InputArtifact, newDep.Command)
+	if err != nil {
+		errResponse(c, 500, err)
+		return
+	}
 	successResponse(c, 201, newDep)
 }
 
-func (d Deployment) Update(c *gin.Context) {
-	post := models.PostDeployment{}
-	c.BindJSON(&post)
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	if !validateRequest(c, post) {
-		return
-	}
-	outputdep := models.Deployment{}
-	db.Where(&models.Deployment{ID: id}).First(&outputdep)
-	dep := models.Deployment{
-		ProjectID:     post.ProjectID,
-		InputArtifact: post.InputArtifact,
-		OutputStream:  post.OutputStream,
-		Status:        post.Status,
-	}
-	db.Model(&outputdep).Updates(dep)
-	successResponse(c, 200, outputdep)
-}
-
-func (d Deployment) Input(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	dep := models.Deployment{}
-	db.First(&dep, id)
-
-	if dep.Status != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Deployment is '%s', not SUBMITTED", dep.Status))
-		return
-	}
-
-	key := fmt.Sprintf("Deployment/%d/Deployment.tar.gz", id)
-
-	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
-	if err != nil {
-		errResponse(c, 500, err)
-		return
-	}
-
-	depId, err := awsSession.RunDeployment(s3Url, dep.Command)
-	if err != nil {
-		errResponse(c, 500, err)
-		return
-	}
-
-	db.Model(&dep).Updates(models.Deployment{BatchId: depId, Status: "QUEUED"})
-	successResponse(c, 200, dep)
-}
-
 func (d Deployment) List(c *gin.Context) {
-	project := c.DefaultQuery("project", "")
+	build := c.DefaultQuery("build", "")
 	deployments := []models.Deployment{}
-	if id, err := strconv.Atoi(project); err == nil && project != "" {
-		db.Where(&models.Deployment{ProjectID: id}).Find(&deployments)
+	if id, err := strconv.Atoi(build); err == nil && build != "" {
+		db.Where(&models.Deployment{BuildID: id}).Find(&deployments)
 	} else {
 		db.Find(&deployments)
 	}
