@@ -81,7 +81,7 @@ curl -u $USER:$PASS -H "Content-Type: application/json" -X PUT -d '{"name":"addi
 
 ```
 curl -u $USER:$PASS -H GET localhost:8080/builds
-{"value":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
+{"value":[{"id":56,"project":{"id":87,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:41:13.273744Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:41:18.358054Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:41:28.356844Z","status":"COMPLETED","code":0}]}}]}
 
 ```
 
@@ -91,7 +91,7 @@ To view one particular build's details:
 
 ```
 curl -u $USER:$PASS -H GET localhost:8080/builds/1
-{"value":{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}}
+{"value": {"id":56,"project":{"id":87,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:41:13.273744Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:41:18.358054Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:41:28.356844Z","status":"COMPLETED","code":0}]}}}
 ```
 
 #### GET /builds?project={project_id}
@@ -99,7 +99,7 @@ curl -u $USER:$PASS -H GET localhost:8080/builds/1
 To view all of the builds associated with a project do the following:
 ```
 curl -u $USER:$PASS -H GET localhost:8080/builds?project=0
-{"value":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","output_artifact":".bin file","outout_stream":"working working done","status":""}]}
+{"value":[{"id":56,"project":{"id":1,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:41:13.273744Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:41:18.358054Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:41:28.356844Z","status":"COMPLETED","code":0}]}}]}
 ```
 
 #### POST /builds
@@ -140,8 +140,7 @@ Gets a list of all simulations, can be filtered by project ID.
 
 ```
 curl -X GET localhost:8080/simulations
-{"value":[{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","outout_stream":"working working done","status":""}]}
-
+{"value":[{"id":34,"project":{"id":93,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:46:16.789615Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:46:21.872226Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:46:31.872251Z","status":"COMPLETED","code":0}]},"command":"test-addition"}]}
 ```
 
 #### POST /simulations
@@ -152,7 +151,7 @@ Simulations have a ProjectID, a Command.
 
 ```
 curl -X POST -H "Content-Type: application/json"  -d '{"project_id": 1, "cmd": "test-addition"}' http://localhost:8080/simulations
-{"value":{"id": 1, "logs_url": "http://localhost:8080/simulations/1/logs", "input_url": "http://localhost:8080/simulations/1/input", "command": "test-addition" "status": "AWAITING_INPUT"}}
+{"value":[{"id":1,"project":{"id":1,"name":"addition"},"command":"test-addition"}]}
 ```
 
 You can expect this to return a HTTP `202` code with the newly created build including ID
@@ -174,7 +173,7 @@ To view one particular simulation's details:
 
 ```
 curl -X GET localhost:8080/simulation/1
-{"value":{"id":1,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":1,"project":{"id":0,"user":{"id":0,"github_id":"","email":"","auth_token":null},"user_id":0,"name":"","builds":null},"project_id":0,"input_artifact":"golang code","command":"test-addition",outout_stream":"working working done","status":""}}
+{"value":{"id":34,"project":{"id":93,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:46:16.789615Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:46:21.872226Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:46:31.872251Z","status":"COMPLETED","code":0}]},"command":"test-addition"}}
 ```
 
 #### GET /simulations/{id}/logs
@@ -182,6 +181,7 @@ curl -X GET localhost:8080/simulation/1
 Stream the logs for a given simulation
 
 <TODO> Describe returned values
+
 
 #### POST /simulations/1/events
 
@@ -192,7 +192,6 @@ For users, the most relevent is `TERMINATED`, which will stop any running jobs.
 ```
 curl -v -XPOST -H "Content-Type: application/json"  -d '{"status": "TERMINATED"}' http://localhost:8080/simulations/1/events
 ```
-
 
 #### GET /builds/{build_id}/logs
 
@@ -220,20 +219,4 @@ Note: Unnecessary use of -X or --request, GET is already inferred.
 < Date: Mon, 27 Mar 2017 15:52:53 GMT
 <
 * Connection #0 to host localhost left intact
-```
-
-#### POST /build/
-
-Uploading a new build, and start processing it
-```
-curl -v -XPOST --data-binary @../examples/addition/.reco-work/bundle.tar.gz http://localhost:8080/build/
-{"JobId":"3c9993d3-ab32-4e7b-96c7-e026fb0e1489","JobName":"example"}
-```
-
-#### GET /build/{build_id}/logs
-
-Stream plain text logs for the build
-
-```
-curl http://localhost:8080/build/3c9993d3-ab32-4e7b-96c7-e026fb0e1489/logs
 ```
