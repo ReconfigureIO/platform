@@ -16,8 +16,7 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	sim := models.Simulation{}
 	var id int
 	if !bindId(c, &id) {
-		errResponse(c, 404, nil)
-		return sim, nil
+		return sim, errNotFound
 	}
 	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&sim, id)
 	err := q.Error

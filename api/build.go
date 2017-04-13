@@ -16,8 +16,7 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
 	var id int
 	if !bindId(c, &id) {
-		errResponse(c, 404, nil)
-		return build, nil
+		return build, errNotFound
 	}
 	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&build, id)
 	err := q.Error
