@@ -23,13 +23,7 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 				"logged_in": false,
 			})
 		} else {
-			user := models.User{}
-
-			err := db.First(&user, user_id.(int)).Error
-			if err != nil {
-				c.Error(err)
-				return
-			}
+			user := GetUser(c)
 
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": true,
