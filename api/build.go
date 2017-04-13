@@ -97,7 +97,7 @@ func (b Build) Input(c *gin.Context) {
 		errResponse(c, 500, err)
 		return
 	}
-	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d", c.Request.Host, build.ID)
+	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d/events", c.Request.Host, build.ID)
 	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
 		errResponse(c, 500, err)
