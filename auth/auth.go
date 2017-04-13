@@ -58,7 +58,7 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 				return
 			}
 
-			user, err := gh.GetOrCreateUser(token.AccessToken)
+			user, err := gh.GetOrCreateUser(c, token.AccessToken)
 			if err != nil {
 				c.Error(err)
 				//				errResponse(c, 500, nil)
@@ -69,6 +69,21 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 			session.Set("user_id", user.ID)
 			session.Save()
 			c.Redirect(http.StatusMovedPermanently, "/")
+		})
+	}
+
+	tokenRoutes := r.Group("/token", RequiresUser())
+	{
+		tokenRoutes.POST("", func(c *gin.Context) {
+			user := GetUser(c)
+			token := models.NewAuthToken()
+			token.User = user
+			err := db.Create(&token).Error
+			if err != nil {
+				c.AbortWithError(500, err)
+				return
+			}
+			c.JSON(200, token)
 		})
 	}
 }

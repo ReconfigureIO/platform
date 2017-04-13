@@ -28,9 +28,7 @@ func NewService(db *gorm.DB) *GithubService {
 
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
-func (s *GithubService) GetOrCreateUser(accessToken string) (models.User, error) {
-	context := context.Background()
-
+func (s *GithubService) GetOrCreateUser(context context.Context, accessToken string) (models.User, error) {
 	oauthClient := s.OauthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: accessToken})
 	client := github.NewClient(oauthClient)
 

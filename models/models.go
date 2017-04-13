@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/dchest/uniuri"
 	"github.com/jinzhu/gorm"
 	"time"
 )
@@ -15,13 +16,12 @@ const (
 )
 
 type User struct {
-	ID                int         `gorm:"primary_key" json:"id"`
-	GithubID          int         `json:"-"`
-	GithubName        string      `json:"github_name"`
-	Name              string      `json:"name"`
-	Email             string      `gorm:"type:varchar(100);unique_index" json:"email"`
-	GithubAccessToken string      `json:"-"`
-	AuthTokens        []AuthToken `json:"auth_token"` //User has many AuthTokens
+	ID                int    `gorm:"primary_key" json:"id"`
+	GithubID          int    `json:"-"`
+	GithubName        string `json:"github_name"`
+	Name              string `json:"name"`
+	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
+	GithubAccessToken string `json:"-"`
 }
 
 type Project struct {
@@ -40,8 +40,13 @@ type PostProject struct {
 
 type AuthToken struct {
 	gorm.Model
-	Token  string `json:"token"`
-	UserID int    `json:"user_id"`
+	Token  string `gorm:"unique_index" json:"token"`
+	User   User   `json:"-" gorm:"ForeignKey:UserID"`
+	UserID int    `json:"-"`
+}
+
+func NewAuthToken() AuthToken {
+	return AuthToken{Token: uniuri.NewLen(64)}
 }
 
 type Build struct {
