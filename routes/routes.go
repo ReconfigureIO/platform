@@ -4,10 +4,11 @@ import (
 	"github.com/ReconfigureIO/platform/api"
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
-func SetupRoutes(r gin.IRouter) {
-	auth.Setup(r)
+func SetupRoutes(r gin.IRouter, db *gorm.DB) {
+	auth.Setup(r, db)
 	build := api.Build{}
 	buildRoute := r.Group("/builds")
 	{

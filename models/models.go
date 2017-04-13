@@ -15,10 +15,13 @@ const (
 )
 
 type User struct {
-	ID         int         `gorm:"primary_key" json:"id"`
-	GithubID   string      `json:"github_id"`
-	Email      string      `gorm:"type:varchar(100);unique_index" json:"email"`
-	AuthTokens []AuthToken `json:"auth_token"` //User has many AuthTokens
+	ID                int         `gorm:"primary_key" json:"id"`
+	GithubID          int         `json:"-"`
+	GithubName        string      `json:"github_name"`
+	Name              string      `json:"name"`
+	Email             string      `gorm:"type:varchar(100);unique_index" json:"email"`
+	GithubAccessToken string      `json:"-"`
+	AuthTokens        []AuthToken `json:"auth_token"` //User has many AuthTokens
 }
 
 type Project struct {

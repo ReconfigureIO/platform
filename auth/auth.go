@@ -1,54 +1,41 @@
 package auth
 
 import (
-	"context"
-	"fmt"
-	"log"
 	"net/http"
-	"os"
 
+	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/github"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/google/go-github/github"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/oauth2"
-	githuboauth "golang.org/x/oauth2/github"
 )
 
-func Setup(r gin.IRouter) {
-	oauthConf := &oauth2.Config{
-		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		Scopes:       []string{"user"},
-		Endpoint:     githuboauth.Endpoint,
-	}
-	log.Printf("%+v\n", oauthConf)
+func Setup(r gin.IRouter, db *gorm.DB) {
+	gh := github.NewService(db)
 
 	r.GET("/", func(c *gin.Context) {
-		context := context.Background()
 		session := sessions.Default(c)
-		token := session.Get("token")
+		user_id := session.Get("user_id")
 
-		if token == nil {
+		if user_id == nil {
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": false,
 			})
 		} else {
-			oauthClient := oauthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: token.(string)})
-			client := github.NewClient(oauthClient)
+			user := models.User{}
 
-			user, _, err := client.Users.Get(context, "")
-
+			err := db.First(&user, user_id.(int)).Error
 			if err != nil {
-				c.String(http.StatusNotFound, "User not found")
+				c.Error(err)
 				return
 			}
 
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": true,
-				"login":     user.Login,
+				"login":     user.GithubName,
 				"name":      user.Name,
-				"avatar":    user.GetAvatarURL(),
-				"email":     user.GetEmail(),
+				"email":     user.Email,
 			})
 		}
 	})
@@ -57,25 +44,30 @@ func Setup(r gin.IRouter) {
 	{
 
 		authRoutes.GET("/signin", func(c *gin.Context) {
-			url := oauthConf.AuthCodeURL("hoge", oauth2.AccessTypeOnline)
+			url := gh.OauthConf.AuthCodeURL("hoge", oauth2.AccessTypeOnline)
 			c.Redirect(http.StatusMovedPermanently, url)
 		})
 
 		authRoutes.GET("/callback", func(c *gin.Context) {
 			code := c.Query("code")
 
-			token, err := oauthConf.Exchange(oauth2.NoContext, code)
+			token, err := gh.OauthConf.Exchange(oauth2.NoContext, code)
 
 			if err != nil {
 				c.String(http.StatusBadRequest, "Error: %s", err)
 				return
 			}
 
-			session := sessions.Default(c)
-			fmt.Println(token.AccessToken)
-			session.Set("token", token.AccessToken)
-			session.Save()
+			user, err := gh.GetOrCreateUser(token.AccessToken)
+			if err != nil {
+				c.Error(err)
+				//				errResponse(c, 500, nil)
+				return
+			}
 
+			session := sessions.Default(c)
+			session.Set("user_id", user.ID)
+			session.Save()
 			c.Redirect(http.StatusMovedPermanently, "/")
 		})
 	}

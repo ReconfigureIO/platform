@@ -8,7 +8,6 @@
     <h1>weboauth</h1>
 
     {{ if .logged_in }}
-    <img src="{{ .avatar }}" width=60 height=60>
     Logged in: {{ .login }} ({{ .name }}) ({{ .email }})
     {{ else }}
     <a href="/oauth/signin">Sign in with GitHub</a>

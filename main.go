@@ -13,7 +13,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func setupDB() {
+func setupDB() *gorm.DB {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
@@ -27,6 +27,7 @@ func setupDB() {
 		fmt.Println("performing migration...")
 		migration.MigrateSchema()
 	}
+	return db
 }
 
 func main() {
@@ -54,8 +55,8 @@ func main() {
 	})
 
 	// setup components
-	setupDB()
-	routes.SetupRoutes(r)
+	db := setupDB()
+	routes.SetupRoutes(r, db)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
