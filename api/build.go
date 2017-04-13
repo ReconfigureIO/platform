@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -12,7 +13,15 @@ import (
 type Build struct{}
 
 func (b Build) Query(c *gin.Context) *gorm.DB {
-	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	session := sessions.Default(c)
+	user_id := session.Get("user_id")
+	u := 0
+	if user_id != nil {
+		u = user_id.(int)
+	}
+	return db.Joins("join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", u).
+		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
 }
 
 // Get the first build by ID, 404 if it doesn't exist
