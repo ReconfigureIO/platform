@@ -2,16 +2,38 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"strconv"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type Simulation struct{}
+
+func (b Simulation) Query(c *gin.Context) *gorm.DB {
+	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+}
+
+// Get the first simulation by ID, 404 if it doesn't exist
+func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
+	sim := models.Simulation{}
+	var id int
+	if !bindId(c, &id) {
+		return sim, errNotFound
+	}
+	err := s.Query(c).First(&sim, id).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			errResponse(c, 404, nil)
+		} else {
+			internalError(c, err)
+		}
+		return sim, err
+	}
+	return sim, nil
+}
 
 func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
@@ -20,48 +42,24 @@ func (s Simulation) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newSim := models.Simulation{UserID: post.UserID, ProjectID: post.ProjectID}
+
+	newSim := models.Simulation{ProjectID: post.ProjectID, Command: post.Command}
 	db.Create(&newSim)
 	successResponse(c, 201, newSim)
 }
 
-func (s Simulation) Update(c *gin.Context) {
-	post := models.PostSimulation{}
-	c.BindJSON(&post)
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	if !validateRequest(c, post) {
-		return
-	}
-	outputsim := models.Simulation{}
-	db.Where(&models.Simulation{ID: id}).First(&outputsim)
-	sim := models.Simulation{
-		UserID:        post.UserID,
-		ProjectID:     post.ProjectID,
-		InputArtifact: post.InputArtifact,
-		OutputStream:  post.OutputStream,
-		Status:        post.Status,
-	}
-	db.Model(&outputsim).Updates(sim)
-	successResponse(c, 200, outputsim)
-}
-
 func (s Simulation) Input(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
+	sim, err := s.ById(c)
+	if err != nil {
 		return
 	}
-	sim := models.Simulation{}
-	db.First(&sim, id)
 
-	if sim.Status != "SUBMITTED" {
+	if sim.Status() != "SUBMITTED" {
 		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
 		return
 	}
 
-	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", id)
+	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", sim.ID)
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
@@ -69,71 +67,89 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	simId, err := awsSession.RunSimulation(s3Url, sim.Command)
+	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/simulations/%d", c.Request.Host, sim.ID)
+
+	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
 		errResponse(c, 500, err)
 		return
 	}
 
-	db.Model(&sim).Updates(models.Simulation{BatchId: simId, Status: "QUEUED"})
+	err = Transaction(c, func(tx *gorm.DB) error {
+		batchJob := BatchService{}.New(simId)
+		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
+	})
+
+	if err != nil {
+		return
+	}
+
 	successResponse(c, 200, sim)
 }
 
 func (s Simulation) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	simulations := []models.Simulation{}
+	q := s.Query(c)
+
 	if id, err := strconv.Atoi(project); err == nil && project != "" {
-		db.Where(&models.Simulation{ProjectID: id}).Find(&simulations)
-	} else {
-		db.Find(&simulations)
+		q = q.Where(&models.Simulation{ProjectID: id})
+	}
+
+	err := q.Find(&simulations).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		internalError(c, err)
+		return
 	}
 
 	successResponse(c, 200, simulations)
 }
 
 func (s Simulation) Get(c *gin.Context) {
-	outputsim := []models.Simulation{}
-	var id int
-	if !bindId(c, &id) {
+	sim, err := s.ById(c)
+	if err != nil {
 		return
 	}
-	db.Where(&models.Simulation{ID: id}).First(&outputsim)
-	successResponse(c, 200, outputsim)
+	successResponse(c, 200, sim)
 }
 
 func (s Simulation) Logs(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	sim := models.Simulation{}
-	// check for error here
-	db.First(&sim, id)
-
-	for !sim.HasStarted() {
-		time.Sleep(time.Second)
-		db.First(&sim, id)
-	}
-
-	simId := sim.BatchId
-
-	logStream, err := awsSession.GetJobStream(simId)
+	sim, err := s.ById(c)
 	if err != nil {
-		errResponse(c, 500, err)
 		return
 	}
 
-	log.Printf("opening log stream: %s", *logStream.LogStreamName)
+	StreamBatchLogs(awsSession, c, &sim.BatchJob)
+}
 
-	lstream := awsSession.NewStream(*logStream)
+func (s Simulation) CreateEvent(c *gin.Context) {
+	sim, err := s.ById(c)
+	if err != nil {
+		return
+	}
 
-	go func() {
-		for !sim.HasFinished() {
-			time.Sleep(10 * time.Second)
-			db.First(&sim, id)
-		}
-		lstream.Ended = true
-	}()
+	event := models.PostBatchEvent{}
+	c.BindJSON(&event)
 
-	stream.Stream(lstream, c)
+	if !validateRequest(c, event) {
+		return
+	}
+
+	currentStatus := sim.Status()
+
+	if !models.CanTransition(currentStatus, event.Status) {
+		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		return
+	}
+
+	newEvent, err := BatchService{}.AddEvent(&sim.BatchJob, event)
+
+	if err != nil {
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
+	}
+
+	successResponse(c, 200, newEvent)
 }

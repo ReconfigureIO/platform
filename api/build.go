@@ -2,41 +2,68 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"strconv"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type Build struct{}
 
+func (b Build) Query(c *gin.Context) *gorm.DB {
+	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+}
+
+// Get the first build by ID, 404 if it doesn't exist
+func (b Build) ById(c *gin.Context) (models.Build, error) {
+	build := models.Build{}
+	var id int
+	if !bindId(c, &id) {
+		return build, errNotFound
+	}
+	err := b.Query(c).First(&build, id).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			errResponse(c, 404, nil)
+		} else {
+			internalError(c, err)
+		}
+		return build, err
+	}
+	return build, nil
+}
+
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	builds := []models.Build{}
+	q := b.Query(c)
+
 	if project != "" {
 		projID, err := strconv.Atoi(project)
 		if err != nil {
 			errResponse(c, 400, nil)
 			return
 		}
-		db.Where(&models.Build{ProjectID: projID}).Find(&builds)
-	} else {
-		db.Find(&builds)
+		q = q.Where(&models.Build{ProjectID: projID})
+	}
+
+	err := q.Find(&builds).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		internalError(c, err)
+		return
 	}
 
 	successResponse(c, 200, builds)
 }
 
 func (b Build) Get(c *gin.Context) {
-	build := models.Build{}
-	var id int
-	if !bindId(c, &id) {
+	build, err := b.ById(c)
+	if err != nil {
 		return
 	}
-	db.Where(&models.Build{ID: id}).First(&build)
 	successResponse(c, 200, build)
 }
 
@@ -47,101 +74,85 @@ func (b Build) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newBuild := models.Build{UserID: post.UserID, ProjectID: post.ProjectID}
+	newBuild := models.Build{ProjectID: post.ProjectID}
 	db.Create(&newBuild)
 	successResponse(c, 201, newBuild)
 }
 
-func (b Build) Update(c *gin.Context) {
-	post := models.PostBuild{}
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	c.BindJSON(&post)
-	if !validateRequest(c, post) {
-		return
-	}
-	outputbuild := models.Build{}
-	db.Where(&models.Build{ID: id}).First(&outputbuild)
-	build := models.Build{
-		UserID:         post.UserID,
-		ProjectID:      post.ProjectID,
-		InputArtifact:  post.InputArtifact,
-		OutputArtifact: post.OutputArtifact,
-		OutputStream:   post.OutputStream,
-		Status:         post.Status,
-	}
-	db.Model(&outputbuild).Updates(build)
-	c.JSON(200, outputbuild)
-}
-
 func (b Build) Input(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
+	build, err := b.ById(c)
+	if err != nil {
 		return
 	}
 
-	build := models.Build{}
-	db.First(&build, id)
-
-	if build.Status != "SUBMITTED" {
+	if build.Status() != "SUBMITTED" {
 		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
 		return
 	}
 
-	key := fmt.Sprintf("builds/%d/simulation.tar.gz", id)
+	key := fmt.Sprintf("builds/%d/simulation.tar.gz", build.ID)
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		errResponse(c, 500, err)
 		return
 	}
-
-	buildId, err := awsSession.RunBuild(s3Url)
+	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d", c.Request.Host, build.ID)
+	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
 		errResponse(c, 500, err)
 		return
 	}
 
-	db.Model(&build).Updates(models.Build{BatchId: buildId, Status: "QUEUED"})
+	err = Transaction(c, func(tx *gorm.DB) error {
+		batchJob := BatchService{}.New(buildId)
+		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
+	})
+
+	if err != nil {
+		return
+	}
+
 	successResponse(c, 200, build)
 }
 
 func (b Build) Logs(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-
-	build := models.Build{}
-	// check for error here
-	db.First(&build, id)
-
-	for !build.HasStarted() {
-		time.Sleep(time.Second)
-		db.First(&build, id)
-	}
-
-	buildId := build.BatchId
-
-	logStream, err := awsSession.GetJobStream(buildId)
+	build, err := b.ById(c)
 	if err != nil {
-		errResponse(c, 500, err)
 		return
 	}
 
-	log.Printf("opening log stream: %s", *logStream.LogStreamName)
+	StreamBatchLogs(awsSession, c, &build.BatchJob)
+}
 
-	lstream := awsSession.NewStream(*logStream)
+func (b Build) CreateEvent(c *gin.Context) {
+	build, err := b.ById(c)
+	if err != nil {
+		return
+	}
 
-	go func() {
-		for !build.HasFinished() {
-			time.Sleep(10 * time.Second)
-			db.First(&build, id)
-		}
-		lstream.Ended = true
-	}()
+	event := models.PostBatchEvent{}
+	c.BindJSON(&event)
 
-	stream.Stream(lstream, c)
+	if !validateRequest(c, event) {
+		return
+	}
+
+	currentStatus := build.Status()
+
+	if !models.CanTransition(currentStatus, event.Status) {
+		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		return
+	}
+
+	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
+
+	if err != nil {
+		c.Error(err)
+		errResponse(c, 500, nil)
+		return
+	}
+
+	successResponse(c, 200, newEvent)
+
 }

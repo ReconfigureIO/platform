@@ -53,7 +53,7 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 	return "s3://" + s.conf.Bucket + "/" + key, nil
 }
 
-func (s *Service) RunBuild(inputArtifactUrl string) (string, error) {
+func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -74,6 +74,10 @@ func (s *Service) RunBuild(inputArtifactUrl string) (string, error) {
 					Value: aws.String(inputArtifactUrl),
 				},
 				{
+					Name:  aws.String("CALLBACK_URL"),
+					Value: aws.String(callbackUrl),
+				},
+				{
 					Name:  aws.String("DEVICE"),
 					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
 				},
@@ -91,7 +95,7 @@ func (s *Service) RunBuild(inputArtifactUrl string) (string, error) {
 	return *resp.JobId, nil
 }
 
-func (s *Service) RunSimulation(inputArtifactUrl string, command string) (string, error) {
+func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -115,6 +119,10 @@ func (s *Service) RunSimulation(inputArtifactUrl string, command string) (string
 					Value: aws.String(inputArtifactUrl),
 				},
 				{
+					Name:  aws.String("CALLBACK_URL"),
+					Value: aws.String(callbackUrl),
+				},
+				{
 					Name:  aws.String("CMD"),
 					Value: aws.String(command),
 				},
@@ -134,6 +142,16 @@ func (s *Service) RunSimulation(inputArtifactUrl string, command string) (string
 		return "", err
 	}
 	return *resp.JobId, nil
+}
+
+func (s *Service) HaltJob(batchId string) error {
+	batchSession := batch.New(s.session)
+	params := &batch.TerminateJobInput{
+		JobId:  aws.String(batchId),        // Required
+		Reason: aws.String("User request"), // Required
+	}
+	_, err := batchSession.TerminateJob(params)
+	return err
 }
 
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {

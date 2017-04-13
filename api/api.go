@@ -42,11 +42,30 @@ func DB(d *gorm.DB) {
 	db = d
 }
 
+// Run a transaction, rolling back if error != nil
+func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
+	tx := db.Begin()
+	err := ops(tx)
+	if err != nil {
+		tx.Rollback()
+		c.Error(err)
+		errResponse(c, 500, nil)
+	} else {
+		tx.Commit()
+	}
+	return err
+}
+
 func errResponse(c *gin.Context, code int, err interface{}) {
 	if err == nil {
 		err = http.StatusText(code)
 	}
 	c.JSON(code, apiError{Error: fmt.Sprint(err)})
+}
+
+func internalError(c *gin.Context, err error) {
+	c.Error(err)
+	errResponse(c, 500, nil)
 }
 
 func successResponse(c *gin.Context, code int, value interface{}) {

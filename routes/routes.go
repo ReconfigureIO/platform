@@ -12,9 +12,9 @@ func SetupRoutes(r *gin.RouterGroup) {
 		buildRoute.GET("", build.List)
 		buildRoute.POST("", build.Create)
 		buildRoute.GET("/:id", build.Get)
-		buildRoute.PUT("/:id", build.Update)
 		buildRoute.PUT("/:id/input", build.Input)
 		buildRoute.GET("/:id/logs", build.Logs)
+		buildRoute.POST("/:id/events", build.CreateEvent)
 	}
 
 	project := api.Project{}
@@ -31,9 +31,9 @@ func SetupRoutes(r *gin.RouterGroup) {
 	{
 		simulationRoute.GET("", simulation.List)
 		simulationRoute.POST("", simulation.Create)
-		simulationRoute.PUT("/:id", simulation.Update)
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
+		simulationRoute.POST("/:id/events", simulation.CreateEvent)
 	}
 }
