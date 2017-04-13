@@ -1,12 +1,9 @@
 package api
 
 import (
-	"log"
 	"strconv"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/gin-gonic/gin"
 )
 
@@ -60,38 +57,5 @@ func (d Deployment) Get(c *gin.Context) {
 }
 
 func (d Deployment) Logs(c *gin.Context) {
-	var id int
-	if !bindId(c, &id) {
-		return
-	}
-	dep := models.Deployment{}
-	// check for error here
-	db.First(&dep, id)
-
-	for !dep.HasStarted() {
-		time.Sleep(time.Second)
-		db.First(&dep, id)
-	}
-
-	depId := dep.BatchId
-
-	logStream, err := awsSession.GetJobStream(depId)
-	if err != nil {
-		errResponse(c, 500, err)
-		return
-	}
-
-	log.Printf("opening log stream: %s", *logStream.LogStreamName)
-
-	lstream := awsSession.NewStream(*logStream)
-
-	go func() {
-		for !dep.HasFinished() {
-			time.Sleep(10 * time.Second)
-			db.First(&dep, id)
-		}
-		lstream.Ended = true
-	}()
-
-	stream.Stream(lstream, c)
+	successResponse(c, 200, "This function does nothing yet")
 }

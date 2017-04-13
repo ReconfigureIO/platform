@@ -155,48 +155,8 @@ func (s *Service) HaltJob(batchId string) error {
 }
 
 func (s *Service) RunDeployment(inputArtifactUrl string, command string) (string, error) {
-	batchSession := batch.New(s.session)
-	params := &batch.SubmitJobInput{
-		JobDefinition: aws.String(s.conf.JobDefinition), // Required
-		JobName:       aws.String("example"),            // Required
-		JobQueue:      aws.String(s.conf.Queue),         // Required
-		ContainerOverrides: &batch.ContainerOverrides{
-			Command: []*string{
-				aws.String("/opt/simulate.sh"),
-			},
-			Environment: []*batch.KeyValuePair{
-				{
-					Name:  aws.String("PART"),
-					Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
-				},
-				{
-					Name:  aws.String("PART_FAMILY"),
-					Value: aws.String("virtexuplus"),
-				},
-				{
-					Name:  aws.String("INPUT_URL"),
-					Value: aws.String(inputArtifactUrl),
-				},
-				{
-					Name:  aws.String("CMD"),
-					Value: aws.String(command),
-				},
-				{
-					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_adm-pcie-ku3_2ddr-xpr_3_3"),
-				},
-				{
-					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:adm-pcie-ku3:2ddr-xpr:3.3"),
-				},
-			},
-		},
-	}
-	resp, err := batchSession.SubmitJob(params)
-	if err != nil {
-		return "", err
-	}
-	return *resp.JobId, nil
+
+	return "This function does nothing yet", nil
 }
 
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
