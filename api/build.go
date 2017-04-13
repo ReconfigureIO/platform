@@ -95,7 +95,7 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(buildId, tx)
+		batchJob := BatchService{}.New(buildId)
 		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
 	})
 

@@ -73,7 +73,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(simId, tx)
+		batchJob := BatchService{}.New(simId)
 		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
 

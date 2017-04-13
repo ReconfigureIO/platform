@@ -2,14 +2,13 @@ package api
 
 import (
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/jinzhu/gorm"
 	"time"
 )
 
 type BatchService struct{}
 
 // Pass in the db that way we can use transactions
-func (b BatchService) New(batchId string, db *gorm.DB) models.BatchJob {
+func (b BatchService) New(batchId string) models.BatchJob {
 	event := models.BatchJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
 	batchJob := models.BatchJob{BatchId: batchId, Events: []models.BatchJobEvent{event}}
 	return batchJob
