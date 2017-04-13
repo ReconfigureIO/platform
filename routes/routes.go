@@ -2,10 +2,12 @@ package routes
 
 import (
 	"github.com/ReconfigureIO/platform/api"
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.RouterGroup) {
+func SetupRoutes(r gin.IRouter) {
+	auth.Setup(r)
 	build := api.Build{}
 	buildRoute := r.Group("/builds")
 	{
