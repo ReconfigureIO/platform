@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -23,13 +22,12 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&sim, id)
 	err := q.Error
 	if err != nil {
-		internalError(c, err)
+		if err == gorm.ErrRecordNotFound {
+			errResponse(c, 404, nil)
+		} else {
+			internalError(c, err)
+		}
 		return sim, err
-	}
-	// check if it didn't come back
-	if sim.ID == 0 {
-		errResponse(c, 404, nil)
-		return sim, errors.New("Not Found")
 	}
 	return sim, nil
 }

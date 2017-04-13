@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -23,13 +22,12 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&build, id)
 	err := q.Error
 	if err != nil {
-		internalError(c, err)
+		if err == gorm.ErrRecordNotFound {
+			errResponse(c, 404, nil)
+		} else {
+			internalError(c, err)
+		}
 		return build, err
-	}
-	// check if it didn't come back
-	if build.ID == 0 {
-		errResponse(c, 404, nil)
-		return build, errors.New("Not Found")
 	}
 	return build, nil
 }
