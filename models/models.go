@@ -26,8 +26,8 @@ type Project struct {
 	User        User    `json:"-" gorm:"ForeignKey:UserID"` //Project belongs to User
 	UserID      int     `json:"-"`
 	Name        string  `json:"name"`
-	Builds      []Build `json:"builds" gorm:"ForeignKey:ProjectID"`
-	Simulations []Build `json:"simulations" gorm:"ForeignKey:ProjectID"`
+	Builds      []Build `json:"builds,omitempty" gorm:"ForeignKey:ProjectID"`
+	Simulations []Build `json:"simulations,omitempty" gorm:"ForeignKey:ProjectID"`
 }
 
 type PostProject struct {
@@ -44,7 +44,7 @@ type AuthToken struct {
 type Build struct {
 	ID         int      `gorm:"primary_key" json:"id"`
 	Project    Project  `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID  int      `json:"project_id"`
+	ProjectID  int      `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobId int64    `json:"-"`
 }

@@ -11,6 +11,10 @@ import (
 
 type Simulation struct{}
 
+func (b Simulation) Query(c *gin.Context) *gorm.DB {
+	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+}
+
 // Get the first simulation by ID, 404 if it doesn't exist
 func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	sim := models.Simulation{}
@@ -18,8 +22,8 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	if !bindId(c, &id) {
 		return sim, errNotFound
 	}
-	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&sim, id)
-	err := q.Error
+	err := s.Query(c).First(&sim, id).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errResponse(c, 404, nil)
@@ -86,10 +90,17 @@ func (s Simulation) Input(c *gin.Context) {
 func (s Simulation) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	simulations := []models.Simulation{}
+	q := s.Query(c)
+
 	if id, err := strconv.Atoi(project); err == nil && project != "" {
-		db.Where(&models.Simulation{ProjectID: id}).Find(&simulations)
-	} else {
-		db.Find(&simulations)
+		q = q.Where(&models.Simulation{ProjectID: id})
+	}
+
+	err := q.Find(&simulations).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		internalError(c, err)
+		return
 	}
 
 	successResponse(c, 200, simulations)

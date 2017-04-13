@@ -11,6 +11,10 @@ import (
 
 type Build struct{}
 
+func (b Build) Query(c *gin.Context) *gorm.DB {
+	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+}
+
 // Get the first build by ID, 404 if it doesn't exist
 func (b Build) ById(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
@@ -18,8 +22,8 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 	if !bindId(c, &id) {
 		return build, errNotFound
 	}
-	q := db.Preload("BatchJob").Preload("BatchJob.Events").First(&build, id)
-	err := q.Error
+	err := b.Query(c).First(&build, id).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errResponse(c, 404, nil)
@@ -34,15 +38,22 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	builds := []models.Build{}
+	q := b.Query(c)
+
 	if project != "" {
 		projID, err := strconv.Atoi(project)
 		if err != nil {
 			errResponse(c, 400, nil)
 			return
 		}
-		db.Where(&models.Build{ProjectID: projID}).Find(&builds)
-	} else {
-		db.Find(&builds)
+		q = q.Where(&models.Build{ProjectID: projID})
+	}
+
+	err := q.Find(&builds).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		internalError(c, err)
+		return
 	}
 
 	successResponse(c, 200, builds)
