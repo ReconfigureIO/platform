@@ -10,7 +10,7 @@ import (
 func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	auth.Setup(r, db)
 	build := api.Build{}
-	buildRoute := r.Group("/builds")
+	buildRoute := r.Group("/builds", auth.RequiresUser())
 	{
 		buildRoute.GET("", build.List)
 		buildRoute.POST("", build.Create)
@@ -21,7 +21,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	}
 
 	project := api.Project{}
-	projectRoute := r.Group("/projects")
+	projectRoute := r.Group("/projects", auth.RequiresUser())
 	{
 		projectRoute.GET("", project.List)
 		projectRoute.POST("", project.Create)
@@ -30,7 +30,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	}
 
 	simulation := api.Simulation{}
-	simulationRoute := r.Group("/simulations")
+	simulationRoute := r.Group("/simulations", auth.RequiresUser())
 	{
 		simulationRoute.GET("", simulation.List)
 		simulationRoute.POST("", simulation.Create)

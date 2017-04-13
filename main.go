@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/api"
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-gonic/contrib/sessions"
@@ -40,8 +41,13 @@ func main() {
 
 	secretKey := os.Getenv("SECRET_KEY_BASE")
 
+	// setup components
+	db := setupDB()
+
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
+	r.Use(auth.SessionAuth(), auth.LoadUser(db))
+
 	r.LoadHTMLGlob("templates/*")
 
 	// ping test
@@ -49,13 +55,6 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
-	// protected ping test
-	r.GET("/secretping", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "successful authentication"})
-	})
-
-	// setup components
-	db := setupDB()
 	routes.SetupRoutes(r, db)
 
 	// Listen and Server in 0.0.0.0:$PORT

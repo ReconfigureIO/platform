@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -13,14 +13,9 @@ import (
 type Build struct{}
 
 func (b Build) Query(c *gin.Context) *gorm.DB {
-	session := sessions.Default(c)
-	user_id := session.Get("user_id")
-	u := 0
-	if user_id != nil {
-		u = user_id.(int)
-	}
+	user := auth.GetUser(c)
 	return db.Joins("join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", u).
+		Where("projects.user_id=?", user.ID).
 		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
 }
 
