@@ -7,7 +7,7 @@ import (
 
 type BatchService struct{}
 
-// Pass in the db that way we can use transactions
+// Create a new batch job with its queued event
 func (b BatchService) New(batchId string) models.BatchJob {
 	event := models.BatchJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
 	batchJob := models.BatchJob{BatchId: batchId, Events: []models.BatchJobEvent{event}}
