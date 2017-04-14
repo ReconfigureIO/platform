@@ -37,11 +37,6 @@ type Project struct {
 	Simulations []Build `json:"simulations,omitempty" gorm:"ForeignKey:ProjectID"`
 }
 
-type PostProject struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-}
-
 type Build struct {
 	ID         int      `gorm:"primary_key" json:"id"`
 	Project    Project  `json:"project" gorm:"ForeignKey:ProjectID"`
