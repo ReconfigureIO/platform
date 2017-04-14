@@ -90,3 +90,13 @@ func validateRequest(c *gin.Context, object interface{}) bool {
 	errResponse(c, 400, err)
 	return false
 }
+
+// Check if the error is a record not found
+// If so, return 404, else 500
+func dbNotFoundOrError(c *gin.Context, err error) {
+	if err == gorm.ErrRecordNotFound {
+		errResponse(c, 404, nil)
+	} else {
+		internalError(c, err)
+	}
+}

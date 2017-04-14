@@ -69,7 +69,6 @@ func (b *Build) HasFinished() bool {
 }
 
 type PostBuild struct {
-	UserID    int `json:"user_id" validate:"nonzero"`
 	ProjectID int `json:"project_id" validate:"nonzero"`
 }
 
@@ -77,7 +76,7 @@ type Simulation struct {
 	ID         int      `gorm:"primary_key" json:"id"`
 	User       User     `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     int      `json:"-"`
-	Project    *Project `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
+	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
 	ProjectID  int      `json:"-"`
 	BatchJobId int64    `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`

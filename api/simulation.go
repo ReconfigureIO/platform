@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -12,7 +13,10 @@ import (
 type Simulation struct{}
 
 func (b Simulation) Query(c *gin.Context) *gorm.DB {
-	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	user := auth.GetUser(c)
+	return db.Joins("join projects on projects.id = simulations.project_id").
+		Where("projects.user_id=?", user.ID).
+		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
 }
 
 // Get the first simulation by ID, 404 if it doesn't exist
@@ -25,11 +29,7 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	err := s.Query(c).First(&sim, id).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			errResponse(c, 404, nil)
-		} else {
-			internalError(c, err)
-		}
+		dbNotFoundOrError(c, err)
 		return sim, err
 	}
 	return sim, nil
@@ -43,8 +43,21 @@ func (s Simulation) Create(c *gin.Context) {
 		return
 	}
 
-	newSim := models.Simulation{ProjectID: post.ProjectID, Command: post.Command}
-	db.Create(&newSim)
+	// Ensure that the project exists, and the user has permissions for it
+	project := models.Project{}
+	err := Project{}.Query(c).First(&project, post.ProjectID).Error
+	if err != nil {
+		dbNotFoundOrError(c, err)
+		return
+	}
+
+	newSim := models.Simulation{Project: project, Command: post.Command}
+	err = db.Create(&newSim).Error
+	if err != nil {
+		internalError(c, err)
+		return
+	}
+
 	successResponse(c, 201, newSim)
 }
 

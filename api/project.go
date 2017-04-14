@@ -29,18 +29,14 @@ func (p Project) ById(c *gin.Context) (models.Project, error) {
 	err := p.Query(c).First(&project, id).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			errResponse(c, 404, nil)
-		} else {
-			internalError(c, err)
-		}
+		dbNotFoundOrError(c, err)
 		return project, err
 	}
 	return project, nil
 }
 
 func (p Project) Create(c *gin.Context) {
-	post := models.PostProject{}
+	post := PostProject{}
 	c.BindJSON(&post)
 	if !validateRequest(c, post) {
 		return
@@ -57,7 +53,7 @@ func (p Project) Update(c *gin.Context) {
 		return
 	}
 
-	post := models.PostProject{}
+	post := PostProject{}
 	c.BindJSON(&post)
 
 	if !validateRequest(c, post) {
