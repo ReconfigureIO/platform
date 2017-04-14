@@ -16,7 +16,10 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
 
 .PHONY: test install clean all
 
-all: $(TARGETS) dist-image/dist/main
+CMD_SOURCES := $(shell find cmd -name main.go)
+TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
+
+all: ${TARGETS} dist-image/dist/main
 
 test: fmt
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
@@ -27,9 +30,6 @@ install:
 dist-image/dist:
 	mkdir -p dist
 
-CMD_SOURCES := $(shell find cmd -name main.go)
-TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
-
 dist-image/dist/%: cmd/%/main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
 
@@ -37,7 +37,7 @@ dist-image/dist/main: main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
 
 clean:
-	rm -rf dist
+	rm -rf dist-image/dist
 
 image: all
 	docker build -t "reco-api:latest" dist-image
