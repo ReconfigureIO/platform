@@ -32,7 +32,7 @@ install:
 	glide install
 
 dist-image/dist:
-	$mkdir -p $@
+	@mkdir -p $@
 
 dist-image/dist/%: cmd/%/main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
