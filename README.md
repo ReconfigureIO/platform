@@ -7,6 +7,11 @@ The backend of Reconfigure.io
 2. run `docker-compose up` in the top level directory.
 3. `curl http://localhost:8080/ping`
 
+## Signing Up
+
+1. https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@api.reconfigure.io/
+2. Login with Github
+
 # API
 
 ## Schema
