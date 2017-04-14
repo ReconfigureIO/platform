@@ -1,7 +1,8 @@
 package auth
 
 import (
-	"encoding/base64"
+	"crypto/subtle"
+	"strconv"
 	"strings"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -37,27 +38,40 @@ func TokenAuth(db *gorm.DB) gin.HandlerFunc {
 		if exists {
 			return
 		}
-		header := strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Basic ")
-		bs, err := base64.StdEncoding.DecodeString(header)
-		if err != nil {
-			c.Error(err)
-			return
-		}
-		decoded := strings.SplitN(string(bs), ":", 2)
-		if len(decoded) == 0 {
-			return
-		}
-		token := models.AuthToken{Token: decoded[0]}
-		err = db.Preload("User").Where(token).First(&token).Error
-		if err == gorm.ErrRecordNotFound {
-			return
-		}
-		if err != nil {
-			c.Error(err)
 
+		username, pass, ok := c.Request.BasicAuth()
+		if !ok {
+			return
+		}
+
+		gh_id, err := strconv.Atoi(strings.TrimPrefix(username, "gh_"))
+		if err != nil {
+			return
+		}
+
+		user := models.User{GithubID: gh_id}
+		err = db.Where(user).First(&user).Error
+
+		if err == gorm.ErrRecordNotFound {
+			// Credentials doesn't match, we return 401 and abort handlers chain.
+			c.Header("WWW-Authenticate", "Authorization Required")
+			c.AbortWithStatus(401)
+			return
+		}
+
+		if err != nil {
+			c.Error(err)
 			c.AbortWithStatus(500)
 		}
-		c.Set(USER, token.User)
+
+		if !secureCompare(user.Token, pass) {
+			// Credentials doesn't match, we return 401 and abort handlers chain.
+			c.Header("WWW-Authenticate", "Authorization Required")
+			c.AbortWithStatus(401)
+			return
+		}
+
+		c.Set(USER, user)
 	}
 }
 
@@ -74,4 +88,12 @@ func RequiresUser() gin.HandlerFunc {
 func GetUser(c *gin.Context) models.User {
 	u := c.MustGet(USER)
 	return u.(models.User)
+}
+
+func secureCompare(given, actual string) bool {
+	if subtle.ConstantTimeEq(int32(len(given)), int32(len(actual))) == 1 {
+		return subtle.ConstantTimeCompare([]byte(given), []byte(actual)) == 1
+	}
+	/* Securely compare actual to itself to keep constant time, but always return false */
+	return subtle.ConstantTimeCompare([]byte(actual), []byte(actual)) == 1 && false
 }

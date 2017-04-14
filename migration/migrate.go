@@ -17,7 +17,6 @@ func MigrateSchema() {
 		panic("failed to connect database")
 	}
 	db.AutoMigrate(&models.User{})
-	db.AutoMigrate(&models.AuthToken{})
 	db.AutoMigrate(&models.Project{})
 	db.AutoMigrate(&models.Simulation{})
 	db.AutoMigrate(&models.Build{})

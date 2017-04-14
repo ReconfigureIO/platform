@@ -29,7 +29,9 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 				"logged_in": true,
 				"login":     user.GithubName,
 				"name":      user.Name,
+				"gh_id":     user.GithubID,
 				"email":     user.Email,
+				"token":     user.Token,
 			})
 		}
 	})
@@ -68,16 +70,14 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 
 	tokenRoutes := r.Group("/token", RequiresUser())
 	{
-		tokenRoutes.POST("", func(c *gin.Context) {
+		tokenRoutes.POST("/refresh", func(c *gin.Context) {
 			user := GetUser(c)
-			token := models.NewAuthToken()
-			token.User = user
-			err := db.Create(&token).Error
+			err := db.Model(&user).Update("token", models.NewUser().Token).Error
 			if err != nil {
 				c.AbortWithError(500, err)
 				return
 			}
-			c.JSON(200, token)
+			c.Redirect(http.StatusFound, "/")
 		})
 	}
 }

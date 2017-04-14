@@ -47,7 +47,7 @@ func (s *GithubService) GetOrCreateUser(context context.Context, accessToken str
 	}
 
 	q := s.db.Where(models.User{GithubID: user.GetID()})
-	err = q.Assign(u).FirstOrInit(&u).Error
+	err = q.Attrs(models.NewUser()).Assign(u).FirstOrInit(&u).Error
 	if err != nil {
 		return u, err
 	}

@@ -5,10 +5,18 @@
     <title>weboauth</title>
   </head>
   <body>
-    <h1>weboauth</h1>
+    <h1>Reconfigure.io</h1>
 
     {{ if .logged_in }}
-    Logged in: {{ .login }} ({{ .name }}) ({{ .email }})
+    Logged in as: {{ .login }}
+    <pre>
+    reco login gh_{{ .gh_id }} {{ .token }}
+    </pre>
+
+    <form method="POST" action="/token/refresh">
+    <input type="submit" value="Refresh Token">
+    </form>
+
     {{ else }}
     <a href="/oauth/signin">Sign in with GitHub</a>
     {{ end }}
