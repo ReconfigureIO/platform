@@ -31,15 +31,14 @@ pipeline {
         stage('install') {
             steps {
                 sh 'docker build -t "reco-api-builder:latest" build'
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" glide install'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make install'
             }
         }
 
         stage('build') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build -o ./api/main main.go'
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" go build -o ./api/deploy_schema ./cmd/deploy_schema/main.go'
-                sh 'docker build -t "reco-api:latest" api'
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make all'
+                sh 'make image'
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
             }
         }
