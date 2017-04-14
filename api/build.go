@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -12,7 +13,10 @@ import (
 type Build struct{}
 
 func (b Build) Query(c *gin.Context) *gorm.DB {
-	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	user := auth.GetUser(c)
+	return db.Joins("join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", user.ID).
+		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
 }
 
 // Get the first build by ID, 404 if it doesn't exist
@@ -25,11 +29,7 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 	err := b.Query(c).First(&build, id).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			errResponse(c, 404, nil)
-		} else {
-			internalError(c, err)
-		}
+		dbNotFoundOrError(c, err)
 		return build, err
 	}
 	return build, nil
@@ -64,6 +64,7 @@ func (b Build) Get(c *gin.Context) {
 	if err != nil {
 		return
 	}
+
 	successResponse(c, 200, build)
 }
 
@@ -74,7 +75,15 @@ func (b Build) Create(c *gin.Context) {
 	if !validateRequest(c, post) {
 		return
 	}
-	newBuild := models.Build{ProjectID: post.ProjectID}
+	// Ensure that the project exists, and the user has permissions for it
+	project := models.Project{}
+	err := Project{}.Query(c).First(&project, post.ProjectID).Error
+	if err != nil {
+		dbNotFoundOrError(c, err)
+		return
+	}
+
+	newBuild := models.Build{Project: project}
 	db.Create(&newBuild)
 	successResponse(c, 201, newBuild)
 }

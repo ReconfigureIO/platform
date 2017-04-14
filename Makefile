@@ -19,7 +19,11 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
 
-all: ${TARGETS} dist-image/dist/main
+TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
+TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
+
+
+all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
 test: fmt
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
@@ -28,13 +32,19 @@ install:
 	glide install
 
 dist-image/dist:
-	mkdir -p dist
+	@mkdir -p $@
 
 dist-image/dist/%: cmd/%/main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
 
 dist-image/dist/main: main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
+
+dist-image/dist/templates: dist-image/dist
+	@mkdir -p $@
+
+dist-image/dist/templates/%: templates/% | dist-image/dist/templates
+	@cp $< $@
 
 clean:
 	rm -rf dist-image/dist

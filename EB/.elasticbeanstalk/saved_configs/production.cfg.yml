@@ -20,6 +20,8 @@ OptionSettings:
       dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
     GIN_MODE: release
     PORT: '8080'
+    GITHUB_CLIENT_ID: 50089c1be8bb0e0106de
+    GITHUB_CLIENT_SECRET: 8055ae03ef97d09eb075d73c1f9f81174994ae01
   aws:elasticbeanstalk:command:
     BatchSize: '10'
     DeploymentPolicy: Rolling
