@@ -8,9 +8,17 @@ import (
 )
 
 func SetupRoutes(r gin.IRouter, db *gorm.DB) {
-	auth.Setup(r, db)
+	authMiddleware := gin.BasicAuth(gin.Accounts{
+		"reco-test": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+	})
+	webRoutes := r.Group("/", authMiddleware)
+
+	auth.Setup(webRoutes, db)
+
+	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
 	build := api.Build{}
-	buildRoute := r.Group("/builds", auth.RequiresUser())
+
+	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
 		buildRoute.POST("", build.Create)
@@ -21,7 +29,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	}
 
 	project := api.Project{}
-	projectRoute := r.Group("/projects", auth.RequiresUser())
+	projectRoute := apiRoutes.Group("/projects")
 	{
 		projectRoute.GET("", project.List)
 		projectRoute.POST("", project.Create)
@@ -30,7 +38,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	}
 
 	simulation := api.Simulation{}
-	simulationRoute := r.Group("/simulations", auth.RequiresUser())
+	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
 		simulationRoute.POST("", simulation.Create)

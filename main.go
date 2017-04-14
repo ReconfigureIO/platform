@@ -46,7 +46,7 @@ func main() {
 
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
-	r.Use(auth.SessionAuth(db), auth.TokenAuth(db))
+	r.Use(auth.SessionAuth(db))
 
 	r.LoadHTMLGlob("templates/*")
 

@@ -16,7 +16,7 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 
 	r.GET("/", func(c *gin.Context) {
 		session := sessions.Default(c)
-		user_id := session.Get("user_id")
+		user_id := session.Get(USER_ID)
 
 		if user_id == nil {
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{

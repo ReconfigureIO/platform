@@ -13,7 +13,7 @@ import (
 
 const (
 	USER_ID = "user_id"
-	USER    = "user"
+	USER    = "reco_user"
 )
 
 func SessionAuth(db *gorm.DB) gin.HandlerFunc {
