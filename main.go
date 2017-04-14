@@ -15,6 +15,11 @@ import (
 func setupDB() {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
+
+	if os.Getenv("GIN_MODE") != "release" {
+		db.LogMode(true)
+	}
+
 	if err != nil {
 		fmt.Println(err)
 		panic("failed to connect database")
