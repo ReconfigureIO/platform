@@ -6,12 +6,19 @@ import (
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/aws"
 	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
-type Simulation struct{}
+type Simulation struct {
+	Aws aws.ServiceInterface
+}
+
+func NewSimulation() Simulation {
+	return Simulation{Aws: awsSession}
+}
 
 func (b Simulation) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
@@ -75,7 +82,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", sim.ID)
 
-	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
+	s3Url, err := s.Aws.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		ErrResponse(c, 500, err)
 		return
@@ -83,7 +90,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/simulations/%d/events", c.Request.Host, sim.ID)
 
-	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
+	simId, err := s.Aws.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
 		ErrResponse(c, 500, err)
 		return
@@ -134,7 +141,7 @@ func (s Simulation) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(awsSession, c, &sim.BatchJob)
+	StreamBatchLogs(s.Aws, c, &sim.BatchJob)
 }
 
 func (s Simulation) CreateEvent(c *gin.Context) {
