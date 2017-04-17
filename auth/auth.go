@@ -39,12 +39,26 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 	authRoutes := r.Group("/oauth")
 	{
 
-		authRoutes.GET("/signin", func(c *gin.Context) {
-			url := gh.OauthConf.AuthCodeURL("hoge", oauth2.AccessTypeOnline)
-			c.Redirect(http.StatusMovedPermanently, url)
+		authRoutes.GET("/signin/:token", func(c *gin.Context) {
+			token := c.Param("token")
+			session := sessions.Default(c)
+			session.Set("invite_token", token)
+			session.Save()
+
+			url := gh.OauthConf.AuthCodeURL(token, oauth2.AccessTypeOnline)
+			c.Redirect(http.StatusFound, url)
 		})
 
 		authRoutes.GET("/callback", func(c *gin.Context) {
+			state_token := c.Query("state")
+			session := sessions.Default(c)
+			stored_token := session.Get("invite_token")
+
+			if state_token != stored_token {
+				c.String(http.StatusBadRequest, "Error: Invalid token")
+				return
+			}
+
 			code := c.Query("code")
 
 			token, err := gh.OauthConf.Exchange(oauth2.NoContext, code)
@@ -61,7 +75,6 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 				return
 			}
 
-			session := sessions.Default(c)
 			session.Set("user_id", user.ID)
 			session.Save()
 			c.Redirect(http.StatusMovedPermanently, "/")
