@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -29,7 +30,7 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 	err := b.Query(c).First(&build, id).Error
 
 	if err != nil {
-		dbNotFoundOrError(c, err)
+		NotFoundOrError(c, err)
 		return build, err
 	}
 	return build, nil
@@ -43,7 +44,7 @@ func (b Build) List(c *gin.Context) {
 	if project != "" {
 		projID, err := strconv.Atoi(project)
 		if err != nil {
-			errResponse(c, 400, nil)
+			ErrResponse(c, 400, nil)
 			return
 		}
 		q = q.Where(&models.Build{ProjectID: projID})
@@ -52,11 +53,11 @@ func (b Build) List(c *gin.Context) {
 	err := q.Find(&builds).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		internalError(c, err)
+		InternalError(c, err)
 		return
 	}
 
-	successResponse(c, 200, builds)
+	SuccessResponse(c, 200, builds)
 }
 
 func (b Build) Get(c *gin.Context) {
@@ -65,27 +66,27 @@ func (b Build) Get(c *gin.Context) {
 		return
 	}
 
-	successResponse(c, 200, build)
+	SuccessResponse(c, 200, build)
 }
 
 func (b Build) Create(c *gin.Context) {
 	post := models.PostBuild{}
 	c.BindJSON(&post)
 
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
 	// Ensure that the project exists, and the user has permissions for it
 	project := models.Project{}
 	err := Project{}.Query(c).First(&project, post.ProjectID).Error
 	if err != nil {
-		dbNotFoundOrError(c, err)
+		NotFoundOrError(c, err)
 		return
 	}
 
 	newBuild := models.Build{Project: project}
 	db.Create(&newBuild)
-	successResponse(c, 201, newBuild)
+	SuccessResponse(c, 201, newBuild)
 }
 
 func (b Build) Input(c *gin.Context) {
@@ -95,7 +96,7 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	if build.Status() != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
+		ErrResponse(c, 400, fmt.Sprintf("Build is '%s', not SUBMITTED", build.Status))
 		return
 	}
 
@@ -103,13 +104,13 @@ func (b Build) Input(c *gin.Context) {
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d/events", c.Request.Host, build.ID)
 	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	successResponse(c, 200, build)
+	SuccessResponse(c, 200, build)
 }
 
 func (b Build) Logs(c *gin.Context) {
@@ -143,14 +144,14 @@ func (b Build) CreateEvent(c *gin.Context) {
 	event := models.PostBatchEvent{}
 	c.BindJSON(&event)
 
-	if !validateRequest(c, event) {
+	if !ValidateRequest(c, event) {
 		return
 	}
 
 	currentStatus := build.Status()
 
 	if !models.CanTransition(currentStatus, event.Status) {
-		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
 		return
 	}
 
@@ -158,10 +159,10 @@ func (b Build) CreateEvent(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
-		errResponse(c, 500, nil)
+		ErrResponse(c, 500, nil)
 		return
 	}
 
-	successResponse(c, 200, newEvent)
+	SuccessResponse(c, 200, newEvent)
 
 }

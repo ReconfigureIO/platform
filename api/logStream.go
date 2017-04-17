@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/stream"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,7 +27,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 			time.Sleep(time.Second)
 			err := refresh()
 			if err != nil {
-				internalError(c, err)
+				InternalError(c, err)
 				return
 			}
 		}
@@ -34,7 +35,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 
 	logStream, err := awsSession.GetJobStream(b.BatchId)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 

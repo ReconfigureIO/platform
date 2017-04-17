@@ -17,8 +17,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-      - GITHUB_CLIENT_ID
-      - GITHUB_CLIENT_SECRET
+      - GITHUB_CLIENT_ID=c405f7d899fa411aaa69
+      - GITHUB_CLIENT_SECRET=0105d6cd1bea780f5ecf651351f2579277f80b14
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=8080
       - RECO_PLATFORM_MIGRATE=1
