@@ -1,5 +1,7 @@
 package aws
 
+//go:generate mockgen -source=aws.go -package=aws -destination=aws_mock.go
+
 import (
 	"bytes"
 	"errors"
