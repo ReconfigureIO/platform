@@ -4,6 +4,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 
 	"github.com/ReconfigureIO/platform/models"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -29,7 +30,7 @@ func (p Project) ById(c *gin.Context) (models.Project, error) {
 	err := p.Query(c).First(&project, id).Error
 
 	if err != nil {
-		dbNotFoundOrError(c, err)
+		NotFoundOrError(c, err)
 		return project, err
 	}
 	return project, nil
@@ -38,13 +39,13 @@ func (p Project) ById(c *gin.Context) (models.Project, error) {
 func (p Project) Create(c *gin.Context) {
 	post := PostProject{}
 	c.BindJSON(&post)
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
 	user := auth.GetUser(c)
 	newProject := models.Project{UserID: user.ID, Name: post.Name}
 	db.Create(&newProject)
-	successResponse(c, 201, newProject)
+	SuccessResponse(c, 201, newProject)
 }
 
 func (p Project) Update(c *gin.Context) {
@@ -56,23 +57,23 @@ func (p Project) Update(c *gin.Context) {
 	post := PostProject{}
 	c.BindJSON(&post)
 
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
 
 	db.Model(&project).Updates(post)
-	successResponse(c, 200, project)
+	SuccessResponse(c, 200, project)
 }
 
 func (p Project) List(c *gin.Context) {
 	projects := []models.Project{}
 	err := p.Query(c).Find(&projects).Error
 	if err != nil {
-		internalError(c, err)
+		InternalError(c, err)
 		return
 	}
 
-	successResponse(c, 200, projects)
+	SuccessResponse(c, 200, projects)
 }
 
 func (p Project) Get(c *gin.Context) {

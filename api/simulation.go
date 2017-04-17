@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -29,7 +30,7 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	err := s.Query(c).First(&sim, id).Error
 
 	if err != nil {
-		dbNotFoundOrError(c, err)
+		NotFoundOrError(c, err)
 		return sim, err
 	}
 	return sim, nil
@@ -39,7 +40,7 @@ func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
 	c.BindJSON(&post)
 
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
 
@@ -47,18 +48,18 @@ func (s Simulation) Create(c *gin.Context) {
 	project := models.Project{}
 	err := Project{}.Query(c).First(&project, post.ProjectID).Error
 	if err != nil {
-		dbNotFoundOrError(c, err)
+		NotFoundOrError(c, err)
 		return
 	}
 
 	newSim := models.Simulation{Project: project, Command: post.Command}
 	err = db.Create(&newSim).Error
 	if err != nil {
-		internalError(c, err)
+		InternalError(c, err)
 		return
 	}
 
-	successResponse(c, 201, newSim)
+	SuccessResponse(c, 201, newSim)
 }
 
 func (s Simulation) Input(c *gin.Context) {
@@ -68,7 +69,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	if sim.Status() != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
+		ErrResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
 		return
 	}
 
@@ -76,7 +77,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 
@@ -84,7 +85,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	successResponse(c, 200, sim)
+	SuccessResponse(c, 200, sim)
 }
 
 func (s Simulation) List(c *gin.Context) {
@@ -112,11 +113,11 @@ func (s Simulation) List(c *gin.Context) {
 	err := q.Find(&simulations).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		internalError(c, err)
+		InternalError(c, err)
 		return
 	}
 
-	successResponse(c, 200, simulations)
+	SuccessResponse(c, 200, simulations)
 }
 
 func (s Simulation) Get(c *gin.Context) {
@@ -124,7 +125,7 @@ func (s Simulation) Get(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	successResponse(c, 200, sim)
+	SuccessResponse(c, 200, sim)
 }
 
 func (s Simulation) Logs(c *gin.Context) {
@@ -145,14 +146,14 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	event := models.PostBatchEvent{}
 	c.BindJSON(&event)
 
-	if !validateRequest(c, event) {
+	if !ValidateRequest(c, event) {
 		return
 	}
 
 	currentStatus := sim.Status()
 
 	if !models.CanTransition(currentStatus, event.Status) {
-		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
 		return
 	}
 
@@ -160,9 +161,9 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
-		errResponse(c, 500, nil)
+		ErrResponse(c, 500, nil)
 		return
 	}
 
-	successResponse(c, 200, newEvent)
+	SuccessResponse(c, 200, newEvent)
 }
