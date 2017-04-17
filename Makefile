@@ -25,7 +25,7 @@ TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLAT
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
-test: fmt
+test:
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 install:
