@@ -54,3 +54,38 @@ func (s *GithubService) GetOrCreateUser(context context.Context, accessToken str
 	s.db.Save(&u)
 	return u, err
 }
+
+// Given an access token, fetch the user data from github, and get an existing user, and update it with the latest info.
+func (s *GithubService) GetUser(context context.Context, accessToken string) (models.User, error) {
+	oauthClient := s.OauthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: accessToken})
+	client := github.NewClient(oauthClient)
+
+	user, _, err := client.Users.Get(context, "")
+
+	if err != nil {
+		return models.User{}, err
+	}
+
+	u := models.User{
+		GithubID:          user.GetID(),
+		GithubName:        user.GetLogin(),
+		Name:              user.GetName(),
+		Email:             user.GetEmail(),
+		GithubAccessToken: accessToken,
+	}
+
+	old_u := models.User{}
+
+	q := s.db.Where(models.User{GithubID: user.GetID()})
+	err = q.First(&old_u).Error
+	if err != nil {
+		return u, err
+	}
+
+	err = s.db.Model(&old_u).Update(u).Error
+	if err != nil {
+		return u, err
+	}
+
+	return old_u, err
+}
