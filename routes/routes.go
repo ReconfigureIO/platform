@@ -8,12 +8,15 @@ import (
 )
 
 func SetupRoutes(r gin.IRouter, db *gorm.DB) {
-	authMiddleware := gin.BasicAuth(gin.Accounts{
-		"reco-test": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
-	})
-	webRoutes := r.Group("/", authMiddleware)
+	// Setup index & signup flow
+	auth.Setup(r, db)
 
-	auth.Setup(webRoutes, db)
+	// Setup admin
+	authMiddleware := gin.BasicAuth(gin.Accounts{
+		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+	})
+	admin := r.Group("/admin", authMiddleware)
+	auth.SetupAdmin(admin, db)
 
 	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
 	build := api.Build{}

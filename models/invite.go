@@ -6,8 +6,8 @@ import (
 )
 
 type InviteToken struct {
-	Token     string `gorm:"type:varchar(128);primary_key"`
-	Timestamp time.Time
+	Token     string    `gorm:"type:varchar(128);primary_key" json:"token"`
+	Timestamp time.Time `json:"created_at"`
 }
 
 func NewInviteToken() InviteToken {
