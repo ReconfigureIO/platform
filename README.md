@@ -7,6 +7,18 @@ The backend of Reconfigure.io
 2. run `docker-compose up` in the top level directory.
 3. `curl http://localhost:8080/ping`
 
+## Creating an invite token
+
+```
+curl -v -XPOST https://admin:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@api.reconfigure.io/admin/invites
+{"value":{"token":"Jroy3dkYHATiDtU3cPpJQWYEyvkGSasIXnXPHgMxI62PliENinA4lUAwwi051UZl","created_at":"2017-04-17T17:34:04.768483806Z"}}
+```
+
+## Signing Up
+
+1. Visit https://api.reconfigure.io/oauth/signin/<invite token>
+2. Login with Github
+
 # API
 
 ## Schema

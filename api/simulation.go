@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -12,7 +14,10 @@ import (
 type Simulation struct{}
 
 func (b Simulation) Query(c *gin.Context) *gorm.DB {
-	return db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	user := auth.GetUser(c)
+	return db.Joins("join projects on projects.id = simulations.project_id").
+		Where("projects.user_id=?", user.ID).
+		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
 }
 
 // Get the first simulation by ID, 404 if it doesn't exist
@@ -25,11 +30,7 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	err := s.Query(c).First(&sim, id).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			errResponse(c, 404, nil)
-		} else {
-			internalError(c, err)
-		}
+		NotFoundOrError(c, err)
 		return sim, err
 	}
 	return sim, nil
@@ -39,13 +40,26 @@ func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
 	c.BindJSON(&post)
 
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
 
-	newSim := models.Simulation{ProjectID: post.ProjectID, Command: post.Command}
-	db.Create(&newSim)
-	successResponse(c, 201, newSim)
+	// Ensure that the project exists, and the user has permissions for it
+	project := models.Project{}
+	err := Project{}.Query(c).First(&project, post.ProjectID).Error
+	if err != nil {
+		NotFoundOrError(c, err)
+		return
+	}
+
+	newSim := models.Simulation{Project: project, Command: post.Command}
+	err = db.Create(&newSim).Error
+	if err != nil {
+		InternalError(c, err)
+		return
+	}
+
+	SuccessResponse(c, 201, newSim)
 }
 
 func (s Simulation) Input(c *gin.Context) {
@@ -55,7 +69,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	if sim.Status() != "SUBMITTED" {
-		errResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
+		ErrResponse(c, 400, fmt.Sprintf("Simulation is '%s', not SUBMITTED", sim.Status))
 		return
 	}
 
@@ -63,7 +77,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 
@@ -71,7 +85,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
-		errResponse(c, 500, err)
+		ErrResponse(c, 500, err)
 		return
 	}
 
@@ -84,7 +98,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	successResponse(c, 200, sim)
+	SuccessResponse(c, 200, sim)
 }
 
 func (s Simulation) List(c *gin.Context) {
@@ -99,11 +113,11 @@ func (s Simulation) List(c *gin.Context) {
 	err := q.Find(&simulations).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		internalError(c, err)
+		InternalError(c, err)
 		return
 	}
 
-	successResponse(c, 200, simulations)
+	SuccessResponse(c, 200, simulations)
 }
 
 func (s Simulation) Get(c *gin.Context) {
@@ -111,7 +125,7 @@ func (s Simulation) Get(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	successResponse(c, 200, sim)
+	SuccessResponse(c, 200, sim)
 }
 
 func (s Simulation) Logs(c *gin.Context) {
@@ -132,14 +146,14 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	event := models.PostBatchEvent{}
 	c.BindJSON(&event)
 
-	if !validateRequest(c, event) {
+	if !ValidateRequest(c, event) {
 		return
 	}
 
 	currentStatus := sim.Status()
 
 	if !models.CanTransition(currentStatus, event.Status) {
-		errResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
 		return
 	}
 
@@ -147,9 +161,9 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
-		errResponse(c, 500, nil)
+		ErrResponse(c, 500, nil)
 		return
 	}
 
-	successResponse(c, 200, newEvent)
+	SuccessResponse(c, 200, newEvent)
 }

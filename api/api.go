@@ -2,14 +2,12 @@ package api
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/ReconfigureIO/platform/service/aws"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	validator "gopkg.in/validator.v2"
 )
 
 var (
@@ -24,19 +22,6 @@ var (
 	})
 )
 
-type (
-	// M is a convenience wrapper for a map.
-	M map[string]interface{}
-
-	apiError struct {
-		Error string `json:"error"`
-	}
-
-	apiSuccess struct {
-		Value interface{} `json:"value"`
-	}
-)
-
 // DB sets the database to use for the API.
 func DB(d *gorm.DB) {
 	db = d
@@ -49,27 +34,11 @@ func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 	if err != nil {
 		tx.Rollback()
 		c.Error(err)
-		errResponse(c, 500, nil)
+		ErrResponse(c, 500, nil)
 	} else {
 		tx.Commit()
 	}
 	return err
-}
-
-func errResponse(c *gin.Context, code int, err interface{}) {
-	if err == nil {
-		err = http.StatusText(code)
-	}
-	c.JSON(code, apiError{Error: fmt.Sprint(err)})
-}
-
-func internalError(c *gin.Context, err error) {
-	c.Error(err)
-	errResponse(c, 500, nil)
-}
-
-func successResponse(c *gin.Context, code int, value interface{}) {
-	c.JSON(code, apiSuccess{Value: value})
 }
 
 func bindId(c *gin.Context, id *int) bool {
@@ -78,15 +47,6 @@ func bindId(c *gin.Context, id *int) bool {
 		*id = i
 		return true
 	}
-	errResponse(c, 404, nil)
-	return false
-}
-
-func validateRequest(c *gin.Context, object interface{}) bool {
-	err := validator.Validate(object)
-	if err == nil {
-		return true
-	}
-	errResponse(c, 400, err)
+	ErrResponse(c, 404, nil)
 	return false
 }

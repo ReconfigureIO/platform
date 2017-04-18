@@ -2,12 +2,26 @@ package routes
 
 import (
 	"github.com/ReconfigureIO/platform/api"
+	"github.com/ReconfigureIO/platform/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
-func SetupRoutes(r *gin.RouterGroup) {
+func SetupRoutes(r gin.IRouter, db *gorm.DB) {
+	// Setup index & signup flow
+	auth.Setup(r, db)
+
+	// Setup admin
+	authMiddleware := gin.BasicAuth(gin.Accounts{
+		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+	})
+	admin := r.Group("/admin", authMiddleware)
+	auth.SetupAdmin(admin, db)
+
+	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
 	build := api.Build{}
-	buildRoute := r.Group("/builds")
+
+	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
 		buildRoute.POST("", build.Create)
@@ -18,7 +32,7 @@ func SetupRoutes(r *gin.RouterGroup) {
 	}
 
 	project := api.Project{}
-	projectRoute := r.Group("/projects")
+	projectRoute := apiRoutes.Group("/projects")
 	{
 		projectRoute.GET("", project.List)
 		projectRoute.POST("", project.Create)
@@ -27,7 +41,7 @@ func SetupRoutes(r *gin.RouterGroup) {
 	}
 
 	simulation := api.Simulation{}
-	simulationRoute := r.Group("/simulations")
+	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
 		simulationRoute.POST("", simulation.Create)

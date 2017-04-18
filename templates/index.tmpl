@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reconfigure.io</title>
+  </head>
+  <body>
+    <h1>Reconfigure.io</h1>
+
+    {{ if .logged_in }}
+    Logged in as: {{ .login }}
+    <pre>
+    reco login gh_{{ .gh_id }} {{ .token }}
+    </pre>
+
+    <form method="POST" action="/token/refresh">
+    <input type="submit" value="Refresh Token">
+    </form>
+
+    {{ else }}
+    <a href="/oauth/signin">Sign in with GitHub</a>
+    {{ end }}
+  </body>
+</html>

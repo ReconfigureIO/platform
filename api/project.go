@@ -1,51 +1,86 @@
 package api
 
 import (
+	"github.com/ReconfigureIO/platform/auth"
+
 	"github.com/ReconfigureIO/platform/models"
+	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 type Project struct{}
 
+type PostProject struct {
+	Name string `json:"name"`
+}
+
+func (p Project) Query(c *gin.Context) *gorm.DB {
+	user := auth.GetUser(c)
+	return db.Where("projects.user_id=?", user.ID)
+}
+
+// Get the first build by ID, 404 if it doesn't exist
+func (p Project) ById(c *gin.Context) (models.Project, error) {
+	project := models.Project{}
+	var id int
+	if !bindId(c, &id) {
+		return project, errNotFound
+	}
+	err := p.Query(c).First(&project, id).Error
+
+	if err != nil {
+		NotFoundOrError(c, err)
+		return project, err
+	}
+	return project, nil
+}
+
 func (p Project) Create(c *gin.Context) {
-	post := models.PostProject{}
+	post := PostProject{}
 	c.BindJSON(&post)
-	if !validateRequest(c, post) {
+	if !ValidateRequest(c, post) {
 		return
 	}
-	newProject := models.Project{UserID: post.UserID, Name: post.Name}
+	user := auth.GetUser(c)
+	newProject := models.Project{UserID: user.ID, Name: post.Name}
 	db.Create(&newProject)
-	successResponse(c, 201, newProject)
+	SuccessResponse(c, 201, newProject)
 }
 
 func (p Project) Update(c *gin.Context) {
-	post := models.PostProject{}
+	project, err := p.ById(c)
+	if err != nil {
+		return
+	}
+
+	post := PostProject{}
 	c.BindJSON(&post)
-	var id int
-	if !bindId(c, &id) {
+
+	if !ValidateRequest(c, post) {
 		return
 	}
-	if !validateRequest(c, post) {
-		return
-	}
-	outputproj := models.Project{}
-	db.Where(&models.Project{ID: id}).First(&outputproj)
-	db.Model(&outputproj).Updates(models.Project{UserID: post.UserID, Name: post.Name})
-	successResponse(c, 200, outputproj)
+
+	db.Model(&project).Updates(post)
+	SuccessResponse(c, 200, project)
 }
 
 func (p Project) List(c *gin.Context) {
 	projects := []models.Project{}
-	db.Find(&projects)
-	successResponse(c, 200, projects)
+	err := p.Query(c).Find(&projects).Error
+	if err != nil {
+		InternalError(c, err)
+		return
+	}
+
+	SuccessResponse(c, 200, projects)
 }
 
 func (p Project) Get(c *gin.Context) {
-	outputproj := []models.Project{}
-	var id int
-	if !bindId(c, &id) {
+	project, err := p.ById(c)
+	if err != nil {
 		return
 	}
-	db.Where(&models.Project{ID: id}).First(&outputproj)
-	c.JSON(200, outputproj)
+
+	c.JSON(200, project)
 }

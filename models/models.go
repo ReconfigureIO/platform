@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
+	"github.com/dchest/uniuri"
 	"time"
 )
 
@@ -15,10 +15,17 @@ const (
 )
 
 type User struct {
-	ID         int         `gorm:"primary_key" json:"id"`
-	GithubID   string      `json:"github_id"`
-	Email      string      `gorm:"type:varchar(100);unique_index" json:"email"`
-	AuthTokens []AuthToken `json:"auth_token"` //User has many AuthTokens
+	ID                int    `gorm:"primary_key" json:"id"`
+	GithubID          int    `gorm:"unique_index" json:"-"`
+	GithubName        string `json:"github_name"`
+	Name              string `json:"name"`
+	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
+	GithubAccessToken string `json:"-"`
+	Token             string `json:"-"`
+}
+
+func NewUser() User {
+	return User{Token: uniuri.NewLen(64)}
 }
 
 type Project struct {
@@ -28,17 +35,6 @@ type Project struct {
 	Name        string  `json:"name"`
 	Builds      []Build `json:"builds,omitempty" gorm:"ForeignKey:ProjectID"`
 	Simulations []Build `json:"simulations,omitempty" gorm:"ForeignKey:ProjectID"`
-}
-
-type PostProject struct {
-	UserID int    `json:"user_id"`
-	Name   string `json:"name"`
-}
-
-type AuthToken struct {
-	gorm.Model
-	Token  string `json:"token"`
-	UserID int    `json:"user_id"`
 }
 
 type Build struct {
@@ -73,7 +69,6 @@ func (b *Build) HasFinished() bool {
 }
 
 type PostBuild struct {
-	UserID    int `json:"user_id" validate:"nonzero"`
 	ProjectID int `json:"project_id" validate:"nonzero"`
 }
 
@@ -81,7 +76,7 @@ type Simulation struct {
 	ID         int      `gorm:"primary_key" json:"id"`
 	User       User     `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     int      `json:"-"`
-	Project    *Project `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
+	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
 	ProjectID  int      `json:"-"`
 	BatchJobId int64    `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
