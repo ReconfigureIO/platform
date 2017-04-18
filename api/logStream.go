@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"log"
 	"time"
 
@@ -12,19 +14,35 @@ import (
 )
 
 func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	w := c.Writer
+
+	// cancel whenever we get a close
+	go func() {
+		<-w.CloseNotify()
+		cancel()
+	}()
+
 	refresh := func() error {
 		return db.Model(&b).Association("Events").Find(&b.Events).Error
 	}
 
-	w := c.Writer
-	clientGone := w.CloseNotify()
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	refreshTicker := time.NewTicker(10 * time.Second)
+	defer refreshTicker.Stop()
 
 	for !b.HasStarted() {
 		select {
-		case <-clientGone:
+		case <-ctx.Done():
 			return
-		default:
-			time.Sleep(time.Second)
+		case <-ticker.C:
+			bytes.NewBufferString("\n").WriteTo(w)
+			w.Flush()
+		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
 				InternalError(c, err)
@@ -45,15 +63,19 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 
 	go func() {
 		for !b.HasFinished() {
-			time.Sleep(10 * time.Second)
-			err := refresh()
-			if err != nil {
-				break
+			select {
+			case <-ctx.Done():
+				return
+			case <-refreshTicker.C:
+				err := refresh()
+				if err != nil {
+					break
+				}
 			}
 		}
 		lstream.Ended = true
 	}()
 
-	stream.Stream(lstream, c)
+	stream.Stream(lstream, c, ctx)
 
 }
