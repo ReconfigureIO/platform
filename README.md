@@ -234,6 +234,11 @@ Stream the logs of an individual deployment.
 
 <TODO> examples
 
+#### POST /deployments/{id}/events
+Add an event to the event log of a deployment, allows for moving between states.
+
+<TODO> examples
+
 ## What to expect
 In the event of an invalid ID we can expect to receive a `404` response from the API:
 

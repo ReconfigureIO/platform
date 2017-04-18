@@ -154,7 +154,7 @@ func (s *Service) HaltJob(batchId string) error {
 	return err
 }
 
-func (s *Service) RunDeployment(inputArtifactUrl string, command string) (string, error) {
+func (s *Service) RunDeployment(command string) (string, error) {
 
 	return "This function does nothing yet", nil
 }

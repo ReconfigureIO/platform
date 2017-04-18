@@ -99,13 +99,11 @@ type PostSimulation struct {
 }
 
 type Deployment struct {
-	ID           int    `gorm:"primary_key" json:"id"`
-	Build        Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID      int    `json:"-"`
-	Command      string `json:"command"`
-	OutputStream string `json:"output_stream"`
-	BatchId      string `json:"-"`
-	Status       string `gorm:"default:'SUBMITTED'" json:"status"`
+	ID      int    `gorm:"primary_key" json:"id"`
+	Build   Build  `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID int    `json:"-"`
+	Command string `json:"command"`
+	Status  string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 func (d *Deployment) HasStarted() bool {
