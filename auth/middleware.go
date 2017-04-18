@@ -90,6 +90,15 @@ func GetUser(c *gin.Context) models.User {
 	return u.(models.User)
 }
 
+func CheckUser(c *gin.Context) (models.User, bool) {
+	user := models.User{}
+	u, exists := c.Get(USER)
+	if exists {
+		user = u.(models.User)
+	}
+	return user, exists
+}
+
 func secureCompare(given, actual string) bool {
 	if subtle.ConstantTimeEq(int32(len(given)), int32(len(actual))) == 1 {
 		return subtle.ConstantTimeCompare([]byte(given), []byte(actual)) == 1
