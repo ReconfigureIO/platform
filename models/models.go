@@ -38,11 +38,12 @@ type Project struct {
 }
 
 type Build struct {
-	ID         int      `gorm:"primary_key" json:"id"`
-	Project    Project  `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID  int      `json:"-"`
-	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
-	BatchJobId int64    `json:"-"`
+	ID          int          `gorm:"primary_key" json:"id"`
+	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID   int          `json:"-"`
+	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
+	BatchJobId  int64        `json:"-"`
+	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
 
 type PostBatchEvent struct {
@@ -98,14 +99,13 @@ type PostSimulation struct {
 }
 
 type Deployment struct {
-	ID            int    `gorm:"primary_key" json:"id"`
-	Build         Build  `json:"build"`
-	BuildID       int    `json:"build_id"`
-	InputArtifact string `json:"input_artifact"`
-	Command       string `json:"command"`
-	OutputStream  string `json:"output_stream"`
-	BatchId       string `json:"-"`
-	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+	ID           int    `gorm:"primary_key" json:"id"`
+	Build        Build  `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID      int    `json:"-"`
+	Command      string `json:"command"`
+	OutputStream string `json:"output_stream"`
+	BatchId      string `json:"-"`
+	Status       string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 func (d *Deployment) HasStarted() bool {
@@ -117,11 +117,10 @@ func (d *Deployment) HasFinished() bool {
 }
 
 type PostDeployment struct {
-	BuildID       int    `json:"build_id" validate:"nonzero"`
-	InputArtifact string `json:"input_artifact"`
-	Command       string `json:"command" validate:"nonzero"`
-	OutputStream  string `json:"output_stream"`
-	Status        string `gorm:"default:'SUBMITTED'" json:"status"`
+	BuildID      int    `json:"build_id" validate:"nonzero"`
+	Command      string `json:"command" validate:"nonzero"`
+	OutputStream string `json:"output_stream"`
+	Status       string `gorm:"default:'SUBMITTED'" json:"status"`
 }
 
 var statuses = struct {
