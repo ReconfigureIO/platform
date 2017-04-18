@@ -43,6 +43,7 @@ type Build struct {
 	ProjectID  int      `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobId int64    `json:"-"`
+	Token      string   `json:"-"`
 }
 
 type PostBatchEvent struct {

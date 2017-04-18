@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -34,6 +35,17 @@ func (b Build) ById(c *gin.Context) (models.Build, error) {
 		return build, err
 	}
 	return build, nil
+}
+
+func (b Build) UnauthOne(c *gin.Context) (models.Build, error) {
+	build := models.Build{}
+	var id int
+	if !bindId(c, &id) {
+		return build, errNotFound
+	}
+	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	err := q.First(&build, id).Error
+	return build, err
 }
 
 func (b Build) List(c *gin.Context) {
@@ -84,7 +96,7 @@ func (b Build) Create(c *gin.Context) {
 		return
 	}
 
-	newBuild := models.Build{Project: project}
+	newBuild := models.Build{Project: project, Token: uniuri.NewLen(64)}
 	db.Create(&newBuild)
 	SuccessResponse(c, 201, newBuild)
 }
@@ -107,7 +119,7 @@ func (b Build) Input(c *gin.Context) {
 		ErrResponse(c, 500, err)
 		return
 	}
-	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/builds/%d/events", c.Request.Host, build.ID)
+	callbackUrl := fmt.Sprintf("https://%s/builds/%d/events?token=%s", c.Request.Host, build.ID, build.Token)
 	buildId, err := awsSession.RunBuild(s3Url, callbackUrl)
 	if err != nil {
 		ErrResponse(c, 500, err)
@@ -135,9 +147,26 @@ func (b Build) Logs(c *gin.Context) {
 	StreamBatchLogs(awsSession, c, &build.BatchJob)
 }
 
+func (b Build) CanPostEvent(c *gin.Context, build models.Build) bool {
+	user, loggedIn := auth.CheckUser(c)
+	if loggedIn && build.Project.UserID == user.ID {
+		return true
+	}
+	token, exists := c.GetQuery("token")
+	if exists && build.Token == token {
+		return true
+	}
+	return false
+}
+
 func (b Build) CreateEvent(c *gin.Context) {
-	build, err := b.ById(c)
+	build, err := b.UnauthOne(c)
 	if err != nil {
+		return
+	}
+
+	if !b.CanPostEvent(c, build) {
+		c.AbortWithStatus(403)
 		return
 	}
 
