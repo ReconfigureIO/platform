@@ -80,6 +80,7 @@ type Simulation struct {
 	ProjectID  int      `json:"-"`
 	BatchJobId int64    `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
+	Token      string   `json:"-"`
 	Command    string   `json:"command"`
 }
 

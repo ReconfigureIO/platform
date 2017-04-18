@@ -48,6 +48,10 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
-		simulationRoute.POST("/:id/events", simulation.CreateEvent)
+	}
+
+	eventRoutes := r.Group("", auth.TokenAuth(db))
+	{
+		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
 	}
 }
