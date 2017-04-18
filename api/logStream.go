@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"io"
 	"log"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
 	w := c.Writer
@@ -35,21 +36,24 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 	refreshTicker := time.NewTicker(10 * time.Second)
 	defer refreshTicker.Stop()
 
-	for !b.HasStarted() {
+	stream.StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+		if b.HasStarted() {
+			return false
+		}
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		case <-ticker.C:
 			bytes.NewBufferString("\n").WriteTo(w)
-			w.Flush()
 		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
 				InternalError(c, err)
-				return
+				return false
 			}
 		}
-	}
+		return true
+	})
 
 	logStream, err := awsSession.GetJobStream(b.BatchId)
 	if err != nil {

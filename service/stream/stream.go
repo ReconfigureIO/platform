@@ -10,18 +10,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func StreamWithContext(ctx context.Context, c *gin.Context, step func(ctx context.Context, w io.Writer) bool) {
+	for {
+		keepGoing := step(ctx, c.Writer)
+		c.Writer.Flush()
+		if !keepGoing {
+			return
+		}
+	}
+}
+
 // start a stream of cloudwatch log events, and stream the messages to
 // the client until it finishes
 func Stream(stream *aws.Stream, c *gin.Context, ctx context.Context) {
-	defer stream.Stop()
 	go func() {
-		err := stream.Run()
+		err := stream.Run(ctx)
 		if err != nil {
 			c.Error(err)
 		}
 	}()
 
-	c.Stream(func(w io.Writer) bool {
+	StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
 

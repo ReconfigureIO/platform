@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"time"
@@ -191,23 +192,17 @@ type Stream struct {
 	session *Service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
-	stop    chan struct{}
 	Ended   bool
 }
 
 func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
-	stop := make(chan struct{}, 1)
 
-	ret := Stream{s, stream, logs, stop, false}
+	ret := Stream{s, stream, logs, false}
 	return &ret
 }
 
-func (stream *Stream) Stop() {
-	stream.stop <- struct{}{}
-}
-
-func (stream *Stream) Run() error {
+func (stream *Stream) Run(ctx context.Context) error {
 	cwLogs := cloudwatchlogs.New(stream.session.session)
 
 	params := (&cloudwatchlogs.GetLogEventsInput{}).
@@ -218,8 +213,10 @@ func (stream *Stream) Run() error {
 	defer func() {
 		close(stream.Events)
 	}()
-	err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
+	err := cwLogs.GetLogEventsPagesWithContext(ctx, params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 		select {
+		case <-ctx.Done():
+			return false
 		case stream.Events <- page:
 			if lastPage || (len(page.Events) == 0 && stream.Ended) {
 				return false
@@ -228,8 +225,6 @@ func (stream *Stream) Run() error {
 				time.Sleep(10 * time.Second)
 			}
 			return true
-		case <-stream.stop:
-			return false
 		}
 	})
 	return err
