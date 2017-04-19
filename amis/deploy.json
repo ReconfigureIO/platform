@@ -1,0 +1,38 @@
+{
+    "builders": [{
+        "type": "amazon-ebs",
+        "region": "us-east-1",
+        "source_ami": "ami-22ce4934",
+        "instance_type": "t2.medium",
+        "ssh_username": "ec2-user",
+        "ami_name": "platform-2017.3 {{timestamp}}",
+        "tags": {
+            "service": "platform",
+            "version": "2017.3",
+            "build": "latest"
+        }
+    }],
+
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "amis/deploy.conf",
+            "destination": "/tmp/deploy.conf"
+        },
+        {
+            "type": "file",
+            "source": "amis/deploy.sh",
+            "destination": "/tmp/deploy.sh"
+        },
+        {
+        	"type": "shell",
+        	"inline": [
+                "sudo cp /tmp/deploy.conf /etc/init/reco.conf",
+                "sudo mkdir -p /opt/reco",
+                "sudo cp /tmp/deploy.sh /opt/reco/deploy.sh",
+                "sudo chmod +x /opt/reco/deploy.sh",
+                "sudo yum install -y docker jq"
+            ]
+        }
+    ]
+}
