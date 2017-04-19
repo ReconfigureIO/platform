@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/ReconfigureIO/platform/auth"
@@ -14,9 +15,10 @@ type Deployment struct{}
 
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
-	return db.Joins("left join builds on builds.project_id = projects.id").Joins("left join deployments on deployments.build_id = builds.id").
-		Where("projects.user_id=?", user.ID).
-		Preload("Project")
+	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", user.ID)
+	//.
+	//Preload("Project")
 }
 
 // Get the first deployment by ID, 404 if it doesn't exist
@@ -64,6 +66,9 @@ func (d Deployment) Create(c *gin.Context) {
 		InternalError(c, err)
 		return
 	}
+	fmt.Println(newDep.Command)
+	fmt.Println(newDep.BuildID)
+
 	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
 	if err != nil {
 		ErrResponse(c, 500, err)
@@ -99,5 +104,11 @@ func (d Deployment) Get(c *gin.Context) {
 }
 
 func (d Deployment) Logs(c *gin.Context) {
-	SuccessResponse(c, 200, "This function does nothing yet")
+	targetdep, err := d.ById(c)
+	logs, err := mockDeploy.GetJobStream(targetdep.ID)
+	if err != nil {
+		ErrResponse(c, 500, err)
+		return
+	}
+	SuccessResponse(c, 200, logs)
 }

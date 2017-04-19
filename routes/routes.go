@@ -52,7 +52,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	}
 
 	deployment := api.Deployment{}
-	deploymentRoute := r.Group("/deployments")
+	deploymentRoute := apiRoutes.Group("/deployments")
 	{
 		deploymentRoute.GET("", deployment.List)
 		deploymentRoute.POST("", deployment.Create)

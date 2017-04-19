@@ -22,15 +22,15 @@ func (s *Service) RunDeployment(command string, buildID int) (string, error) {
 	return "This function does nothing yet", nil
 }
 
-func (s *Service) HaltDep(id string) error {
-	return err
+func (s *Service) HaltDep(id int) error {
+	return nil
 }
 
-func (s *Service) GetDepDetail(id string) (string, error) {
+func (s *Service) GetDepDetail(id int) (string, error) {
 	return "imaginary", nil
 }
 
-func (s *Service) GetJobStream(id string) (string, error) {
+func (s *Service) GetJobStream(id int) (string, error) {
 
 	return "doing doing deployed", nil
 }
