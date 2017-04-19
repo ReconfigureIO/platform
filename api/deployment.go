@@ -16,10 +16,10 @@ func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
 	return db.Joins("left join builds on builds.project_id = projects.id").Joins("left join deployments on deployments.build_id = builds.id").
 		Where("projects.user_id=?", user.ID).
-		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+		Preload("Project")
 }
 
-// Get the first simulation by ID, 404 if it doesn't exist
+// Get the first deployment by ID, 404 if it doesn't exist
 func (d Deployment) ById(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
 	var id int
@@ -64,7 +64,7 @@ func (d Deployment) Create(c *gin.Context) {
 		InternalError(c, err)
 		return
 	}
-	_, err = awsSession.RunDeployment(newDep.Command)
+	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
 	if err != nil {
 		ErrResponse(c, 500, err)
 		return
@@ -101,43 +101,3 @@ func (d Deployment) Get(c *gin.Context) {
 func (d Deployment) Logs(c *gin.Context) {
 	SuccessResponse(c, 200, "This function does nothing yet")
 }
-
-// func (s Simulation) Logs(c *gin.Context) {
-// 	sim, err := s.ById(c)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	StreamBatchLogs(awsSession, c, &sim.BatchJob)
-// }
-
-// func (s Simulation) CreateEvent(c *gin.Context) {
-// 	sim, err := s.ById(c)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	event := models.PostBatchEvent{}
-// 	c.BindJSON(&event)
-
-// 	if !ValidateRequest(c, event) {
-// 		return
-// 	}
-
-// 	currentStatus := sim.Status()
-
-// 	if !models.CanTransition(currentStatus, event.Status) {
-// 		ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
-// 		return
-// 	}
-
-// 	newEvent, err := BatchService{}.AddEvent(&sim.BatchJob, event)
-
-// 	if err != nil {
-// 		c.Error(err)
-// 		ErrResponse(c, 500, nil)
-// 		return
-// 	}
-
-// 	SuccessResponse(c, 200, newEvent)
-// }

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	. "github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -19,6 +20,12 @@ var (
 		Bucket:        "reconfigureio-builds",
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
+	})
+
+	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
+		Foo: "reconfigureio-builds",
+		Bar: "build-jobs",
+		Baz: "sdaccel-builder-build",
 	})
 )
 
