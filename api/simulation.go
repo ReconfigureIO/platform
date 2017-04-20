@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -36,6 +37,17 @@ func (s Simulation) ById(c *gin.Context) (models.Simulation, error) {
 	return sim, nil
 }
 
+func (s Simulation) UnauthOne(c *gin.Context) (models.Simulation, error) {
+	sim := models.Simulation{}
+	var id int
+	if !bindId(c, &id) {
+		return sim, errNotFound
+	}
+	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	err := q.First(&sim, id).Error
+	return sim, err
+}
+
 func (s Simulation) Create(c *gin.Context) {
 	post := models.PostSimulation{}
 	c.BindJSON(&post)
@@ -52,7 +64,7 @@ func (s Simulation) Create(c *gin.Context) {
 		return
 	}
 
-	newSim := models.Simulation{Project: project, Command: post.Command}
+	newSim := models.Simulation{Project: project, Command: post.Command, Token: uniuri.NewLen(64)}
 	err = db.Create(&newSim).Error
 	if err != nil {
 		InternalError(c, err)
@@ -81,7 +93,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackUrl := fmt.Sprintf("https://reco-test:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264@%s/simulations/%d/events", c.Request.Host, sim.ID)
+	callbackUrl := fmt.Sprintf("https://%s/simulations/%d/events?token=%s", c.Request.Host, sim.ID, sim.Token)
 
 	simId, err := awsSession.RunSimulation(s3Url, callbackUrl, sim.Command)
 	if err != nil {
@@ -137,9 +149,26 @@ func (s Simulation) Logs(c *gin.Context) {
 	StreamBatchLogs(awsSession, c, &sim.BatchJob)
 }
 
+func (s Simulation) CanPostEvent(c *gin.Context, sim models.Simulation) bool {
+	user, loggedIn := auth.CheckUser(c)
+	if loggedIn && sim.Project.UserID == user.ID {
+		return true
+	}
+	token, exists := c.GetQuery("token")
+	if exists && sim.Token == token {
+		return true
+	}
+	return false
+}
+
 func (s Simulation) CreateEvent(c *gin.Context) {
-	sim, err := s.ById(c)
+	sim, err := s.UnauthOne(c)
 	if err != nil {
+		return
+	}
+
+	if !s.CanPostEvent(c, sim) {
+		c.AbortWithStatus(403)
 		return
 	}
 
