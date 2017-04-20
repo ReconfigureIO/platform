@@ -16,8 +16,8 @@
     "provisioners": [
         {
             "type": "file",
-            "source": "amis/deploy.conf",
-            "destination": "/tmp/deploy.conf"
+            "source": "amis/deploy.yml",
+            "destination": "/tmp/99_reco_deploy.yml"
         },
         {
             "type": "file",
@@ -27,7 +27,7 @@
         {
         	"type": "shell",
         	"inline": [
-                "sudo cp /tmp/deploy.conf /etc/init/reco.conf",
+                "sudo cp /tmp/99_reco_deploy.yml /etc/cloud/cloud.cfg.d/99_reco_deploy.yml",
                 "sudo mkdir -p /opt/reco",
                 "sudo cp /tmp/deploy.sh /opt/reco/deploy.sh",
                 "sudo chmod +x /opt/reco/deploy.sh",
