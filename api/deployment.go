@@ -59,7 +59,6 @@ func (d Deployment) Create(c *gin.Context) {
 	newDep := models.Deployment{
 		BuildID: post.BuildID,
 		Command: post.Command,
-		Status:  "QUEUED",
 	}
 	err = db.Create(&newDep).Error
 	if err != nil {
