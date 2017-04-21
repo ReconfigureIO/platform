@@ -1,5 +1,9 @@
 package mock_deployment
 
+import (
+//"github.com/ReconfigureIO/platform/models"
+)
+
 type Service struct {
 	session string
 	conf    ServiceConfig

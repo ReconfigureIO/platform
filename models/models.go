@@ -112,6 +112,7 @@ type Deployment struct {
 	BuildID  int    `json:"-"`
 	Command  string `json:"command"`
 	DepJobId int64  `json:"-"`
+	Token    string `json:"-"`
 	DepJob   DepJob `json:"job" gorm:"ForeignKey:DepJobId"`
 }
 
