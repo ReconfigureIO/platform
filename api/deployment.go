@@ -163,7 +163,7 @@ func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 		Message:   event.Message,
 		Code:      event.Code,
 	}
-	err := db.Model(DepJob).Association("Events").Append(newEvent).Error
+	err := db.Model(&DepJob).Association("Events").Append(newEvent).Error
 	if err != nil {
 		return models.DepJobEvent{}, nil
 	}
