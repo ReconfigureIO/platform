@@ -155,6 +155,11 @@ func (s *Service) HaltJob(batchId string) error {
 	return err
 }
 
+func (s *Service) RunDeployment(command string) (string, error) {
+
+	return "This function does nothing yet", nil
+}
+
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}

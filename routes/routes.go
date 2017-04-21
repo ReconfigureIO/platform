@@ -49,9 +49,20 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
+	deployment := api.Deployment{}
+	deploymentRoute := apiRoutes.Group("/deployments")
+	{
+		deploymentRoute.GET("", deployment.List)
+		deploymentRoute.POST("", deployment.Create)
+		deploymentRoute.GET("/:id", deployment.Get)
+		deploymentRoute.GET("/:id/logs", deployment.Logs)
+	}
+
 	eventRoutes := r.Group("", auth.TokenAuth(db))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
+		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
+
 }

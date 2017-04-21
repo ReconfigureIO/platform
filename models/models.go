@@ -38,15 +38,22 @@ type Project struct {
 }
 
 type Build struct {
-	ID         int      `gorm:"primary_key" json:"id"`
-	Project    Project  `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID  int      `json:"-"`
-	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
-	BatchJobId int64    `json:"-"`
-	Token      string   `json:"-"`
+	ID          int          `gorm:"primary_key" json:"id"`
+	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID   int          `json:"-"`
+	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
+	BatchJobId  int64        `json:"-"`
+	Token       string       `json:"-"`
+	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
 
 type PostBatchEvent struct {
+	Status  string `json:"status" validate:"nonzero"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
+type PostDepEvent struct {
 	Status  string `json:"status" validate:"nonzero"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
@@ -99,6 +106,32 @@ type PostSimulation struct {
 	Command   string `json:"command" validate:"nonzero"`
 }
 
+type Deployment struct {
+	ID       int    `gorm:"primary_key" json:"id"`
+	Build    Build  `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID  int    `json:"-"`
+	Command  string `json:"command"`
+	DepJobId int64  `json:"-"`
+	Token    string `json:"-"`
+	DepJob   DepJob `json:"job" gorm:"ForeignKey:DepJobId"`
+}
+
+type PostDeployment struct {
+	BuildID      int    `json:"build_id" validate:"nonzero"`
+	Command      string `json:"command" validate:"nonzero"`
+	OutputStream string `json:"output_stream"`
+	Status       string `gorm:"default:'SUBMITTED'" json:"status"`
+}
+
+func (d *Deployment) Status() string {
+	events := d.DepJob.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return SUBMITTED
+}
+
 var statuses = struct {
 	started  []string
 	finished []string
@@ -111,6 +144,12 @@ type BatchJob struct {
 	ID      int64           `gorm:"primary_key" json:"-"`
 	BatchId string          `json:"-"`
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+}
+
+type DepJob struct {
+	ID     int64         `gorm:"primary_key" json:"-"`
+	DepId  string        `json:"-"`
+	Events []DepJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
 func (b *BatchJob) Status() string {
@@ -130,6 +169,15 @@ func (b *BatchJob) HasFinished() bool {
 	return hasFinished(b.Status())
 }
 
+func (d *DepJob) Status() string {
+	events := d.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return SUBMITTED
+}
+
 type BatchJobEvent struct {
 	ID         int64     `gorm:"primary_key" json:"-"`
 	BatchJobId int64     `json:"-"`
@@ -137,6 +185,23 @@ type BatchJobEvent struct {
 	Status     string    `json:"status"`
 	Message    string    `json:"message,omitempty"`
 	Code       int       `json:"code"`
+}
+
+func (d *DepJob) HasStarted() bool {
+	return hasStarted(d.Status())
+}
+
+func (d *DepJob) HasFinished() bool {
+	return hasFinished(d.Status())
+}
+
+type DepJobEvent struct {
+	ID        int64     `gorm:"primary_key" json:"-"`
+	DepJobId  int64     `json:"-"`
+	Timestamp time.Time `json:"timestamp"`
+	Status    string    `json:"status"`
+	Message   string    `json:"message,omitempty"`
+	Code      int       `json:"code"`
 }
 
 func hasStarted(status string) bool {
