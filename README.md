@@ -211,6 +211,33 @@ Stream the logs for a given build
 
 <TODO> Describe format, termination
 
+#### GET /deployments
+
+Get a list of deployments, can be filtered by parent `build ID`.
+
+<TODO> examples
+		
+#### POST /deployments
+		
+Create and process a deployment. Requires a parent `build ID` and a `command`
+
+<TODO> examples 
+		
+#### GET /deployments/{id}
+
+Get the details of an individual deployment.
+
+<TODO> examples
+		
+#### GET /deployments/{id}/logs
+Stream the logs of an individual deployment.
+
+<TODO> examples
+
+#### POST /deployments/{id}/events
+Add an event to the event log of a deployment, allows for moving between states.
+
+<TODO> examples
 
 ## What to expect
 In the event of an invalid ID we can expect to receive a `404` response from the API:
