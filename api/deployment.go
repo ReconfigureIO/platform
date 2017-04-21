@@ -64,9 +64,6 @@ func (d Deployment) Create(c *gin.Context) {
 		InternalError(c, err)
 		return
 	}
-	fmt.Println(newDep.Command)
-	fmt.Println(newDep.BuildID)
-
 	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
 	if err != nil {
 		ErrResponse(c, 500, err)
