@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -52,12 +53,10 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	parentbuild := models.Build{}
-	db.Where(&models.Build{ID: post.BuildID}).First(&parentbuild)
-
 	newDep := models.Deployment{
 		BuildID: post.BuildID,
 		Command: post.Command,
+		Token:   uniuri.NewLen(64),
 	}
 	err = db.Create(&newDep).Error
 	if err != nil {
@@ -66,12 +65,17 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 	fmt.Println(newDep.Command)
 	fmt.Println(newDep.BuildID)
+	fmt.Println(newDep.Token)
+
+	depJob := models.DepJob{}
+	db.Model(&newDep).Association("DepJob").Append(depJob)
 
 	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
 	if err != nil {
 		ErrResponse(c, 500, err)
 		return
 	}
+
 	SuccessResponse(c, 201, newDep)
 }
 
@@ -160,15 +164,17 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 }
 
 func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
+	fmt.Println(event.Message)
 	newEvent := models.DepJobEvent{
 		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
 		Code:      event.Code,
 	}
+	fmt.Println(newEvent)
 	err := db.Model(DepJob).Association("Events").Append(newEvent).Error
 	if err != nil {
-		return models.DepJobEvent{}, nil
+		return models.DepJobEvent{}, err
 	}
 	return newEvent, nil
 }
@@ -179,7 +185,7 @@ func (d Deployment) UnauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindId(c, &id) {
 		return dep, errNotFound
 	}
-	q := db.Preload("Project").Preload("DepJob").Preload("DepJob.Events")
+	q := db.Preload("DepJob").Preload("DepJob.Events")
 	err := q.First(&dep, id).Error
 	return dep, err
 }

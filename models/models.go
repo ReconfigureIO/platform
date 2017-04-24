@@ -111,16 +111,14 @@ type Deployment struct {
 	Build    Build  `json:"build" gorm:"ForeignKey:BuildID"`
 	BuildID  int    `json:"-"`
 	Command  string `json:"command"`
-	DepJobId int64  `json:"-"`
 	Token    string `json:"-"`
-	DepJob   DepJob `json:"job" gorm:"ForeignKey:DepJobId"`
+	DepJobId int    `json:"-"`
+	DepJob   DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
 }
 
 type PostDeployment struct {
-	BuildID      int    `json:"build_id" validate:"nonzero"`
-	Command      string `json:"command" validate:"nonzero"`
-	OutputStream string `json:"output_stream"`
-	Status       string `gorm:"default:'SUBMITTED'" json:"status"`
+	BuildID int    `json:"build_id" validate:"nonzero"`
+	Command string `json:"command" validate:"nonzero"`
 }
 
 func (d *Deployment) Status() string {
@@ -147,9 +145,8 @@ type BatchJob struct {
 }
 
 type DepJob struct {
-	ID     int64         `gorm:"primary_key" json:"-"`
-	DepId  string        `json:"-"`
-	Events []DepJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+	ID     int           `gorm:"primary_key" json:"-"`
+	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`
 }
 
 func (b *BatchJob) Status() string {
@@ -196,8 +193,8 @@ func (d *DepJob) HasFinished() bool {
 }
 
 type DepJobEvent struct {
-	ID        int64     `gorm:"primary_key" json:"-"`
-	DepJobId  int64     `json:"-"`
+	ID        int       `gorm:"primary_key" json:"-"`
+	DepJobId  int       `json:"-"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`
