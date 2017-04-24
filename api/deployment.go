@@ -166,13 +166,14 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
 	fmt.Println(event.Message)
 	newEvent := models.DepJobEvent{
+		DepJobId:  DepJob.ID,
 		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
 		Code:      event.Code,
 	}
 	fmt.Println(newEvent)
-	err := db.Model(DepJob).Association("Events").Append(newEvent).Error
+	err := db.Create(&newEvent).Error
 	if err != nil {
 		return models.DepJobEvent{}, err
 	}
