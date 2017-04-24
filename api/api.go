@@ -23,9 +23,9 @@ var (
 	})
 
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
-		Foo: "reconfigureio-builds",
-		Bar: "build-jobs",
-		Baz: "sdaccel-builder-build",
+		LogGroup: "josh-test-sdaccel",
+		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
+		AMI:      "ami-7427bb62",
 	})
 )
 

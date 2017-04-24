@@ -66,7 +66,7 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 	_, err = mockDeploy.RunDeployment(c, newDep)
 	if err != nil {
-		ErrResponse(c, 500, err)
+		InternalError(c, err)
 		return
 	}
 	SuccessResponse(c, 201, newDep)
