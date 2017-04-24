@@ -18,7 +18,8 @@ type Deployment struct{}
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
 	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID)
+		Where("projects.user_id=?", user.ID).
+		Preload("Build").Preload("DepJob").Preload("DepJob.Events")
 }
 
 // Get the first deployment by ID, 404 if it doesn't exist
