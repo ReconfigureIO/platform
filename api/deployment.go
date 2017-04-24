@@ -64,9 +64,6 @@ func (d Deployment) Create(c *gin.Context) {
 		InternalError(c, err)
 		return
 	}
-	fmt.Println(newDep.Command)
-	fmt.Println(newDep.BuildID)
-	fmt.Println(newDep.Token)
 
 	depJob := models.DepJob{}
 	db.Model(&newDep).Association("DepJob").Append(depJob)
@@ -173,7 +170,7 @@ func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 		Message:   event.Message,
 		Code:      event.Code,
 	}
-	fmt.Println(newEvent)
+
 	err := db.Create(&newEvent).Error
 	if err != nil {
 		return models.DepJobEvent{}, err
