@@ -148,7 +148,7 @@ type BatchJob struct {
 
 type DepJob struct {
 	ID     int64         `gorm:"primary_key" json:"-"`
-	DepId  string        `json:"-"`
+	DepId  string        `json:"-" validate:"nonzero"`
 	Events []DepJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
@@ -197,7 +197,7 @@ func (d *DepJob) HasFinished() bool {
 
 type DepJobEvent struct {
 	ID        int64     `gorm:"primary_key" json:"-"`
-	DepJobId  int64     `json:"-"`
+	DepJobId  int64     `json:"-" validate:"nonzero"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`
