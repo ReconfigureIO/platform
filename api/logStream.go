@@ -20,6 +20,10 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 
 	w := c.Writer
 
+	// set necessary headers to inform client of streaming connection
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
+
 	// cancel whenever we get a close
 	go func() {
 		<-w.CloseNotify()
