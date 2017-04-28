@@ -25,7 +25,7 @@ func TestDepJobEventValidation(t *testing.T) {
 		DepJobId: 0,
 	}
 
-	err = validator.Validate(newDepJobEvent)
+	err := validator.Validate(newDepJobEvent)
 	if err != nil {
 		t.Error()
 	}
