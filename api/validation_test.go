@@ -8,7 +8,9 @@ import (
 )
 
 func TestProjValidation(t *testing.T) {
-	newPProj := PostProject{}
+	newPProj := PostProject{
+		Name: "foobar"
+	}
 
 	err := validator.Validate(newPProj)
 	if err != nil {
@@ -19,7 +21,7 @@ func TestProjValidation(t *testing.T) {
 
 func TestDepJobEventValidation(t *testing.T) {
 	newDepJobEvent := models.DepJobEvent{
-		DepJobId: 0,
+		DepJobId: 1,
 	}
 
 	err := validator.Validate(newDepJobEvent)
