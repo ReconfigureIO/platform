@@ -7,20 +7,24 @@ import (
 	validator "gopkg.in/validator.v2"
 )
 
-func TestValidation(t *testing.T) {
+func TestProjValidation(t *testing.T) {
 	newProj := models.Project{
 		Name:   "",
 		UserID: 1,
-	}
-
-	newDepJobEvent := models.DepJobEvent{
-		DepJobId: 0,
 	}
 
 	err := validator.Validate(newProj)
 	if err != nil {
 		t.Error()
 	}
+
+}
+
+func TestDepJobEventValidation(t *testing.T) {
+	newDepJobEvent := models.DepJobEvent{
+		DepJobId: 0,
+	}
+
 	err = validator.Validate(newDepJobEvent)
 	if err != nil {
 		t.Error()
