@@ -16,8 +16,10 @@ curl -v -XPOST https://admin:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3
 
 ## Signing Up
 
-1. Visit https://api.reconfigure.io/oauth/signin/<invite token>
+1. Visit `https://api.reconfigure.io/oauth/signup/{invite_token}`
 2. Login with Github
+3. Use the generated token with our tooling
+4. If you need to view this token again visit https://api.reconfigureio/oauth/signin
 
 # API
 
