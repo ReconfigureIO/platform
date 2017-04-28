@@ -8,7 +8,7 @@ import (
 )
 
 func TestProjValidation(t *testing.T) {
-	newPProj := api.PostProject{}
+	newPProj := PostProject{}
 
 	err := validator.Validate(newPProj)
 	if err != nil {
