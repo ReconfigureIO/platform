@@ -37,6 +37,10 @@ func setupDB() *gorm.DB {
 }
 
 func main() {
+	Setup()
+}
+
+func Setup() {
 	port, found := os.LookupEnv("PORT")
 	if !found {
 		port = "8080"
