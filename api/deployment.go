@@ -163,7 +163,6 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 }
 
 func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
-	fmt.Println(event.Message)
 	newEvent := models.DepJobEvent{
 		DepJobId:  DepJob.ID,
 		Timestamp: time.Now(),
