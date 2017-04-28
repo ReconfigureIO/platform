@@ -8,12 +8,9 @@ import (
 )
 
 func TestProjValidation(t *testing.T) {
-	newProj := models.Project{
-		Name:   "",
-		UserID: 1,
-	}
+	newPProj := models.PostProject{}
 
-	err := validator.Validate(newProj)
+	err := validator.Validate(newPProj)
 	if err != nil {
 		t.Error()
 	}
