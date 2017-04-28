@@ -35,7 +35,7 @@ func (s *Signup) ResignIn(c *gin.Context) {
 	c.Redirect(http.StatusFound, url)
 }
 
-func (s *Signup) SignIn(c *gin.Context) {
+func (s *Signup) SignUp(c *gin.Context) {
 	token := c.Param("token")
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
