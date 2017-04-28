@@ -9,7 +9,7 @@ import (
 
 func TestProjValidation(t *testing.T) {
 	newPProj := PostProject{
-		Name: "foobar"
+		Name: "foobar",
 	}
 
 	err := validator.Validate(newPProj)
