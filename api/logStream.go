@@ -48,7 +48,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 		case <-ctx.Done():
 			return false
 		case <-ticker.C:
-			bytes.NewBufferString("\n").WriteTo(w)
+			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
