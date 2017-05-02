@@ -49,7 +49,7 @@ func Stream(stream *aws.Stream, c *gin.Context, ctx context.Context) {
 			}
 			return ok
 		case <-ticker.C:
-			bytes.NewBufferString("\n").WriteTo(w)
+			bytes.NewBuffer([]byte{0}).WriteTo(w)
 			return true
 		}
 	})
