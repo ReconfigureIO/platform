@@ -12,7 +12,7 @@ import (
 type Project struct{}
 
 type PostProject struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"nonzero"`
 }
 
 func (p Project) Query(c *gin.Context) *gorm.DB {
