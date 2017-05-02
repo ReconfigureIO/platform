@@ -30,3 +30,15 @@ func TestDepJobEventValidation(t *testing.T) {
 	}
 
 }
+
+func TestDepJobValidation(t *testing.T) {
+	newDepJob := models.DepJob{
+		DepId: "",
+	}
+
+	err := validator.Validate(newDepJob)
+	if err != nil {
+		t.Error()
+	}
+
+}
