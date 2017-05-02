@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -17,7 +18,8 @@ type Deployment struct{}
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
 	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID)
+		Where("projects.user_id=?", user.ID).
+		Preload("Build").Preload("DepJob.Events").Preload("DepJob")
 }
 
 // Get the first deployment by ID, 404 if it doesn't exist
@@ -52,23 +54,27 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	parentbuild := models.Build{}
-	db.Where(&models.Build{ID: post.BuildID}).First(&parentbuild)
+	depJob := models.DepJob{}
+	db.Create(&depJob)
 
 	newDep := models.Deployment{
-		BuildID: post.BuildID,
-		Command: post.Command,
+		BuildID:  post.BuildID,
+		Command:  post.Command,
+		DepJobId: depJob.ID,
+		Token:    uniuri.NewLen(64),
 	}
 	err = db.Create(&newDep).Error
 	if err != nil {
 		InternalError(c, err)
 		return
 	}
+
 	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
 	if err != nil {
 		ErrResponse(c, 500, err)
 		return
 	}
+
 	SuccessResponse(c, 201, newDep)
 }
 
@@ -158,14 +164,16 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 
 func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
 	newEvent := models.DepJobEvent{
+		DepJobId:  DepJob.ID,
 		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
 		Code:      event.Code,
 	}
-	err := db.Model(&DepJob).Association("Events").Append(newEvent).Error
+
+	err := db.Create(&newEvent).Error
 	if err != nil {
-		return models.DepJobEvent{}, nil
+		return models.DepJobEvent{}, err
 	}
 	return newEvent, nil
 }
@@ -176,7 +184,7 @@ func (d Deployment) UnauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindId(c, &id) {
 		return dep, errNotFound
 	}
-	q := db.Preload("Project").Preload("DepJob").Preload("DepJob.Events")
+	q := db.Preload("DepJob").Preload("DepJob.Events")
 	err := q.First(&dep, id).Error
 	return dep, err
 }
