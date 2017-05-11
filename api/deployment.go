@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -69,7 +70,7 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	_, err = mockDeploy.RunDeployment(newDep.Command, newDep.BuildID)
+	_, err = mockDeploy.RunDeployment(context.Background(), newDep)
 	if err != nil {
 		InternalError(c, err)
 		return
