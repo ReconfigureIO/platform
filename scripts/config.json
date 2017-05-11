@@ -1,0 +1,9 @@
+{
+    "container": {
+        "image": "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
+        "command": "fpga-load-local-image -S 0 -I agfi-0f0e045f919413242 && fpga-describe-local-image -S 0"
+    },
+    "logs": {
+        "group": "josh-test-sdaccel"
+    }
+}
