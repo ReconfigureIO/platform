@@ -16,6 +16,18 @@ import (
 
 var NOT_FOUND = errors.New("Not Found")
 
+type AWS interface {
+	New(conf ServiceConfig) *Service
+	Upload(key string, r io.Reader, length int64) (string, error)
+	RunBuild(inputArtifactUrl string, callbackUrl string) (string, error)
+	RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error)
+	HaltJob(batchId string) error
+	RunDeployment(command string) (string, error)
+	GetJobDetail(id string) (*batch.JobDetail, error)
+	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
+	Run(ctx context.Context) error
+}
+
 type Service struct {
 	session *session.Session
 	conf    ServiceConfig
