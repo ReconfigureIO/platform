@@ -23,4 +23,7 @@ func MigrateSchema() {
 	db.AutoMigrate(&models.Build{})
 	db.AutoMigrate(&models.BatchJob{})
 	db.AutoMigrate(&models.BatchJobEvent{})
+	db.AutoMigrate(&models.Deployment{})
+	db.AutoMigrate(&models.DepJob{})
+	db.AutoMigrate(&models.DepJobEvent{})
 }

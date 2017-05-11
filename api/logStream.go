@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"log"
 	"time"
 
@@ -12,26 +15,49 @@ import (
 )
 
 func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.BatchJob) {
+	ctx, cancel := context.WithCancel(c)
+	defer cancel()
+
+	w := c.Writer
+
+	// set necessary headers to inform client of streaming connection
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
+
+	// cancel whenever we get a close
+	go func() {
+		<-w.CloseNotify()
+		cancel()
+	}()
+
 	refresh := func() error {
 		return db.Model(&b).Association("Events").Find(&b.Events).Error
 	}
 
-	w := c.Writer
-	clientGone := w.CloseNotify()
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
 
-	for !b.HasStarted() {
+	refreshTicker := time.NewTicker(10 * time.Second)
+	defer refreshTicker.Stop()
+
+	stream.StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+		if b.HasStarted() {
+			return false
+		}
 		select {
-		case <-clientGone:
-			return
-		default:
-			time.Sleep(time.Second)
+		case <-ctx.Done():
+			return false
+		case <-ticker.C:
+			bytes.NewBuffer([]byte{0}).WriteTo(w)
+		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
 				InternalError(c, err)
-				return
+				return false
 			}
 		}
-	}
+		return true
+	})
 
 	logStream, err := awsSession.GetJobStream(b.BatchId)
 	if err != nil {
@@ -45,15 +71,19 @@ func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.
 
 	go func() {
 		for !b.HasFinished() {
-			time.Sleep(10 * time.Second)
-			err := refresh()
-			if err != nil {
-				break
+			select {
+			case <-ctx.Done():
+				return
+			case <-refreshTicker.C:
+				err := refresh()
+				if err != nil {
+					break
+				}
 			}
 		}
 		lstream.Ended = true
 	}()
 
-	stream.Stream(lstream, c)
+	stream.Stream(lstream, c, ctx)
 
 }

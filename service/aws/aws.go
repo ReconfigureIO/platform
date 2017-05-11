@@ -4,6 +4,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"time"
@@ -18,13 +19,16 @@ import (
 var NOT_FOUND = errors.New("Not Found")
 
 type ServiceInterface interface {
+	New(conf ServiceConfig) *Service
 	Upload(key string, r io.Reader, length int64) (string, error)
 	RunBuild(inputArtifactUrl string, callbackUrl string) (string, error)
 	RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error)
 	HaltJob(batchId string) error
+	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
+  NewStream(stream cloudwatchlogs.LogStream) *Stream
+	Run(ctx context.Context) error
 }
 
 type Service struct {
@@ -75,7 +79,7 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
-					Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+					Value: aws.String("xcvu9p-flgb2104-2-i"),
 				},
 				{
 					Name:  aws.String("PART_FAMILY"),
@@ -91,11 +95,11 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
+					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
+					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
 				},
 			},
 		},
@@ -120,7 +124,7 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
-					Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+					Value: aws.String("xcvu9p-flgb2104-2-i"),
 				},
 				{
 					Name:  aws.String("PART_FAMILY"),
@@ -140,11 +144,11 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
+					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
+					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
 				},
 			},
 		},
@@ -164,6 +168,11 @@ func (s *Service) HaltJob(batchId string) error {
 	}
 	_, err := batchSession.TerminateJob(params)
 	return err
+}
+
+func (s *Service) RunDeployment(command string) (string, error) {
+
+	return "This function does nothing yet", nil
 }
 
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
@@ -203,23 +212,17 @@ type Stream struct {
 	session *Service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
-	stop    chan struct{}
 	Ended   bool
 }
 
 func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
-	stop := make(chan struct{}, 1)
 
-	ret := Stream{s, stream, logs, stop, false}
+	ret := Stream{s, stream, logs, false}
 	return &ret
 }
 
-func (stream *Stream) Stop() {
-	stream.stop <- struct{}{}
-}
-
-func (stream *Stream) Run() error {
+func (stream *Stream) Run(ctx context.Context) error {
 	cwLogs := cloudwatchlogs.New(stream.session.session)
 
 	params := (&cloudwatchlogs.GetLogEventsInput{}).
@@ -230,8 +233,10 @@ func (stream *Stream) Run() error {
 	defer func() {
 		close(stream.Events)
 	}()
-	err := cwLogs.GetLogEventsPages(params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
+	err := cwLogs.GetLogEventsPagesWithContext(ctx, params, func(page *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 		select {
+		case <-ctx.Done():
+			return false
 		case stream.Events <- page:
 			if lastPage || (len(page.Events) == 0 && stream.Ended) {
 				return false
@@ -240,8 +245,6 @@ func (stream *Stream) Run() error {
 				time.Sleep(10 * time.Second)
 			}
 			return true
-		case <-stream.stop:
-			return false
 		}
 	})
 	return err

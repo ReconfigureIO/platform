@@ -47,6 +47,12 @@ pipeline {
             }
         }
 
+        stage('test') {
+            steps {
+                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make test'
+            }
+        }
+
         stage('build') {
             steps {
                 sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make all'

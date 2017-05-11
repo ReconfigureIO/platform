@@ -10,7 +10,7 @@
     {{ if .logged_in }}
     Logged in as: {{ .login }}
     <pre>
-    reco login gh_{{ .gh_id }} {{ .token }}
+    reco login gh_{{ .gh_id }}_{{ .token }}
     </pre>
 
     <form method="POST" action="/token/refresh">

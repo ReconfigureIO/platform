@@ -32,7 +32,7 @@ test: generate
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 install:
-	glide install
+	glide install && go test -i $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 dist-image/dist:
 	@mkdir -p $@
