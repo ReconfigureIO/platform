@@ -14,7 +14,7 @@ import (
 )
 
 type Simulation struct {
-	Aws aws.ServiceInterface
+	Aws *aws.Service
 }
 
 func NewSimulation() Simulation {
