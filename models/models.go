@@ -147,7 +147,7 @@ type BatchJob struct {
 type DepJob struct {
 	ID     int           `gorm:"primary_key" json:"-"`
 	DepId  string        `json:"-" validate:"nonzero"`
-	Events []DepJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`
 }
 
 func (b *BatchJob) Status() string {
