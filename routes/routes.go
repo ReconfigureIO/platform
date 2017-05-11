@@ -39,7 +39,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.Simulation{}
+	simulation := api.NewSimulation()
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)

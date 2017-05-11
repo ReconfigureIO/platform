@@ -14,3 +14,6 @@ import:
   subpackages:
   - github
 - package: github.com/dchest/uniuri
+- package: github.com/golang/mock
+  subpackages:
+  - gomock

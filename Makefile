@@ -14,7 +14,7 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all
+.PHONY: test install clean all generate
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -25,7 +25,10 @@ TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLAT
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
-test:
+generate:
+	go generate -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
+
+test: generate
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 install:
