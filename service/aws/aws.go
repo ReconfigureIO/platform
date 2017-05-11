@@ -76,7 +76,7 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
-					Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+					Value: aws.String("xcvu9p-flgb2104-2-i"),
 				},
 				{
 					Name:  aws.String("PART_FAMILY"),
@@ -92,11 +92,11 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
+					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
+					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
 				},
 			},
 		},
@@ -121,7 +121,7 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
-					Value: aws.String("xcvu9p-flgb2104-2-i-es2"),
+					Value: aws.String("xcvu9p-flgb2104-2-i"),
 				},
 				{
 					Name:  aws.String("PART_FAMILY"),
@@ -141,11 +141,11 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_minotaur-vu9p-f1_4ddr-xpr_3_3"),
+					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:minotaur-vu9p-f1:4ddr-xpr:3.3"),
+					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
 				},
 			},
 		},
