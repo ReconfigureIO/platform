@@ -1,2 +1,5 @@
 .glide
 vendor
+creds
+runner-build
+*_mock.go

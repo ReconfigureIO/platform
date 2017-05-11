@@ -1,5 +1,7 @@
 package aws
 
+//go:generate mockgen -source=aws.go -package=aws -destination=aws_mock.go
+
 import (
 	"bytes"
 	"context"
@@ -16,8 +18,7 @@ import (
 
 var NOT_FOUND = errors.New("Not Found")
 
-type AWS interface {
-	New(conf ServiceConfig) *Service
+type ServiceInterface interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
 	RunBuild(inputArtifactUrl string, callbackUrl string) (string, error)
 	RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error)
@@ -25,6 +26,7 @@ type AWS interface {
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
+	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Run(ctx context.Context) error
 }
 

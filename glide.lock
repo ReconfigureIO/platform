@@ -1,5 +1,5 @@
-hash: 3b1379d766fbaef55f87c7acf1c5dfb0b9a09912e65f8eba58302d2724ea838f
-updated: 2017-04-13T20:24:25.089415452Z
+hash: a98948d3db3a9f749ed4e3a93a2273c15ea516e2b83f0b8852d5242b887dae6b
+updated: 2017-04-17T22:12:42.591036267Z
 imports:
 - name: github.com/aws/aws-sdk-go
   version: 7be45195c3af1b54a609812f90c05a7e492e2491
@@ -53,6 +53,10 @@ imports:
   - render
 - name: github.com/go-ini/ini
   version: 1730955e3146956d6a087861380f9b4667ed5071
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
 - name: github.com/golang/protobuf
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
