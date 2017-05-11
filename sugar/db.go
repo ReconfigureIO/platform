@@ -22,6 +22,7 @@ type (
 	}
 )
 
+// ErrResponse responds to the request with code and error.
 func ErrResponse(c *gin.Context, code int, err interface{}) {
 	if err == nil {
 		err = http.StatusText(code)
@@ -29,16 +30,18 @@ func ErrResponse(c *gin.Context, code int, err interface{}) {
 	c.JSON(code, apiError{Error: fmt.Sprint(err)})
 }
 
+// InternalError responds to request with an internal error.
 func InternalError(c *gin.Context, err error) {
 	c.Error(err)
 	ErrResponse(c, 500, nil)
 }
 
+// SuccessResponse responds to request with code and value.
 func SuccessResponse(c *gin.Context, code int, value interface{}) {
 	c.JSON(code, apiSuccess{Value: value})
 }
 
-// Check if the error is a record not found
+// NotFoundOrError checks if the error is a record not found error.
 // If so, return 404, else 500
 func NotFoundOrError(c *gin.Context, err error) {
 	if err == gorm.ErrRecordNotFound {
@@ -48,6 +51,7 @@ func NotFoundOrError(c *gin.Context, err error) {
 	}
 }
 
+// ValidateRequest validates the request using validator.
 func ValidateRequest(c *gin.Context, object interface{}) bool {
 	err := validator.Validate(object)
 	if err == nil {

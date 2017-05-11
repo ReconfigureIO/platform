@@ -12,29 +12,31 @@ import (
 )
 
 const (
-	USER_ID = "user_id"
-	USER    = "reco_user"
+	strUserID = "user_id"
+	strUser   = "reco_user"
 )
 
+// SessionAuth handles session authentication.
 func SessionAuth(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-		user_id := session.Get(USER_ID)
-		if user_id != nil {
+		userID := session.Get(strUserID)
+		if userID != nil {
 			user := models.User{}
-			err := db.First(&user, user_id.(int)).Error
+			err := db.First(&user, userID.(int)).Error
 			if err != nil && err != gorm.ErrRecordNotFound {
 				c.AbortWithError(500, err)
 				return
 			}
-			c.Set(USER, user)
+			c.Set(strUser, user)
 		}
 	}
 }
 
+// TokenAuth handles token authentication.
 func TokenAuth(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, exists := c.Get(USER)
+		_, exists := c.Get(strUser)
 		if exists {
 			return
 		}
@@ -44,12 +46,12 @@ func TokenAuth(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		gh_id, err := strconv.Atoi(strings.TrimPrefix(username, "gh_"))
+		ghID, err := strconv.Atoi(strings.TrimPrefix(username, "gh_"))
 		if err != nil {
 			return
 		}
 
-		user := models.User{GithubID: gh_id}
+		user := models.User{GithubID: ghID}
 		err = db.Where(user).First(&user).Error
 
 		if err == gorm.ErrRecordNotFound {
@@ -71,28 +73,30 @@ func TokenAuth(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.Set(USER, user)
+		c.Set(strUser, user)
 	}
 }
 
-// exit with a 403 if the user doesn't exist
+// RequiresUser exits with a 403 if the user doesn't exist
 func RequiresUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, exists := c.Get(USER)
+		_, exists := c.Get(strUser)
 		if !exists {
 			c.AbortWithStatus(403)
 		}
 	}
 }
 
+// GetUser gets the current user.
 func GetUser(c *gin.Context) models.User {
-	u := c.MustGet(USER)
+	u := c.MustGet(strUser)
 	return u.(models.User)
 }
 
+// CheckUser validates a user.
 func CheckUser(c *gin.Context) (models.User, bool) {
 	user := models.User{}
-	u, exists := c.Get(USER)
+	u, exists := c.Get(strUser)
 	if exists {
 		user = u.(models.User)
 	}

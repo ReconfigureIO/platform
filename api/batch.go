@@ -1,19 +1,22 @@
 package api
 
 import (
-	"github.com/ReconfigureIO/platform/models"
 	"time"
+
+	"github.com/ReconfigureIO/platform/models"
 )
 
+// BatchService is aws batch job service.
 type BatchService struct{}
 
-// Create a new batch job with its queued event
-func (b BatchService) New(batchId string) models.BatchJob {
+// New creates a new batch job with its queued event.
+func (b BatchService) New(batchID string) models.BatchJob {
 	event := models.BatchJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	batchJob := models.BatchJob{BatchId: batchId, Events: []models.BatchJobEvent{event}}
+	batchJob := models.BatchJob{BatchID: batchID, Events: []models.BatchJobEvent{event}}
 	return batchJob
 }
 
+// AddEvent adds an event to the batch service.
 func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error) {
 	newEvent := models.BatchJobEvent{
 		Timestamp: time.Now(),
@@ -26,8 +29,8 @@ func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatch
 		return models.BatchJobEvent{}, nil
 	}
 
-	if newEvent.Status == models.TERMINATED {
-		err = awsSession.HaltJob(batchJob.BatchId)
+	if newEvent.Status == models.StatusTerminated {
+		err = awsSession.HaltJob(batchJob.BatchID)
 		if err != nil {
 			return models.BatchJobEvent{}, nil
 		}

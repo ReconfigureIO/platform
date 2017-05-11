@@ -10,14 +10,16 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// SetupAdmin sets up admin routes.
 func SetupAdmin(r gin.IRouter, db *gorm.DB) {
-	admin := InviteAdmin{db: db}
+	admin := inviteAdmin{db: db}
 	invites := r.Group("/invites")
 	{
 		invites.POST("", admin.Create)
 	}
 }
 
+// Setup sets all routes.
 func Setup(r gin.IRouter, db *gorm.DB) {
 	gh := github.NewService(db)
 
@@ -26,7 +28,7 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 	authRoutes := r.Group("/oauth")
 	{
 
-		signup := Signup{db: db, gh: gh}
+		signup := signupUser{db: db, gh: gh}
 		authRoutes.GET("/signin", signup.ResignIn)
 		authRoutes.GET("/signup/:token", signup.SignUp)
 		authRoutes.GET("/callback", signup.Callback)
@@ -46,11 +48,12 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 	}
 }
 
+// Index handles request to the site root.
 func Index(c *gin.Context) {
 	session := sessions.Default(c)
-	user_id := session.Get(USER_ID)
+	userID := session.Get(strUserID)
 
-	if user_id == nil {
+	if userID == nil {
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"logged_in": false,
 		})

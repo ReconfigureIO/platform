@@ -6,7 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
-	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -34,26 +34,26 @@ func DB(d *gorm.DB) {
 	db = d
 }
 
-// Run a transaction, rolling back if error != nil
+// Transaction runs a transaction, rolling back if error != nil.
 func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 	tx := db.Begin()
 	err := ops(tx)
 	if err != nil {
 		tx.Rollback()
 		c.Error(err)
-		ErrResponse(c, 500, nil)
+		sugar.ErrResponse(c, 500, nil)
 	} else {
 		tx.Commit()
 	}
 	return err
 }
 
-func bindId(c *gin.Context, id *int) bool {
-	paramId := c.Param("id")
-	if i, err := strconv.Atoi(paramId); err == nil && paramId != "" {
+func bindID(c *gin.Context, id *int) bool {
+	paramID := c.Param("id")
+	if i, err := strconv.Atoi(paramID); err == nil && paramID != "" {
 		*id = i
 		return true
 	}
-	ErrResponse(c, 404, nil)
+	sugar.ErrResponse(c, 404, nil)
 	return false
 }
