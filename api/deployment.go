@@ -107,12 +107,10 @@ func (d Deployment) Get(c *gin.Context) {
 
 func (d Deployment) Logs(c *gin.Context) {
 	targetdep, err := d.ById(c)
-	logs, err := mockDeploy.GetJobStream(targetdep.ID)
 	if err != nil {
-		ErrResponse(c, 500, err)
 		return
 	}
-	SuccessResponse(c, 200, logs)
+	StreamDeploymentLogs(mockDeploy, c, &targetdep)
 }
 
 func (d Deployment) CanPostEvent(c *gin.Context, dep models.Deployment) bool {
