@@ -27,7 +27,6 @@ type ServiceInterface interface {
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
-	Run(ctx context.Context) error
 }
 
 type Service struct {
@@ -41,7 +40,7 @@ type ServiceConfig struct {
 	JobDefinition string
 }
 
-func New(conf ServiceConfig) *Service {
+func New(conf ServiceConfig) ServiceInterface {
 	s := Service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
@@ -217,8 +216,11 @@ type Stream struct {
 func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
-	ret := Stream{s, stream, logs, false}
-	return &ret
+	return &Stream{
+		session: s,
+		stream:  stream,
+		Events:  logs,
+	}
 }
 
 func (stream *Stream) Run(ctx context.Context) error {

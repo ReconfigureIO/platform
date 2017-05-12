@@ -15,7 +15,7 @@ import (
 )
 
 // StreamBatchLogs streams batch logs from AWS.
-func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob) {
+func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.BatchJob) {
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
