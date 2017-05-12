@@ -16,7 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-var errNotFound = errors.New("Not Found")
+// ErrNotFound is not found error.
+var ErrNotFound = errors.New("Not Found")
 
 // Service is an AWS service.
 type Service interface {
@@ -28,11 +29,12 @@ type Service interface {
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
+	Conf() *ServiceConfig
 }
 
 type service struct {
 	session *session.Session
-	Conf    ServiceConfig
+	conf    ServiceConfig
 }
 
 // ServiceConfig holds configuration for service.
@@ -45,7 +47,7 @@ type ServiceConfig struct {
 
 // New creates a new service with conf.
 func New(conf ServiceConfig) Service {
-	s := service{Conf: conf}
+	s := service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
 }
@@ -58,7 +60,7 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	body.ReadFrom(r)
 
 	putParams := &s3.PutObjectInput{
-		Bucket:        aws.String(s.Conf.Bucket), // Required
+		Bucket:        aws.String(s.conf.Bucket), // Required
 		Key:           aws.String(key),           // Required
 		Body:          bytes.NewReader(body.Bytes()),
 		ContentLength: aws.Int64(length),
@@ -68,15 +70,15 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	return "s3://" + s.Conf.Bucket + "/" + key, nil
+	return "s3://" + s.conf.Bucket + "/" + key, nil
 }
 
 func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
-		JobDefinition: aws.String(s.Conf.JobDefinition), // Required
+		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
-		JobQueue:      aws.String(s.Conf.Queue),         // Required
+		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
 			Environment: []*batch.KeyValuePair{
 				{
@@ -116,9 +118,9 @@ func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string,
 func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
-		JobDefinition: aws.String(s.Conf.JobDefinition), // Required
+		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
-		JobQueue:      aws.String(s.Conf.Queue),         // Required
+		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
 			Command: []*string{
 				aws.String("/opt/simulate.sh"),
@@ -185,7 +187,7 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 		return nil, err
 	}
 	if len(resp.Jobs) == 0 {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return resp.Jobs[0], nil
 }
@@ -194,7 +196,7 @@ func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
-		LogGroupName:        aws.String(s.Conf.LogGroup), // Required
+		LogGroupName:        aws.String(s.conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
 		LogStreamNamePrefix: aws.String("example/" + id),
@@ -205,9 +207,13 @@ func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	}
 
 	if len(resp.LogStreams) == 0 {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return resp.LogStreams[0], nil
+}
+
+func (s *service) Conf() *ServiceConfig {
+	return &s.conf
 }
 
 // Stream is log stream.

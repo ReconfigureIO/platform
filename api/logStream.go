@@ -85,8 +85,8 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		}
 		lstream.Ended = true
 	}()
-  
-	stream.Start(ctx, lstream, c, awsSession.Conf.LogGroup)
+
+	stream.Start(ctx, lstream, c, awsSession.Conf().LogGroup)
 }
 
 func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
@@ -117,7 +117,7 @@ func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 	refreshTicker := time.NewTicker(10 * time.Second)
 	defer refreshTicker.Stop()
 
-	stream.StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
 		if depJob.HasStarted() {
 			return false
 		}

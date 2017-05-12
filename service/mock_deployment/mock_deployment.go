@@ -120,7 +120,7 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 	}
 
 	if len(resp.LogStreams) == 0 {
-		return nil, awsService.NOT_FOUND
+		return nil, awsService.ErrNotFound
 	}
 	return resp.LogStreams[0], nil
 
