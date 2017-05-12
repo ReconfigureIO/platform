@@ -16,25 +16,26 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-var NOT_FOUND = errors.New("Not Found")
+var errNotFound = errors.New("Not Found")
 
-type ServiceInterface interface {
+// Service is an AWS service.
+type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
-	RunBuild(inputArtifactUrl string, callbackUrl string) (string, error)
-	RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error)
-	HaltJob(batchId string) error
+	RunBuild(inputArtifactURL string, callbackURL string) (string, error)
+	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
+	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
-	Run(ctx context.Context) error
 }
 
-type Service struct {
+type service struct {
 	session *session.Session
 	Conf    ServiceConfig
 }
 
+// ServiceConfig holds configuration for service.
 type ServiceConfig struct {
 	LogGroup      string
 	Bucket        string
@@ -42,13 +43,14 @@ type ServiceConfig struct {
 	JobDefinition string
 }
 
-func New(conf ServiceConfig) *Service {
-	s := Service{Conf: conf}
+// New creates a new service with conf.
+func New(conf ServiceConfig) Service {
+	s := service{Conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
 }
 
-func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) {
+func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
 	// This is bad and buffers the entire body in memory :(
@@ -69,7 +71,7 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 	return "s3://" + s.Conf.Bucket + "/" + key, nil
 }
 
-func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string, error) {
+func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.Conf.JobDefinition), // Required
@@ -87,11 +89,11 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 				},
 				{
 					Name:  aws.String("INPUT_URL"),
-					Value: aws.String(inputArtifactUrl),
+					Value: aws.String(inputArtifactURL),
 				},
 				{
 					Name:  aws.String("CALLBACK_URL"),
-					Value: aws.String(callbackUrl),
+					Value: aws.String(callbackURL),
 				},
 				{
 					Name:  aws.String("DEVICE"),
@@ -111,7 +113,7 @@ func (s *Service) RunBuild(inputArtifactUrl string, callbackUrl string) (string,
 	return *resp.JobId, nil
 }
 
-func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, command string) (string, error) {
+func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.Conf.JobDefinition), // Required
@@ -132,11 +134,11 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 				},
 				{
 					Name:  aws.String("INPUT_URL"),
-					Value: aws.String(inputArtifactUrl),
+					Value: aws.String(inputArtifactURL),
 				},
 				{
 					Name:  aws.String("CALLBACK_URL"),
-					Value: aws.String(callbackUrl),
+					Value: aws.String(callbackURL),
 				},
 				{
 					Name:  aws.String("CMD"),
@@ -160,22 +162,22 @@ func (s *Service) RunSimulation(inputArtifactUrl string, callbackUrl string, com
 	return *resp.JobId, nil
 }
 
-func (s *Service) HaltJob(batchId string) error {
+func (s *service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
-		JobId:  aws.String(batchId),        // Required
+		JobId:  aws.String(batchID),        // Required
 		Reason: aws.String("User request"), // Required
 	}
 	_, err := batchSession.TerminateJob(params)
 	return err
 }
 
-func (s *Service) RunDeployment(command string) (string, error) {
+func (s *service) RunDeployment(command string) (string, error) {
 
 	return "This function does nothing yet", nil
 }
 
-func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
+func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
 	resp, err := batchSession.DescribeJobs(inp)
@@ -183,12 +185,12 @@ func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 		return nil, err
 	}
 	if len(resp.Jobs) == 0 {
-		return nil, NOT_FOUND
+		return nil, errNotFound
 	}
 	return resp.Jobs[0], nil
 }
 
-func (s *Service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
+func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
@@ -203,25 +205,30 @@ func (s *Service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	}
 
 	if len(resp.LogStreams) == 0 {
-		return nil, NOT_FOUND
+		return nil, errNotFound
 	}
 	return resp.LogStreams[0], nil
 }
 
+// Stream is log stream.
 type Stream struct {
-	session *Service
+	session *service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
 	Ended   bool
 }
 
-func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
+func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
-	ret := Stream{s, stream, logs, false}
-	return &ret
+	return &Stream{
+		session: s,
+		stream:  stream,
+		Events:  logs,
+	}
 }
 
+// Run starts the stream using context.
 func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	cwLogs := cloudwatchlogs.New(stream.session.session)
 

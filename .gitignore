@@ -3,3 +3,4 @@ vendor
 creds
 runner-build
 *_mock.go
+debug.test

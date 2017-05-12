@@ -11,11 +11,12 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/ReconfigureIO/platform/service/stream"
-	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 )
 
-func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob) {
+// StreamBatchLogs streams batch logs from AWS.
+func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob) {
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
@@ -41,7 +42,7 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 	refreshTicker := time.NewTicker(10 * time.Second)
 	defer refreshTicker.Stop()
 
-	stream.StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
 		if b.HasStarted() {
 			return false
 		}
@@ -53,16 +54,16 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
-				InternalError(c, err)
+				sugar.InternalError(c, err)
 				return false
 			}
 		}
 		return true
 	})
 
-	logStream, err := awsSession.GetJobStream(b.BatchId)
+	logStream, err := awsSession.GetJobStream(b.BatchID)
 	if err != nil {
-		ErrResponse(c, 500, err)
+		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
@@ -84,9 +85,8 @@ func StreamBatchLogs(awsSession *aws.Service, c *gin.Context, b *models.BatchJob
 		}
 		lstream.Ended = true
 	}()
-
-	stream.Stream(lstream, c, ctx, awsSession.Conf.LogGroup)
-
+  
+	stream.Start(ctx, lstream, c, awsSession.Conf.LogGroup)
 }
 
 func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
@@ -129,7 +129,7 @@ func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
-				InternalError(c, err)
+				sugar.InternalError(c, err)
 				return false
 			}
 		}
@@ -138,7 +138,7 @@ func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 
 	logStream, err := service.GetDeploymentStream(ctx, *deployment)
 	if err != nil {
-		ErrResponse(c, 500, err)
+		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
@@ -161,6 +161,6 @@ func StreamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		lstream.Ended = true
 	}()
 
-	stream.Stream(lstream, c, ctx, service.Conf.LogGroup)
+	stream.Start(ctx, lstream, c, service.Conf.LogGroup)
 
 }

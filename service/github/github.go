@@ -8,27 +8,30 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/oauth2"
-	githuboauth "golang.org/x/oauth2/github"
+	ghoauth "golang.org/x/oauth2/github"
 )
 
-type GithubService struct {
+// Service is Github service.
+type Service struct {
 	OauthConf *oauth2.Config
 	db        *gorm.DB
 }
 
-func NewService(db *gorm.DB) *GithubService {
+// New creates a new Github service.
+func New(db *gorm.DB) *Service {
 	oauthConf := &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 		Scopes:       []string{"user"},
-		Endpoint:     githuboauth.Endpoint,
+		Endpoint:     ghoauth.Endpoint,
 	}
-	return &GithubService{OauthConf: oauthConf, db: db}
+	return &Service{OauthConf: oauthConf, db: db}
 }
 
+// GetOrCreateUser fetches or create a user.
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
-func (s *GithubService) GetOrCreateUser(context context.Context, accessToken string) (models.User, error) {
+func (s *Service) GetOrCreateUser(context context.Context, accessToken string) (models.User, error) {
 	oauthClient := s.OauthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: accessToken})
 	client := github.NewClient(oauthClient)
 
@@ -55,8 +58,9 @@ func (s *GithubService) GetOrCreateUser(context context.Context, accessToken str
 	return u, err
 }
 
+// GetUser fetches a user.
 // Given an access token, fetch the user data from github, and get an existing user, and update it with the latest info.
-func (s *GithubService) GetUser(context context.Context, accessToken string) (models.User, error) {
+func (s *Service) GetUser(context context.Context, accessToken string) (models.User, error) {
 	oauthClient := s.OauthConf.Client(oauth2.NoContext, &oauth2.Token{AccessToken: accessToken})
 	client := github.NewClient(oauthClient)
 
@@ -74,18 +78,18 @@ func (s *GithubService) GetUser(context context.Context, accessToken string) (mo
 		GithubAccessToken: accessToken,
 	}
 
-	old_u := models.User{}
+	oldUser := models.User{}
 
 	q := s.db.Where(models.User{GithubID: user.GetID()})
-	err = q.First(&old_u).Error
+	err = q.First(&oldUser).Error
 	if err != nil {
 		return u, err
 	}
 
-	err = s.db.Model(&old_u).Update(u).Error
+	err = s.db.Model(&oldUser).Update(u).Error
 	if err != nil {
 		return u, err
 	}
 
-	return old_u, err
+	return oldUser, err
 }
