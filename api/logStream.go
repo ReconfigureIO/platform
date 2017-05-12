@@ -15,7 +15,7 @@ import (
 )
 
 // StreamBatchLogs streams batch logs from AWS.
-func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.BatchJob) {
+func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob) {
 	ctx, cancel := context.WithCancel(c)
 	defer cancel()
 
@@ -41,7 +41,7 @@ func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.
 	refreshTicker := time.NewTicker(10 * time.Second)
 	defer refreshTicker.Stop()
 
-	stream.StreamWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
 		if b.HasStarted() {
 			return false
 		}
@@ -85,6 +85,6 @@ func StreamBatchLogs(awsSession aws.ServiceInterface, c *gin.Context, b *models.
 		lstream.Ended = true
 	}()
 
-	stream.Stream(lstream, c, ctx)
+	stream.Start(ctx, lstream, c)
 
 }

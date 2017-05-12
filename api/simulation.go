@@ -15,7 +15,7 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	Aws aws.ServiceInterface
+	Aws aws.Service
 }
 
 // NewSimulation creates a new Simulation.

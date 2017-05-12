@@ -16,7 +16,7 @@ import (
 
 type signupUser struct {
 	db *gorm.DB
-	gh *github.GithubService
+	gh *github.Service
 }
 
 func (s *signupUser) GetAuthToken(token string) (models.InviteToken, error) {

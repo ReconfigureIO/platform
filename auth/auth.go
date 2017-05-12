@@ -21,7 +21,7 @@ func SetupAdmin(r gin.IRouter, db *gorm.DB) {
 
 // Setup sets all routes.
 func Setup(r gin.IRouter, db *gorm.DB) {
-	gh := github.NewService(db)
+	gh := github.New(db)
 
 	r.GET("/", Index)
 
