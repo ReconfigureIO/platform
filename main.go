@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	stripe "github.com/stripe/stripe-go"
 )
 
 func setupDB() *gorm.DB {
@@ -61,6 +62,8 @@ func main() {
 	})
 
 	routes.SetupRoutes(r, db)
+
+	stripe.Key = "sk_test_NvEpeLnLAV15b9TWJzZKLkvW"
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
