@@ -17,3 +17,5 @@ import:
 - package: github.com/golang/mock
   subpackages:
   - gomock
+- package: github.com/stripe/stripe-go
+  version: ~21.4.1
