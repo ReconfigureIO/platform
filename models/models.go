@@ -53,7 +53,7 @@ type Build struct {
 	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
 	ProjectID   int          `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
-	BatchJobId  int64        `json:"-"`
+	BatchJobID  int64        `json:"-"`
 	Token       string       `json:"-"`
 	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
@@ -104,7 +104,7 @@ type Simulation struct {
 	UserID     int      `json:"-"`
 	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
 	ProjectID  int      `json:"-"`
-	BatchJobId int64    `json:"-"`
+	BatchJobID int64    `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
 	Token      string   `json:"-"`
 	Command    string   `json:"command"`
