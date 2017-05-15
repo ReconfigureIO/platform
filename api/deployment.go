@@ -27,11 +27,11 @@ func (d Deployment) Query(c *gin.Context) *gorm.DB {
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
 func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	err := d.Query(c).First(&dep, id).Error
+	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -51,7 +51,7 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure that the project exists, and the user has permissions for it
 	build := models.Build{}
-	err := Build{}.Query(c).First(&build, post.BuildID).Error
+	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
@@ -187,11 +187,11 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 
 func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
 	q := db.Preload("DepJob").Preload("DepJob.Events")
-	err := q.First(&dep, id).Error
+	err := q.First(&dep, "deployments.id = ?", id).Error
 	return dep, err
 }

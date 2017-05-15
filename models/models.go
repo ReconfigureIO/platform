@@ -63,7 +63,7 @@ type Build struct {
 	uuidHook
 	ID          string       `gorm:"primary_key" json:"id"`
 	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID   int          `json:"-"`
+	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobID  int64        `json:"-"`
 	Token       string       `json:"-"`
@@ -184,6 +184,7 @@ type BatchJob struct {
 
 // DepJob model.
 type DepJob struct {
+	uuidHook
 	ID     string        `gorm:"primary_key" json:"-"`
 	DepID  string        `json:"-" validate:"nonzero"`
 	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`

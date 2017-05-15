@@ -33,11 +33,11 @@ func (s Simulation) Query(c *gin.Context) *gorm.DB {
 // ByID gets the first simulation by ID, 404 if it doesn't exist
 func (s Simulation) ByID(c *gin.Context) (models.Simulation, error) {
 	sim := models.Simulation{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return sim, errNotFound
 	}
-	err := s.Query(c).First(&sim, id).Error
+	err := s.Query(c).First(&sim, "simulations.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -48,12 +48,12 @@ func (s Simulation) ByID(c *gin.Context) (models.Simulation, error) {
 
 func (s Simulation) unauthOne(c *gin.Context) (models.Simulation, error) {
 	sim := models.Simulation{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return sim, errNotFound
 	}
 	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
-	err := q.First(&sim, id).Error
+	err := q.First(&sim, "simulations.id = ?", id).Error
 	return sim, err
 }
 
@@ -68,7 +68,7 @@ func (s Simulation) Create(c *gin.Context) {
 
 	// Ensure that the project exists, and the user has permissions for it
 	project := models.Project{}
-	err := Project{}.Query(c).First(&project, post.ProjectID).Error
+	err := Project{}.Query(c).First(&project, "projects.id = ?", post.ProjectID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
@@ -96,7 +96,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("simulation/%d/simulation.tar.gz", sim.ID)
+	key := fmt.Sprintf("simulation/%s/simulation.tar.gz", sim.ID)
 
 	s3Url, err := s.Aws.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/simulations/%d/events?token=%s", c.Request.Host, sim.ID, sim.Token)
+	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
 
 	simID, err := s.Aws.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {
