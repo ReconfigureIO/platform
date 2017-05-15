@@ -1,6 +1,7 @@
 branch-defaults:
   default:
-    environment: worker-env
+    environment: worker-production
+    group_suffix: production
 global:
   application_name: platform
   branch: null
