@@ -9,6 +9,10 @@ import (
 	"io"
 	"time"
 
+	"io/ioutil"
+
+	"os"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -52,18 +56,36 @@ func New(conf ServiceConfig) Service {
 func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
-	// This is bad and buffers the entire body in memory :(
-	body := bytes.Buffer{}
-	body.ReadFrom(r)
+	var reader io.ReadSeeker
+
+	// s3.PutObjectInput takes in a io.ReadSeeker
+	// rather than reading everything into memory
+	// let's write it to a temp file instead
+	f, err := ioutil.TempFile("", "")
+	if err == nil {
+		if _, err = io.Copy(f, r); err == nil {
+			f.Close()
+			reader = f
+			defer os.Remove(f.Name())
+		}
+	}
+	if err != nil {
+		// if temp file fails (which hardly happens)
+		// fall back to reading into memory
+		// this is bad and buffers the entire body in memory :(
+		body := bytes.Buffer{}
+		body.ReadFrom(r)
+		reader = bytes.NewReader(body.Bytes())
+	}
 
 	putParams := &s3.PutObjectInput{
 		Bucket:        aws.String(s.conf.Bucket), // Required
 		Key:           aws.String(key),           // Required
-		Body:          bytes.NewReader(body.Bytes()),
+		Body:          reader,
 		ContentLength: aws.Int64(length),
 	}
 
-	_, err := s3Session.PutObject(putParams)
+	_, err = s3Session.PutObject(putParams)
 	if err != nil {
 		return "", err
 	}

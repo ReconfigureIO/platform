@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
@@ -131,8 +130,8 @@ func (s Simulation) List(c *gin.Context) {
 	simulations := []models.Simulation{}
 	q := s.Query(c)
 
-	if id, err := strconv.Atoi(project); err == nil && project != "" {
-		q = q.Where(&models.Simulation{ProjectID: id})
+	if project != "" {
+		q = q.Where(&models.Simulation{ProjectID: project})
 	}
 
 	err := q.Find(&simulations).Error

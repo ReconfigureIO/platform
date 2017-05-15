@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/auth"
@@ -88,8 +87,8 @@ func (d Deployment) List(c *gin.Context) {
 	deployments := []models.Deployment{}
 	q := d.Query(c)
 
-	if id, err := strconv.Atoi(build); err == nil && build != "" {
-		q = q.Where(&models.Deployment{BuildID: id})
+	if build != "" {
+		q = q.Where(&models.Deployment{BuildID: build})
 	}
 	err := q.Find(&deployments).Error
 

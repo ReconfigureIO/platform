@@ -47,7 +47,9 @@ func (p Project) Create(c *gin.Context) {
 	}
 	user := auth.GetUser(c)
 	newProject := models.Project{UserID: user.ID, Name: post.Name}
-	db.Create(&newProject)
+	if err := db.Create(&newProject).Error; err != nil {
+		sugar.ErrResponse(c, 500, err)
+	}
 	sugar.SuccessResponse(c, 201, newProject)
 }
 

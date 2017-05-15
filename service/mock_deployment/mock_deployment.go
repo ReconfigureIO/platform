@@ -98,7 +98,7 @@ func (s *Service) GetDepDetail(id int) (string, error) {
 	return "imaginary", nil
 }
 
-func (s *Service) GetJobStream(id int) (string, error) {
+func (s *Service) GetJobStream(id string) (string, error) {
 
 	return "doing doing deployed", nil
 }
