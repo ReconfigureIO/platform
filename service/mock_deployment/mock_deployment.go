@@ -26,8 +26,9 @@ type LogsConfig struct {
 }
 
 type Deployment struct {
-	Container ContainerConfig `json:"container"`
-	Logs      LogsConfig      `json:"logs"`
+	Container   ContainerConfig `json:"container"`
+	Logs        LogsConfig      `json:"logs"`
+	CallbackUrl string          `json:"callback_url"`
 }
 
 type Service struct {
@@ -47,8 +48,9 @@ func New(conf ServiceConfig) *Service {
 	return &s
 }
 
-func (s *ServiceConfig) ContainerConfig(deployment models.Deployment) Deployment {
+func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUrl string) Deployment {
 	return Deployment{
+		CallbackUrl: callbackUrl,
 		Container: ContainerConfig{
 			Image:   s.Image,
 			Command: deployment.Command,
@@ -69,10 +71,10 @@ func (d Deployment) String() (string, error) {
 	return buff.String(), err
 }
 
-func (s *Service) RunDeployment(ctx context.Context, deployment models.Deployment) (string, error) {
+func (s *Service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
 	ec2Session := ec2.New(s.session)
 
-	encodedConfig, err := s.Conf.ContainerConfig(deployment).String()
+	encodedConfig, err := s.Conf.ContainerConfig(deployment, callbackUrl).String()
 	if err != nil {
 		return "", err
 	}

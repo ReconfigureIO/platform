@@ -70,7 +70,9 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	_, err = mockDeploy.RunDeployment(context.Background(), newDep)
+	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+
+	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
 	if err != nil {
 		InternalError(c, err)
 		return
