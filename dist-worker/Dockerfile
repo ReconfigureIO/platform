@@ -1,3 +1,2 @@
-FROM debian:jessie
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-CMD ["echo", "fail"]
+FROM reco-api:latest
+CMD ["/worker"]
