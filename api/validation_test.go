@@ -21,7 +21,7 @@ func TestProjValidation(t *testing.T) {
 
 func TestDepJobEventValidation(t *testing.T) {
 	newDepJobEvent := models.DepJobEvent{
-		DepJobId: 1,
+		DepJobID: 1,
 	}
 
 	err := validator.Validate(newDepJobEvent)
@@ -33,7 +33,7 @@ func TestDepJobEventValidation(t *testing.T) {
 
 func TestDepJobValidation(t *testing.T) {
 	newDepJob := models.DepJob{
-		DepId: "1",
+		DepID: "1",
 	}
 
 	err := validator.Validate(newDepJob)

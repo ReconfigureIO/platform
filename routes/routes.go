@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// SetupRoutes sets up api routes.
 func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	// Setup index & signup flow
 	auth.Setup(r, db)

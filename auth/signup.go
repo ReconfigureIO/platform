@@ -6,7 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
-	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -14,18 +14,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Signup struct {
+type signupUser struct {
 	db *gorm.DB
-	gh *github.GithubService
+	gh *github.Service
 }
 
-func (s *Signup) GetAuthToken(token string) (models.InviteToken, error) {
+func (s *signupUser) GetAuthToken(token string) (models.InviteToken, error) {
 	var i models.InviteToken
 	err := s.db.Where(&models.InviteToken{Token: token}).First(&i).Error
 	return i, err
 }
 
-func (s *Signup) ResignIn(c *gin.Context) {
+func (s *signupUser) ResignIn(c *gin.Context) {
 	newState := uniuri.NewLen(64)
 	session := sessions.Default(c)
 	session.Set("login_token", newState)
@@ -35,11 +35,11 @@ func (s *Signup) ResignIn(c *gin.Context) {
 	c.Redirect(http.StatusFound, url)
 }
 
-func (s *Signup) SignUp(c *gin.Context) {
+func (s *signupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
-		NotFoundOrError(c, err)
+		sugar.NotFoundOrError(c, err)
 		return
 	}
 
@@ -51,42 +51,42 @@ func (s *Signup) SignUp(c *gin.Context) {
 	c.Redirect(http.StatusFound, url)
 }
 
-func (s *Signup) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
-	state_token := c.Query("state")
+func (s *signupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
+	stateToken := c.Query("state")
 
-	stored_token := session.Get("invite_token")
-	if stored_token != nil {
+	storedToken := session.Get("invite_token")
+	if storedToken != nil {
 		session.Delete("invite_token")
-		if stored_token.(string) == state_token {
-			return stored_token.(string), true, nil
+		if storedToken.(string) == stateToken {
+			return storedToken.(string), true, nil
 		}
 	}
 
-	login_token := session.Get("login_token")
-	if login_token != nil {
+	loginToken := session.Get("login_token")
+	if loginToken != nil {
 		session.Delete("login_token")
 
-		if login_token.(string) == state_token {
-			return login_token.(string), false, nil
+		if loginToken.(string) == stateToken {
+			return loginToken.(string), false, nil
 		}
 	}
 
 	return "", true, errors.New("Error: No valid tokens")
 }
 
-func (s *Signup) Callback(c *gin.Context) {
+func (s *signupUser) Callback(c *gin.Context) {
 	session := sessions.Default(c)
 
-	stored_token, newUser, err := s.StoredToken(c, session)
+	storedToken, newUser, err := s.StoredToken(c, session)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 	if newUser {
-		invite, err := s.GetAuthToken(stored_token)
+		invite, err := s.GetAuthToken(storedToken)
 		if err != nil {
-			NotFoundOrError(c, err)
+			sugar.NotFoundOrError(c, err)
 			return
 		}
 		defer s.db.Delete(&invite)

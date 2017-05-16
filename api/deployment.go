@@ -8,14 +8,16 @@ import (
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
-	. "github.com/ReconfigureIO/platform/sugar"
+	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
+// Deployment handles request for deployments.
 type Deployment struct{}
 
+// Query fetches deployment for user and project.
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
 	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
@@ -23,27 +25,28 @@ func (d Deployment) Query(c *gin.Context) *gorm.DB {
 		Preload("Build").Preload("DepJob.Events").Preload("DepJob")
 }
 
-// Get the first deployment by ID, 404 if it doesn't exist
-func (d Deployment) ById(c *gin.Context) (models.Deployment, error) {
+// ByID gets the first deployment by ID, 404 if it doesn't exist.
+func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
 	var id int
-	if !bindId(c, &id) {
+	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
 	err := d.Query(c).First(&dep, id).Error
 
 	if err != nil {
-		NotFoundOrError(c, err)
+		sugar.NotFoundOrError(c, err)
 		return dep, err
 	}
 	return dep, nil
 }
 
+// Create creates a new deployment
 func (d Deployment) Create(c *gin.Context) {
 	post := models.PostDeployment{}
 	c.BindJSON(&post)
 
-	if !ValidateRequest(c, post) {
+	if !sugar.ValidateRequest(c, post) {
 		return
 	}
 
@@ -51,7 +54,7 @@ func (d Deployment) Create(c *gin.Context) {
 	build := models.Build{}
 	err := Build{}.Query(c).First(&build, post.BuildID).Error
 	if err != nil {
-		NotFoundOrError(c, err)
+		sugar.NotFoundOrError(c, err)
 		return
 	}
 
@@ -61,12 +64,12 @@ func (d Deployment) Create(c *gin.Context) {
 	newDep := models.Deployment{
 		BuildID:  post.BuildID,
 		Command:  post.Command,
-		DepJobId: depJob.ID,
+		DepJobID: depJob.ID,
 		Token:    uniuri.NewLen(64),
 	}
 	err = db.Create(&newDep).Error
 	if err != nil {
-		InternalError(c, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -74,13 +77,14 @@ func (d Deployment) Create(c *gin.Context) {
 
 	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
 	if err != nil {
-		InternalError(c, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
-	SuccessResponse(c, 201, newDep)
+	sugar.SuccessResponse(c, 201, newDep)
 }
 
+// List lists all deployments.
 func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
 	deployments := []models.Deployment{}
@@ -92,30 +96,32 @@ func (d Deployment) List(c *gin.Context) {
 	err := q.Find(&deployments).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
-		InternalError(c, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
-	SuccessResponse(c, 200, deployments)
+	sugar.SuccessResponse(c, 200, deployments)
 }
 
+// Get fetches a deployment.
 func (d Deployment) Get(c *gin.Context) {
-	outputdep, err := d.ById(c)
+	outputdep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
-	SuccessResponse(c, 200, outputdep)
+	sugar.SuccessResponse(c, 200, outputdep)
 }
 
+// Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
-	targetdep, err := d.ById(c)
+	targetdep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
 	StreamDeploymentLogs(mockDeploy, c, &targetdep)
 }
 
-func (d Deployment) CanPostEvent(c *gin.Context, dep models.Deployment) bool {
+func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
 	user, loggedIn := auth.CheckUser(c)
 	if loggedIn && dep.Build.Project.UserID == user.ID {
 		return true
@@ -127,13 +133,14 @@ func (d Deployment) CanPostEvent(c *gin.Context, dep models.Deployment) bool {
 	return false
 }
 
+// CreateEvent creates a deployment event.
 func (d Deployment) CreateEvent(c *gin.Context) {
-	dep, err := d.UnauthOne(c)
+	dep, err := d.unauthOne(c)
 	if err != nil {
 		return
 	}
 
-	if !d.CanPostEvent(c, dep) {
+	if !d.canPostEvent(c, dep) {
 		c.AbortWithStatus(403)
 		return
 	}
@@ -141,31 +148,31 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	event := models.PostDepEvent{}
 	c.BindJSON(&event)
 
-	if !ValidateRequest(c, event) {
+	if !sugar.ValidateRequest(c, event) {
 		return
 	}
 
 	currentStatus := dep.Status()
 
 	if !models.CanTransition(currentStatus, event.Status) {
-		ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		sugar.ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
 		return
 	}
 
-	newEvent, err := AddEvent(&dep.DepJob, event)
+	newEvent, err := addEvent(&dep.DepJob, event)
 
 	if err != nil {
 		c.Error(err)
-		ErrResponse(c, 500, nil)
+		sugar.ErrResponse(c, 500, nil)
 		return
 	}
 
-	SuccessResponse(c, 200, newEvent)
+	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
+func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
 	newEvent := models.DepJobEvent{
-		DepJobId:  DepJob.ID,
+		DepJobID:  DepJob.ID,
 		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
@@ -179,10 +186,10 @@ func AddEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 	return newEvent, nil
 }
 
-func (d Deployment) UnauthOne(c *gin.Context) (models.Deployment, error) {
+func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
 	var id int
-	if !bindId(c, &id) {
+	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
 	q := db.Preload("DepJob").Preload("DepJob.Events")

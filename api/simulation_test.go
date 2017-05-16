@@ -11,6 +11,10 @@ func Test_ServiceInterface(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	s := aws.NewMockServiceInterface(mockCtrl)
-	s.EXPECT()
+	s := aws.NewMockService(mockCtrl)
+	s.EXPECT().RunBuild("foo", "bar").Return("foobar", nil)
+	ss, err := s.RunBuild("foo", "bar")
+	if err != nil || ss != "foobar" {
+		t.Error("unexpected result")
+	}
 }
