@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 func main() {
@@ -13,7 +14,7 @@ func main() {
 	db, err := gorm.Open("postgres", gormConnDets)
 
 	if err != nil {
-		panic("failed to connect to database")
+		log.Fatalf("failed to connect to database: %s", err.Error())
 	}
 
 	port, found := os.LookupEnv("PORT")
