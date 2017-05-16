@@ -69,7 +69,7 @@ pipeline {
                     }
                 }
                 dir('EB'){
-                    sh 'eb deploy --modules worker web --env-group-suffix production
+                    sh 'eb deploy --modules worker web --env-group-suffix production'
                 }
             }
         }
