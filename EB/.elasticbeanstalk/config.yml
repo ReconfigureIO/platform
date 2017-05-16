@@ -7,7 +7,7 @@ global:
   default_ec2_keyname: null
   default_platform: Docker 1.12.6
   default_region: us-east-1
-  instance_profile: null
+  instance_profile: aws-arn:aws:iam::398048034572:role/aws-elasticbeanstalk-ec2-role
   platform_name: null
   platform_version: null
   profile: null
