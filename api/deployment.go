@@ -85,12 +85,18 @@ func (d Deployment) Create(c *gin.Context) {
 // List lists all deployments.
 func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
+	project := c.DefaultQuery("project", "")
 	deployments := []models.Deployment{}
 	q := d.Query(c)
+
+	if projid, err := strconv.Atoi(project); err == nil && project != "" {
+		q = q.Where(&models.Build{ProjectID: projid})
+	}
 
 	if id, err := strconv.Atoi(build); err == nil && build != "" {
 		q = q.Where(&models.Deployment{BuildID: id})
 	}
+
 	err := q.Find(&deployments).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
