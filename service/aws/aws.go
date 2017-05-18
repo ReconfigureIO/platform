@@ -7,8 +7,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/ioutil"
+	"os"
 	"time"
 
+	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -55,14 +58,54 @@ func New(conf ServiceConfig) Service {
 func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
-	// This is bad and buffers the entire body in memory :(
-	body := bytes.Buffer{}
-	body.ReadFrom(r)
+	// s3.PutObjectInput takes in a io.ReadSeeker
+	// rather than reading everything into memory
+	// let's write it to a temp file instead
+	var reader io.ReadSeeker
+
+	// We have multiple lines that are dependent on the
+	// previous line returning nil error.
+	// Using error group for convenience
+	var e errs.Group
+	var tmpFile *os.File
+
+	// remove tmpFile when done
+	defer func() {
+		if tmpFile != nil {
+			os.Remove(tmpFile.Name())
+		}
+	}()
+
+	e.Add(func() (err error) {
+		tmpFile, err = ioutil.TempFile("", "")
+		return
+	})
+	e.Add(func() error {
+		_, err := io.Copy(tmpFile, r)
+		return err
+	})
+	e.Add(func() (err error) {
+		tmpFile.Close()
+		tmpFile, err = os.Open(tmpFile.Name())
+		return
+	})
+	e.Add(func() error {
+		reader = tmpFile
+		return nil
+	})
+	if err := e.Exec(); err != nil {
+		// if writing to temp file fails (which hardly happens)
+		// fall back to reading into memory
+		// this is bad and buffers the entire body in memory :(
+		body := bytes.Buffer{}
+		body.ReadFrom(r)
+		reader = bytes.NewReader(body.Bytes())
+	}
 
 	putParams := &s3.PutObjectInput{
 		Bucket:        aws.String(s.conf.Bucket), // Required
 		Key:           aws.String(key),           // Required
-		Body:          bytes.NewReader(body.Bytes()),
+		Body:          reader,
 		ContentLength: aws.Int64(length),
 	}
 

@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
@@ -26,11 +25,11 @@ func (b Build) Query(c *gin.Context) *gorm.DB {
 // ByID gets the first build by ID, 404 if it doesn't exist.
 func (b Build) ByID(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return build, errNotFound
 	}
-	err := b.Query(c).First(&build, id).Error
+	err := b.Query(c).First(&build, "builds.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -41,12 +40,12 @@ func (b Build) ByID(c *gin.Context) (models.Build, error) {
 
 func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return build, errNotFound
 	}
 	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
-	err := q.First(&build, id).Error
+	err := q.First(&build, "id = ?", id).Error
 	return build, err
 }
 
@@ -57,12 +56,7 @@ func (b Build) List(c *gin.Context) {
 	q := b.Query(c)
 
 	if project != "" {
-		projID, err := strconv.Atoi(project)
-		if err != nil {
-			sugar.ErrResponse(c, 400, nil)
-			return
-		}
-		q = q.Where(&models.Build{ProjectID: projID})
+		q = q.Where(&models.Build{ProjectID: project})
 	}
 
 	err := q.Find(&builds).Error
@@ -95,14 +89,17 @@ func (b Build) Create(c *gin.Context) {
 	}
 	// Ensure that the project exists, and the user has permissions for it
 	project := models.Project{}
-	err := Project{}.Query(c).First(&project, post.ProjectID).Error
+	err := Project{}.Query(c).First(&project, "projects.id = ?", post.ProjectID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
 	}
 
 	newBuild := models.Build{Project: project, Token: uniuri.NewLen(64)}
-	db.Create(&newBuild)
+	if err := db.Create(&newBuild).Error; err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
@@ -118,14 +115,14 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("builds/%d/simulation.tar.gz", build.ID)
+	key := fmt.Sprintf("builds/%s/simulation.tar.gz", build.ID)
 
 	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/builds/%d/events?token=%s", c.Request.Host, build.ID, build.Token)
+	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
 	buildID, err := awsSession.RunBuild(s3Url, callbackURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
