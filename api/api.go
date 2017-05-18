@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
@@ -49,10 +48,10 @@ func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 	return err
 }
 
-func bindID(c *gin.Context, id *int) bool {
+func bindID(c *gin.Context, id *string) bool {
 	paramID := c.Param("id")
-	if i, err := strconv.Atoi(paramID); err == nil && paramID != "" {
-		*id = i
+	if paramID != "" {
+		*id = paramID
 		return true
 	}
 	sugar.ErrResponse(c, 404, nil)

@@ -37,6 +37,10 @@ func (s *signupUser) ResignIn(c *gin.Context) {
 
 func (s *signupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
+	if token == "" {
+		sugar.ErrResponse(c, 400, "invite token required")
+		return
+	}
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
