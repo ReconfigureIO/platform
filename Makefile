@@ -54,3 +54,4 @@ clean:
 
 image: all
 	docker build -t "reco-api:latest" dist-image
+	docker build -t "reco-api:latest-worker" dist-worker

@@ -52,6 +52,7 @@ pipeline {
                 sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make all'
                 sh 'make image'
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
+                sh 'docker tag reco-api:latest-worker 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker'
             }
         }
 
@@ -64,11 +65,11 @@ pipeline {
                 script {
                     docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
                         docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
+                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker").push()
                     }
                 }
                 dir('EB'){
-                    sh 'eb config --cfg production'
-                    sh 'eb deploy'
+                    sh 'eb deploy --modules worker web --env-group-suffix production'
                 }
             }
         }
