@@ -90,7 +90,7 @@ func (d Deployment) List(c *gin.Context) {
 	q := d.Query(c)
 
 	if projid, err := strconv.Atoi(project); err == nil && project != "" {
-		q = q.Where(&models.Build{ProjectID: projid})
+		q = q.Where("builds.project_id=?", projid)
 	}
 
 	if id, err := strconv.Atoi(build); err == nil && build != "" {
