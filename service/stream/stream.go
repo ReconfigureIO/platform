@@ -23,9 +23,9 @@ func StartWithContext(ctx context.Context, c *gin.Context, step func(ctx context
 
 // Start starts a stream of cloudwatch log events, and stream the messages to
 // the client until it finishes.
-func Start(ctx context.Context, stream *aws.Stream, c *gin.Context) {
+func Start(ctx context.Context, stream *aws.Stream, c *gin.Context, logGroup string) {
 	go func() {
-		err := stream.Run(ctx)
+		err := stream.Run(ctx, logGroup)
 		if err != nil {
 			c.Error(err)
 		}
