@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -57,21 +58,43 @@ func New(conf ServiceConfig) Service {
 func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
-	var reader io.ReadSeeker
-
 	// s3.PutObjectInput takes in a io.ReadSeeker
 	// rather than reading everything into memory
 	// let's write it to a temp file instead
-	f, err := ioutil.TempFile("", "")
-	if err == nil {
-		if _, err = io.Copy(f, r); err == nil {
-			f.Close()
-			reader = f
-			defer os.Remove(f.Name())
+	var reader io.ReadSeeker
+
+	// We have multiple lines that are dependent on the
+	// previous line returning nil error.
+	// Using error group for convenience
+	var e errs.Group
+	var tmpFile *os.File
+
+	// remove tmpFile when done
+	defer func() {
+		if tmpFile != nil {
+			os.Remove(tmpFile.Name())
 		}
-	}
-	if err != nil {
-		// if temp file fails (which hardly happens)
+	}()
+
+	e.Add(func() (err error) {
+		tmpFile, err = ioutil.TempFile("", "")
+		return
+	})
+	e.Add(func() error {
+		_, err := io.Copy(tmpFile, r)
+		return err
+	})
+	e.Add(func() (err error) {
+		tmpFile.Close()
+		tmpFile, err = os.Open(tmpFile.Name())
+		return
+	})
+	e.Add(func() error {
+		reader = tmpFile
+		return nil
+	})
+	if err := e.Exec(); err != nil {
+		// if writing to temp file fails (which hardly happens)
 		// fall back to reading into memory
 		// this is bad and buffers the entire body in memory :(
 		body := bytes.Buffer{}
@@ -86,7 +109,7 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 		ContentLength: aws.Int64(length),
 	}
 
-	_, err = s3Session.PutObject(putParams)
+	_, err := s3Session.PutObject(putParams)
 	if err != nil {
 		return "", err
 	}

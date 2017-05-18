@@ -1,8 +1,10 @@
-hash: 422e772435a65c25b835dd31b361c38a48ee5e73fc91e8b603fee9ad2819c8af
-updated: 2017-05-15T20:56:37.541370994+01:00
+hash: 160b4fde86558364c8f36cc05680eccd58947e1b8e1fab6476fe702ee6c145b2
+updated: 2017-05-18T10:07:28.238510036+01:00
 imports:
+- name: github.com/abiosoft/errs
+  version: 42b3fcff7074a30e8c369806679bd0e983326bd4
 - name: github.com/aws/aws-sdk-go
-  version: cea091b5b8fe6fcecf0eb6ec8f1a2570ff4ee6a7
+  version: 3cf3ede801c0c4b8b0f6f65b7be60a61a55ef91c
   subpackages:
   - aws
   - aws/awserr
@@ -64,7 +66,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: 11516601ad905b8307923d093a487b6a5446f2c4
+  version: 4b7b445665c8ce4f3c10c753b1884e2c4f09e323
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -101,7 +103,7 @@ imports:
   subpackages:
   - context
 - name: golang.org/x/oauth2
-  version: ad516a297a9f2a74ecc244861b298c94bdd28b9d
+  version: f047394b6d14284165300fd82dad67edb3a4d7f6
   subpackages:
   - github
   - internal
