@@ -16,7 +16,7 @@ OptionSettings:
     RollingUpdateEnabled: true
     RollingUpdateType: Health
   aws:elasticbeanstalk:application:environment:
-    DATABASE_URL: host=production-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com
+    DATABASE_URL: host=production-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
       dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
     GIN_MODE: release
     PORT: '8080'
