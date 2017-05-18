@@ -23,7 +23,7 @@ func SessionAuth(db *gorm.DB) gin.HandlerFunc {
 		userID := session.Get(strUserID)
 		if userID != nil {
 			user := models.User{}
-			err := db.First(&user, userID.(int)).Error
+			err := db.First(&user, "id = ?", userID).Error
 			if err != nil && err != gorm.ErrRecordNotFound {
 				c.AbortWithError(500, err)
 				return

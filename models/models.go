@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -21,9 +23,17 @@ const (
 	StatusErrored = "ERRORED"
 )
 
+// uuidHook hooks new uuid as primary key for models before creation.
+type uuidHook struct{}
+
+func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
+	return scope.SetColumn("id", uuid.NewV4().String())
+}
+
 // User model.
 type User struct {
-	ID                int    `gorm:"primary_key" json:"id"`
+	uuidHook
+	ID                string `gorm:"primary_key" json:"id"`
 	GithubID          int    `gorm:"unique_index" json:"-"`
 	GithubName        string `json:"github_name"`
 	Name              string `json:"name"`
@@ -39,9 +49,10 @@ func NewUser() User {
 
 // Project model.
 type Project struct {
-	ID          int     `gorm:"primary_key" json:"id"`
+	uuidHook
+	ID          string  `gorm:"primary_key" json:"id"`
 	User        User    `json:"-" gorm:"ForeignKey:UserID"` //Project belongs to User
-	UserID      int     `json:"-"`
+	UserID      string  `json:"-"`
 	Name        string  `json:"name"`
 	Builds      []Build `json:"builds,omitempty" gorm:"ForeignKey:ProjectID"`
 	Simulations []Build `json:"simulations,omitempty" gorm:"ForeignKey:ProjectID"`
@@ -49,9 +60,10 @@ type Project struct {
 
 // Build model.
 type Build struct {
-	ID          int          `gorm:"primary_key" json:"id"`
+	uuidHook
+	ID          string       `gorm:"primary_key" json:"id"`
 	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID   int          `json:"-"`
+	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobID  int64        `json:"-"`
 	Token       string       `json:"-"`
@@ -94,16 +106,17 @@ func (b *Build) HasFinished() bool {
 
 // PostBuild is post request body for a new build.
 type PostBuild struct {
-	ProjectID int `json:"project_id" validate:"nonzero"`
+	ProjectID string `json:"project_id" validate:"nonzero"`
 }
 
 // Simulation model.
 type Simulation struct {
-	ID         int      `gorm:"primary_key" json:"id"`
+	uuidHook
+	ID         string   `gorm:"primary_key" json:"id"`
 	User       User     `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     int      `json:"-"`
 	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
-	ProjectID  int      `json:"-"`
+	ProjectID  string   `json:"-"`
 	BatchJobID int64    `json:"-"`
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
 	Token      string   `json:"-"`
@@ -122,24 +135,25 @@ func (s *Simulation) Status() string {
 
 // PostSimulation is the post request body for new simulation.
 type PostSimulation struct {
-	ProjectID int    `json:"project_id" validate:"nonzero"`
+	ProjectID string `json:"project_id" validate:"nonzero"`
 	Command   string `json:"command" validate:"nonzero"`
 }
 
 // Deployment model.
 type Deployment struct {
-	ID       int    `gorm:"primary_key" json:"id"`
+	uuidHook
+	ID       string `gorm:"primary_key" json:"id"`
 	Build    Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID  int    `json:"-"`
+	BuildID  string `json:"-"`
 	Command  string `json:"command"`
 	Token    string `json:"-"`
-	DepJobID int    `json:"-"`
+	DepJobID string `json:"-"`
 	DepJob   DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
 }
 
 // PostDeployment is post request body for new deployment.
 type PostDeployment struct {
-	BuildID int    `json:"build_id" validate:"nonzero"`
+	BuildID string `json:"build_id" validate:"nonzero"`
 	Command string `json:"command" validate:"nonzero"`
 }
 
@@ -170,7 +184,8 @@ type BatchJob struct {
 
 // DepJob model.
 type DepJob struct {
-	ID     int           `gorm:"primary_key" json:"-"`
+	uuidHook
+	ID     string        `gorm:"primary_key" json:"-"`
 	DepID  string        `json:"-" validate:"nonzero"`
 	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`
 }
@@ -207,7 +222,8 @@ func (d *DepJob) Status() string {
 
 // BatchJobEvent model.
 type BatchJobEvent struct {
-	ID         int64     `gorm:"primary_key" json:"-"`
+	uuidHook
+	ID         string    `gorm:"primary_key" json:"-"`
 	BatchJobID int64     `json:"-"`
 	Timestamp  time.Time `json:"timestamp"`
 	Status     string    `json:"status"`
@@ -227,8 +243,9 @@ func (d *DepJob) HasFinished() bool {
 
 // DepJobEvent model.
 type DepJobEvent struct {
-	ID        int       `gorm:"primary_key" json:"-"`
-	DepJobID  int       `json:"-" validate:"nonzero"`
+	uuidHook
+	ID        string    `gorm:"primary_key" json:"-"`
+	DepJobID  string    `json:"-" validate:"nonzero"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`
