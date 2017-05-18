@@ -89,12 +89,12 @@ func (d Deployment) List(c *gin.Context) {
 	deployments := []models.Deployment{}
 	q := d.Query(c)
 
-	if projid, err := strconv.Atoi(project); err == nil && project != "" {
-		q = q.Where("builds.project_id=?", projid)
+	if project != "" {
+		q = q.Where("builds.project_id=?", project)
 	}
 
-	if id, err := strconv.Atoi(build); err == nil && build != "" {
-		q = q.Where(&models.Deployment{BuildID: id})
+	if build != "" {
+		q = q.Where(&models.Deployment{BuildID: build})
 	}
 
 	err := q.Find(&deployments).Error
