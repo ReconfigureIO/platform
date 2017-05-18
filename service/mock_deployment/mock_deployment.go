@@ -5,10 +5,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
+	awsService "github.com/ReconfigureIO/platform/service/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
@@ -18,17 +21,19 @@ type ContainerConfig struct {
 }
 
 type LogsConfig struct {
-	Group string `json:"group"`
+	Group  string `json:"group"`
+	Prefix string `json:"prefix"`
 }
 
 type Deployment struct {
-	Container ContainerConfig `json:"container"`
-	Logs      LogsConfig      `json:"logs"`
+	Container   ContainerConfig `json:"container"`
+	Logs        LogsConfig      `json:"logs"`
+	CallbackUrl string          `json:"callback_url"`
 }
 
 type Service struct {
 	session *session.Session
-	conf    ServiceConfig
+	Conf    ServiceConfig
 }
 
 type ServiceConfig struct {
@@ -38,40 +43,44 @@ type ServiceConfig struct {
 }
 
 func New(conf ServiceConfig) *Service {
-	s := Service{conf: conf}
+	s := Service{Conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
 }
 
-func (s *ServiceConfig) ContainerConfig(deployment models.Deployment) Deployment {
+func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUrl string) Deployment {
 	return Deployment{
+		CallbackUrl: callbackUrl,
 		Container: ContainerConfig{
 			Image:   s.Image,
 			Command: deployment.Command,
 		},
 		Logs: LogsConfig{
-			Group: s.LogGroup,
+			Group:  s.LogGroup,
+			Prefix: fmt.Sprintf("deployment-%d", deployment.ID),
 		},
 	}
 }
 
 func (d Deployment) String() (string, error) {
 	buff := bytes.Buffer{}
-	enc := json.NewEncoder(base64.NewEncoder(base64.StdEncoding, &buff))
+	b64Encoder := base64.NewEncoder(base64.StdEncoding, &buff)
+	enc := json.NewEncoder(b64Encoder)
 	err := enc.Encode(d)
+	b64Encoder.Close()
 	return buff.String(), err
 }
 
-func (s *Service) RunDeployment(ctx context.Context, deployment models.Deployment) (string, error) {
+func (s *Service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
 	ec2Session := ec2.New(s.session)
 
-	encodedConfig, err := s.conf.ContainerConfig(deployment).String()
+	encodedConfig, err := s.Conf.ContainerConfig(deployment, callbackUrl).String()
 	if err != nil {
 		return "", err
 	}
 
 	cfg := ec2.RunInstancesInput{
-		ImageId: aws.String(s.conf.AMI),
+		ImageId: aws.String(s.Conf.AMI),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
@@ -98,7 +107,23 @@ func (s *Service) GetDepDetail(id int) (string, error) {
 	return "imaginary", nil
 }
 
-func (s *Service) GetJobStream(id string) (string, error) {
+func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Deployment) (*cloudwatchlogs.LogStream, error) {
+	cwLogs := cloudwatchlogs.New(s.session)
 
-	return "doing doing deployed", nil
+	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
+		LogGroupName:        aws.String(s.Conf.LogGroup), // Required
+		Descending:          aws.Bool(true),
+		Limit:               aws.Int64(1),
+		LogStreamNamePrefix: aws.String(fmt.Sprintf("deployment-%d", deployment.ID)),
+	}
+	resp, err := cwLogs.DescribeLogStreams(searchParams)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.LogStreams) == 0 {
+		return nil, awsService.ErrNotFound
+	}
+	return resp.LogStreams[0], nil
+
 }
