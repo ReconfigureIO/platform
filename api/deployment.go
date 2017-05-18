@@ -117,7 +117,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	StreamDeploymentLogs(mockDeploy, c, &targetdep)
+	streamDeploymentLogs(mockDeploy, c, &targetdep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {

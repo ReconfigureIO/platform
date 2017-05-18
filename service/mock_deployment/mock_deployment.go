@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
-	awsService "github.com/ReconfigureIO/platform/service/aws"
+	awsservice "github.com/ReconfigureIO/platform/service/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -122,7 +122,7 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 	}
 
 	if len(resp.LogStreams) == 0 {
-		return nil, awsService.ErrNotFound
+		return nil, awsservice.ErrNotFound
 	}
 	return resp.LogStreams[0], nil
 
