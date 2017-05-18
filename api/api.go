@@ -17,6 +17,7 @@ var (
 	db *gorm.DB
 
 	awsSession = aws.New(aws.ServiceConfig{
+		LogGroup:      "/aws/batch/job",
 		Bucket:        "reconfigureio-builds",
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
@@ -25,7 +26,7 @@ var (
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-		AMI:      "ami-7427bb62",
+		AMI:      "ami-850c7293",
 	})
 )
 

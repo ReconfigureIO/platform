@@ -73,7 +73,9 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	_, err = mockDeploy.RunDeployment(context.Background(), newDep)
+	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+
+	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -119,12 +121,10 @@ func (d Deployment) Get(c *gin.Context) {
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
 	targetdep, err := d.ByID(c)
-	logs, err := mockDeploy.GetJobStream(targetdep.ID)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
 		return
 	}
-	sugar.SuccessResponse(c, 200, logs)
+	StreamDeploymentLogs(mockDeploy, c, &targetdep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
