@@ -22,4 +22,5 @@ services:
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=8080
       - RECO_PLATFORM_MIGRATE=1
+      - RECO_FEATURE_BILLING=1
       - STRIPE_KEY=sk_test_NvEpeLnLAV15b9TWJzZKLkvW
