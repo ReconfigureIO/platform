@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -98,7 +99,7 @@ func (s *signupUser) Callback(c *gin.Context) {
 
 	code := c.Query("code")
 
-	token, err := s.gh.OauthConf.Exchange(oauth2.NoContext, code)
+	token, err := s.gh.OauthConf.Exchange(context.Background(), code)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error: %s", err)

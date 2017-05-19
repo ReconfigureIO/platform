@@ -59,6 +59,14 @@ func Index(c *gin.Context) {
 		})
 	} else {
 		user := GetUser(c)
+		if user == (models.User{}) {
+			// empty
+			session.Clear()
+			c.HTML(http.StatusOK, "index.tmpl", gin.H{
+				"logged_in": false,
+			})
+			return
+		}
 
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"logged_in": true,
