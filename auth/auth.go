@@ -58,15 +58,20 @@ func Index(c *gin.Context) {
 			"logged_in": false,
 		})
 	} else {
-		user := GetUser(c)
-
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"logged_in": true,
-			"login":     user.GithubName,
-			"name":      user.Name,
-			"gh_id":     user.GithubID,
-			"email":     user.Email,
-			"token":     user.Token,
-		})
+		user, exists := CheckUser(c)
+		if exists == true {
+			c.HTML(http.StatusOK, "index.tmpl", gin.H{
+				"logged_in": true,
+				"login":     user.GithubName,
+				"name":      user.Name,
+				"gh_id":     user.GithubID,
+				"email":     user.Email,
+				"token":     user.Token,
+			})
+		} else {
+			c.HTML(http.StatusOK, "index.tmpl", gin.H{
+				"logged_in": false,
+			})
+		}
 	}
 }
