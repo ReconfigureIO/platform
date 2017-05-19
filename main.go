@@ -46,6 +46,7 @@ func main() {
 	r := gin.Default()
 
 	secretKey := os.Getenv("SECRET_KEY_BASE")
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	// setup components
 	db := setupDB()
@@ -62,8 +63,6 @@ func main() {
 	})
 
 	routes.SetupRoutes(r, db)
-
-	stripe.Key = "sk_test_NvEpeLnLAV15b9TWJzZKLkvW"
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
