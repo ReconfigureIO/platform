@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -37,6 +38,10 @@ func (s *signupUser) ResignIn(c *gin.Context) {
 
 func (s *signupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
+	if token == "" {
+		sugar.ErrResponse(c, 400, "invite token required")
+		return
+	}
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -94,7 +99,7 @@ func (s *signupUser) Callback(c *gin.Context) {
 
 	code := c.Query("code")
 
-	token, err := s.gh.OauthConf.Exchange(oauth2.NoContext, code)
+	token, err := s.gh.OauthConf.Exchange(context.Background(), code)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error: %s", err)

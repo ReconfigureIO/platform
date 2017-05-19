@@ -7,8 +7,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/ioutil"
+	"os"
 	"time"
 
+	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -16,7 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-var errNotFound = errors.New("Not Found")
+// ErrNotFound is not found error.
+var ErrNotFound = errors.New("Not Found")
 
 // Service is an AWS service.
 type Service interface {
@@ -28,6 +32,7 @@ type Service interface {
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
+	Conf() *ServiceConfig
 }
 
 type service struct {
@@ -37,6 +42,7 @@ type service struct {
 
 // ServiceConfig holds configuration for service.
 type ServiceConfig struct {
+	LogGroup      string
 	Bucket        string
 	Queue         string
 	JobDefinition string
@@ -52,14 +58,54 @@ func New(conf ServiceConfig) Service {
 func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
-	// This is bad and buffers the entire body in memory :(
-	body := bytes.Buffer{}
-	body.ReadFrom(r)
+	// s3.PutObjectInput takes in a io.ReadSeeker
+	// rather than reading everything into memory
+	// let's write it to a temp file instead
+	var reader io.ReadSeeker
+
+	// We have multiple lines that are dependent on the
+	// previous line returning nil error.
+	// Using error group for convenience
+	var e errs.Group
+	var tmpFile *os.File
+
+	// remove tmpFile when done
+	defer func() {
+		if tmpFile != nil {
+			os.Remove(tmpFile.Name())
+		}
+	}()
+
+	e.Add(func() (err error) {
+		tmpFile, err = ioutil.TempFile("", "")
+		return
+	})
+	e.Add(func() error {
+		_, err := io.Copy(tmpFile, r)
+		return err
+	})
+	e.Add(func() (err error) {
+		tmpFile.Close()
+		tmpFile, err = os.Open(tmpFile.Name())
+		return
+	})
+	e.Add(func() error {
+		reader = tmpFile
+		return nil
+	})
+	if err := e.Exec(); err != nil {
+		// if writing to temp file fails (which hardly happens)
+		// fall back to reading into memory
+		// this is bad and buffers the entire body in memory :(
+		body := bytes.Buffer{}
+		body.ReadFrom(r)
+		reader = bytes.NewReader(body.Bytes())
+	}
 
 	putParams := &s3.PutObjectInput{
 		Bucket:        aws.String(s.conf.Bucket), // Required
 		Key:           aws.String(key),           // Required
-		Body:          bytes.NewReader(body.Bytes()),
+		Body:          reader,
 		ContentLength: aws.Int64(length),
 	}
 
@@ -184,7 +230,7 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 		return nil, err
 	}
 	if len(resp.Jobs) == 0 {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return resp.Jobs[0], nil
 }
@@ -193,7 +239,7 @@ func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
-		LogGroupName:        aws.String("/aws/batch/job"), // Required
+		LogGroupName:        aws.String(s.conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
 		LogStreamNamePrefix: aws.String("example/" + id),
@@ -204,9 +250,13 @@ func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
 	}
 
 	if len(resp.LogStreams) == 0 {
-		return nil, errNotFound
+		return nil, ErrNotFound
 	}
 	return resp.LogStreams[0], nil
+}
+
+func (s *service) Conf() *ServiceConfig {
+	return &s.conf
 }
 
 // Stream is log stream.
@@ -228,11 +278,11 @@ func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 }
 
 // Run starts the stream using context.
-func (stream *Stream) Run(ctx context.Context) error {
+func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	cwLogs := cloudwatchlogs.New(stream.session.session)
 
 	params := (&cloudwatchlogs.GetLogEventsInput{}).
-		SetLogGroupName("/aws/batch/job").
+		SetLogGroupName(logGroup).
 		SetLogStreamName(*stream.stream.LogStreamName).
 		SetStartFromHead(true)
 

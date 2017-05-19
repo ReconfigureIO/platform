@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"strconv"
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
@@ -17,6 +16,7 @@ var (
 	db *gorm.DB
 
 	awsSession = aws.New(aws.ServiceConfig{
+		LogGroup:      "/aws/batch/job",
 		Bucket:        "reconfigureio-builds",
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
@@ -25,7 +25,7 @@ var (
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-		AMI:      "ami-7427bb62",
+		AMI:      "ami-850c7293",
 	})
 )
 
@@ -48,10 +48,10 @@ func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 	return err
 }
 
-func bindID(c *gin.Context, id *int) bool {
+func bindID(c *gin.Context, id *string) bool {
 	paramID := c.Param("id")
-	if i, err := strconv.Atoi(paramID); err == nil && paramID != "" {
-		*id = i
+	if paramID != "" {
+		*id = paramID
 		return true
 	}
 	sugar.ErrResponse(c, 404, nil)

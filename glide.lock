@@ -1,8 +1,10 @@
-hash: 8db17376d63f7dc8bad97512e619f09c95081600eb3cdac05006e3afa910a8a4
-updated: 2017-05-12T20:03:21.121882916Z
+hash: 9c2651676be75153c5e772ae90d21a382637f75c43f6f360ee3db1fb77bf2bc4
+updated: 2017-05-19T14:01:23.14787034Z
 imports:
+- name: github.com/abiosoft/errs
+  version: 42b3fcff7074a30e8c369806679bd0e983326bd4
 - name: github.com/aws/aws-sdk-go
-  version: cea091b5b8fe6fcecf0eb6ec8f1a2570ff4ee6a7
+  version: 0b6039ef3d10c1eda49843ebf9773dcc5bba0169
   subpackages:
   - aws
   - aws/awserr
@@ -94,8 +96,13 @@ imports:
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/stripe/stripe-go
   version: 339ff3ba4d4b26f9179e31f958d8f68c5fd07b43
+  subpackages:
+  - customer
+  - orderitem
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:

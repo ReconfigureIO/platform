@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/auth"
@@ -28,11 +27,11 @@ func (d Deployment) Query(c *gin.Context) *gorm.DB {
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
 func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	err := d.Query(c).First(&dep, id).Error
+	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -52,7 +51,7 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure that the project exists, and the user has permissions for it
 	build := models.Build{}
-	err := Build{}.Query(c).First(&build, post.BuildID).Error
+	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
@@ -73,7 +72,9 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	_, err = mockDeploy.RunDeployment(context.Background(), newDep)
+	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+
+	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -85,12 +86,18 @@ func (d Deployment) Create(c *gin.Context) {
 // List lists all deployments.
 func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
+	project := c.DefaultQuery("project", "")
 	deployments := []models.Deployment{}
 	q := d.Query(c)
 
-	if id, err := strconv.Atoi(build); err == nil && build != "" {
-		q = q.Where(&models.Deployment{BuildID: id})
+	if project != "" {
+		q = q.Where("builds.project_id=?", project)
 	}
+
+	if build != "" {
+		q = q.Where(&models.Deployment{BuildID: build})
+	}
+
 	err := q.Find(&deployments).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -113,12 +120,10 @@ func (d Deployment) Get(c *gin.Context) {
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
 	targetdep, err := d.ByID(c)
-	logs, err := mockDeploy.GetJobStream(targetdep.ID)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
 		return
 	}
-	sugar.SuccessResponse(c, 200, logs)
+	streamDeploymentLogs(mockDeploy, c, &targetdep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
@@ -188,11 +193,11 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 
 func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	dep := models.Deployment{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
 	q := db.Preload("DepJob").Preload("DepJob.Events")
-	err := q.First(&dep, id).Error
+	err := q.First(&dep, "deployments.id = ?", id).Error
 	return dep, err
 }

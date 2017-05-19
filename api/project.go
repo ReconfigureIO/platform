@@ -25,11 +25,11 @@ func (p Project) Query(c *gin.Context) *gorm.DB {
 // ByID get the first build by ID, 404 if it doesn't exist
 func (p Project) ByID(c *gin.Context) (models.Project, error) {
 	project := models.Project{}
-	var id int
+	var id string
 	if !bindID(c, &id) {
 		return project, errNotFound
 	}
-	err := p.Query(c).First(&project, id).Error
+	err := p.Query(c).First(&project, "projects.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -47,7 +47,9 @@ func (p Project) Create(c *gin.Context) {
 	}
 	user := auth.GetUser(c)
 	newProject := models.Project{UserID: user.ID, Name: post.Name}
-	db.Create(&newProject)
+	if err := db.Create(&newProject).Error; err != nil {
+		sugar.ErrResponse(c, 500, err)
+	}
 	sugar.SuccessResponse(c, 201, newProject)
 }
 
