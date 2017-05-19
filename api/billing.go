@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -26,7 +28,8 @@ func (b Billing) Replace(c *gin.Context) {
 	user := auth.GetUser(c)
 
 	customerParams := &stripe.CustomerParams{
-		Desc: "Customer for olivia.johnson@example.com",
+		Desc:  fmt.Sprintf("%s (github: %d)", user.Name, user.GithubID),
+		Email: user.Email,
 	}
 	customerParams.SetSource(post.Token)
 
