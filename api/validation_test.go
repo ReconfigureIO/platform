@@ -21,7 +21,7 @@ func TestProjValidation(t *testing.T) {
 
 func TestDepJobEventValidation(t *testing.T) {
 	newDepJobEvent := models.DepJobEvent{
-		DepJobID: 1,
+		DepJobID: "1",
 	}
 
 	err := validator.Validate(newDepJobEvent)

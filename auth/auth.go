@@ -69,7 +69,8 @@ func Index(c *gin.Context) {
 				"token":     user.Token,
 			})
 		} else {
-			c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			session.Clear()
+      c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": false,
 			})
 		}
