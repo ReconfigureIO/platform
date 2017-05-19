@@ -20,8 +20,14 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	auth.SetupAdmin(admin, db)
 
 	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
-	build := api.Build{}
 
+	billing := api.Billing{}
+	billingRoutes := apiRoutes.Group("/user")
+	{
+		billingRoutes.POST("payment-info", billing.Replace)
+	}
+
+	build := api.Build{}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
