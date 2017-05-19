@@ -14,7 +14,7 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate
+.PHONY: test install clean all generate deploy-production deploy-staging
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -55,3 +55,13 @@ clean:
 image: all
 	docker build -t "reco-api:latest" dist-image
 	docker build -t "reco-api:latest-worker" dist-worker
+
+deploy-production:
+	cp EB/web/env-production.yaml EB/web/env.yaml
+	cp EB/worker/env-production.yaml EB/worker/env.yaml
+	cd EB && eb deploy --modules worker web --env-group-suffix production
+
+deploy-staging:
+	cp EB/web/env-staging.yaml EB/web/env.yaml
+	cp EB/worker/env-staging.yaml EB/worker/env.yaml
+	cd EB && eb deploy --modules worker web --env-group-suffix staging
