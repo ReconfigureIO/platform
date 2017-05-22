@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	stripe "github.com/stripe/stripe-go"
 )
 
 func setupDB() *gorm.DB {
@@ -45,6 +46,7 @@ func main() {
 	r := gin.Default()
 
 	secretKey := os.Getenv("SECRET_KEY_BASE")
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	// setup components
 	db := setupDB()
