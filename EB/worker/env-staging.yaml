@@ -1,0 +1,98 @@
+EnvironmentConfigurationMetadata:
+  Description: Configuration created from the EB CLI using "eb config save".
+  DateCreated: '1494867154000'
+  DateModified: '1494867154000'
+Platform:
+  PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux/2.5.2
+OptionSettings:
+  aws:elasticbeanstalk:application:environment:
+    DATABASE_URL: host=test-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
+      dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
+    PORT: 80
+    RECO_FEATURE_BILLING: '1'
+    STRIPE_KEY: sk_test_NvEpeLnLAV15b9TWJzZKLkvW
+  AWSEBAutoScalingScaleDownPolicy.aws:autoscaling:trigger:
+    LowerBreachScaleIncrement: '-1'
+  AWSEBAutoScalingScaleUpPolicy.aws:autoscaling:trigger:
+    UpperBreachScaleIncrement: '1'
+  AWSEBCloudwatchAlarmHigh.aws:autoscaling:trigger:
+    UpperThreshold: '6000000'
+  AWSEBCloudwatchAlarmLow.aws:autoscaling:trigger:
+    BreachDuration: '5'
+    EvaluationPeriods: '1'
+    LowerThreshold: '2000000'
+    MeasureName: NetworkOut
+    Period: '5'
+    Statistic: Average
+    Unit: Bytes
+  aws:autoscaling:asg:
+    Availability Zones: Any
+    Cooldown: '360'
+    Custom Availability Zones: ''
+    MaxSize: '4'
+    MinSize: '1'
+  aws:autoscaling:launchconfiguration:
+    BlockDeviceMappings: /dev/xvdcz=:12:true:gp2
+    IamInstanceProfile: api-web-server
+    ImageId: ami-a7e563b1
+    InstanceType: t1.micro
+    MonitoringInterval: 1 minute
+    SSHSourceRestriction: tcp,22,22,0.0.0.0/0
+    SecurityGroups: awseb-e-fprd9jctnx-stack-AWSEBSecurityGroup-10T89WV1XYICQ,awseb-e-2p8psfzkm3-stack-AWSEBSecurityGroup-2U2MBE2L1S45
+  aws:autoscaling:updatepolicy:rollingupdate:
+    MaxBatchSize: '1'
+    MinInstancesInService: '1'
+    PauseTime: PT1m30S
+    RollingUpdateEnabled: 'true'
+    RollingUpdateType: Time
+    Timeout: PT30M
+  aws:ec2:vpc:
+    ELBScheme: public
+  aws:elasticbeanstalk:application:
+    Application Healthcheck URL: /health
+  aws:elasticbeanstalk:cloudwatch:logs:
+    DeleteOnTerminate: 'false'
+    RetentionInDays: '7'
+    StreamLogs: 'false'
+  aws:elasticbeanstalk:command:
+    BatchSize: '30'
+    BatchSizeType: Percentage
+    IgnoreHealthCheck: 'false'
+    Timeout: '600'
+  aws:elasticbeanstalk:control:
+    DefaultSSHPort: '22'
+    LaunchTimeout: '0'
+    LaunchType: Migration
+    RollbackLaunchOnFailure: 'false'
+  aws:elasticbeanstalk:environment:
+    EnvironmentType: LoadBalanced
+    ServiceRole: aws-elasticbeanstalk-service-role
+  aws:elasticbeanstalk:healthreporting:system:
+    ConfigDocument: '{"Version":1,"CloudWatchMetrics":{"Instance":{"CPUIrq":null,"LoadAverage5min":null,"ApplicationRequests5xx":null,"ApplicationRequests4xx":null,"CPUUser":null,"LoadAverage1min":null,"ApplicationLatencyP50":null,"CPUIdle":null,"InstanceHealth":null,"ApplicationLatencyP95":null,"ApplicationLatencyP85":null,"RootFilesystemUtil":null,"ApplicationLatencyP90":null,"CPUSystem":null,"ApplicationLatencyP75":null,"CPUSoftirq":null,"ApplicationLatencyP10":null,"ApplicationLatencyP99":null,"ApplicationRequestsTotal":null,"ApplicationLatencyP99.9":null,"ApplicationRequests3xx":null,"ApplicationRequests2xx":null,"CPUIowait":null,"CPUNice":null},"Environment":{"InstancesSevere":null,"InstancesDegraded":null,"ApplicationRequests5xx":null,"ApplicationRequests4xx":null,"ApplicationLatencyP50":null,"ApplicationLatencyP95":null,"ApplicationLatencyP85":null,"InstancesUnknown":null,"ApplicationLatencyP90":null,"InstancesInfo":null,"InstancesPending":null,"ApplicationLatencyP75":null,"ApplicationLatencyP10":null,"ApplicationLatencyP99":null,"ApplicationRequestsTotal":null,"InstancesNoData":null,"ApplicationLatencyP99.9":null,"ApplicationRequests3xx":null,"ApplicationRequests2xx":null,"InstancesOk":null,"InstancesWarning":null}}}'
+    HealthCheckSuccessThreshold: Ok
+    SystemType: enhanced
+  aws:elasticbeanstalk:hostmanager:
+    LogPublicationControl: 'false'
+  aws:elasticbeanstalk:managedactions:
+    ManagedActionsEnabled: 'false'
+  aws:elasticbeanstalk:managedactions:platformupdate:
+    InstanceRefreshEnabled: 'false'
+  aws:elasticbeanstalk:monitoring:
+    Automatically Terminate Unhealthy Instances: 'true'
+  aws:elasticbeanstalk:sns:topics:
+    Notification Endpoint: a5a9m1s2r6h6f3l3@reconfigure.slack.com
+    Notification Protocol: email
+  aws:elasticbeanstalk:sqsd:
+    ConnectTimeout: '5'
+    HttpConnections: '50'
+    HttpPath: /
+    InactivityTimeout: '299'
+    MaxRetries: '10'
+    MimeType: application/json
+    RetentionPeriod: '345600'
+    VisibilityTimeout: '300'
+EnvironmentTier:
+  Type: SQS/HTTP
+  Name: Worker
+AWSConfigurationTemplateVersion: 1.1.0.0
+EnvironmentName: worker+
