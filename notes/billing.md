@@ -48,7 +48,17 @@ Web only?
 
 ```
 curl -u $USER:$PASS -X GET localhost:8080/user
-{"value":{"id":1,"name": "joshbohde", "email":"josh.bohde@reconfigure.io", "billing-plan": "open-source"}}
+{"value":{"name": "joshbohde", "email":"josh.bohde@reconfigure.io", "billing-plan": "open-source"}}
+```
+Can we share the stripe token, or should that be internal? If it's internal, we'll need to pull relevant info from Strip at that time
+
+### PUT /user
+
+Web only?
+
+```
+curl -u $USER:$PASS -X PUT -d "{\"email\": \"test@example.com\"}" localhost:8080/user
+{"value":{"name": "joshbohde", "email":"test@example.com", "billing-plan": "open-source"}}
 ```
 Can we share the stripe token, or should that be internal? If it's internal, we'll need to pull relevant info from Strip at that time
 
