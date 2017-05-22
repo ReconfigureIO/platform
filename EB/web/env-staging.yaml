@@ -90,7 +90,7 @@ OptionSettings:
     InstanceProtocol: HTTP
     ListenerEnabled: 'true'
     ListenerProtocol: HTTPS
-    SSLCertificateId: 	arn:aws:acm:us-east-1:398048034572:certificate/1fd33edb-f867-478d-8f4f-e33f9b16b59a
+    SSLCertificateId: arn:aws:acm:us-east-1:398048034572:certificate/1fd33edb-f867-478d-8f4f-e33f9b16b59a
   aws:elb:listener:80:
     InstancePort: '80'
     InstanceProtocol: HTTP
