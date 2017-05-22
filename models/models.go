@@ -44,7 +44,8 @@ type User struct {
 	GithubAccessToken string `json:"-"`
 	Token             string `json:"-"`
 	StripeToken       string `json:"-"`
-	BillingPlan       string `gorm:"-" json:"billing_plan"`
+	// We'll ignore this in the db for now, to provide mock data
+	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
 
 // NewUser creates a new User.

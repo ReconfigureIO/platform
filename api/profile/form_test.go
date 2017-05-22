@@ -8,7 +8,7 @@ import (
 )
 
 func TestProfileCanBeOpenSource(t *testing.T) {
-	err := validator.Validate(ProfileUpdate{
+	err := validator.Validate(ProfileData{
 		BillingPlan: models.OpenSource,
 	})
 	if err != nil {
@@ -17,7 +17,7 @@ func TestProfileCanBeOpenSource(t *testing.T) {
 }
 
 func TestProfileCanBeSingleUser(t *testing.T) {
-	err := validator.Validate(ProfileUpdate{
+	err := validator.Validate(ProfileData{
 		BillingPlan: models.SingleUser,
 	})
 	if err != nil {
@@ -26,7 +26,7 @@ func TestProfileCanBeSingleUser(t *testing.T) {
 }
 
 func TestProfileFailsWithNonexistantPlan(t *testing.T) {
-	err := validator.Validate(ProfileUpdate{
+	err := validator.Validate(ProfileData{
 		BillingPlan: "nope",
 	})
 	if err == nil {

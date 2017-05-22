@@ -1,11 +1,8 @@
 package profile
 
 import (
-	//	"fmt"
-
-	//	"github.com/ReconfigureIO/platform/auth"
-	//	"github.com/ReconfigureIO/platform/models"
-	//	"github.com/ReconfigureIO/platform/sugar"
+	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -16,9 +13,33 @@ type Profile struct {
 }
 
 func (p Profile) Get(c *gin.Context) {
+	user := auth.GetUser(c)
 
+	prof := ProfileData{}
+	prof.FromUser(user)
+
+	sugar.SuccessResponse(c, 200, prof)
 }
 
 func (p Profile) Update(c *gin.Context) {
+	user := auth.GetUser(c)
 
+	prof := ProfileData{}
+	prof.FromUser(user)
+
+	c.BindJSON(&prof)
+
+	if !sugar.ValidateRequest(c, prof) {
+		return
+	}
+
+	err := p.DB.Model(&user).Updates(prof).Error
+
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	prof.FromUser(user)
+	sugar.SuccessResponse(c, 200, prof)
 }

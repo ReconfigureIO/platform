@@ -27,6 +27,14 @@ func init() {
 	validator.SetValidationFunc("is_billing_plan", isBillingPlan)
 }
 
-type ProfileUpdate struct {
+type ProfileData struct {
+	Name        string `json:"name"`
+	Email       string `json:"email"`
 	BillingPlan string `json:"billing_plan" validate:"is_billing_plan"`
+}
+
+func (p *ProfileData) FromUser(user models.User) {
+	p.Name = user.Name
+	p.Email = user.Email
+	p.BillingPlan = models.OpenSource
 }
