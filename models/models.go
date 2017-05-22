@@ -21,6 +21,9 @@ const (
 	StatusCompleted = "COMPLETED"
 	// StatusErrored is errored job state.
 	StatusErrored = "ERRORED"
+
+	OpenSource = "open-source"
+	SingleUser = "single-user"
 )
 
 // uuidHook hooks new uuid as primary key for models before creation.
@@ -41,11 +44,12 @@ type User struct {
 	GithubAccessToken string `json:"-"`
 	Token             string `json:"-"`
 	StripeToken       string `json:"-"`
+	BillingPlan       string `gorm:"-" json:"billing_plan"`
 }
 
 // NewUser creates a new User.
 func NewUser() User {
-	return User{Token: uniuri.NewLen(64)}
+	return User{Token: uniuri.NewLen(64), BillingPlan: OpenSource}
 }
 
 // Project model.
