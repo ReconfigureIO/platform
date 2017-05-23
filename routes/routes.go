@@ -1,6 +1,9 @@
 package routes
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/ReconfigureIO/platform/api"
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/gin-gonic/gin"
@@ -20,8 +23,18 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	auth.SetupAdmin(admin, db)
 
 	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
-	build := api.Build{}
 
+	if os.Getenv("RECO_FEATURE_BILLING") == "1" {
+		fmt.Println("enabling billing api endpoints")
+
+		billing := api.Billing{}
+		billingRoutes := apiRoutes.Group("/user")
+		{
+			billingRoutes.POST("payment-info", billing.Replace)
+		}
+	}
+
+	build := api.Build{}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)

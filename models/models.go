@@ -40,6 +40,7 @@ type User struct {
 	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
 	GithubAccessToken string `json:"-"`
 	Token             string `json:"-"`
+	StripeToken       string `json:"-"`
 }
 
 // NewUser creates a new User.
