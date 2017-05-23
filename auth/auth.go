@@ -59,7 +59,7 @@ func Index(c *gin.Context) {
 		})
 	} else {
 		user, exists := CheckUser(c)
-		if exists == true {
+		if exists {
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": true,
 				"login":     user.GithubName,
@@ -70,7 +70,7 @@ func Index(c *gin.Context) {
 			})
 		} else {
 			session.Clear()
-      c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": false,
 			})
 		}
