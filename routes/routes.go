@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/api"
+	"github.com/ReconfigureIO/platform/api/profile"
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -28,8 +29,11 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		fmt.Println("enabling billing api endpoints")
 
 		billing := api.Billing{}
+		profile := profile.Profile{db}
 		billingRoutes := apiRoutes.Group("/user")
 		{
+			billingRoutes.GET("", profile.Get)
+			billingRoutes.PUT("", profile.Update)
 			billingRoutes.POST("payment-info", billing.Replace)
 		}
 	}
