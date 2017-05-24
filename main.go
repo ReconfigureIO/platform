@@ -13,6 +13,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	stripe "github.com/stripe/stripe-go"
+	"github.com/unrolled/secure"
 )
 
 func setupDB() *gorm.DB {
@@ -38,12 +39,34 @@ func setupDB() *gorm.DB {
 }
 
 func main() {
+
+	secureMiddleware := secure.New(secure.Options{
+		FrameDeny: true,
+	})
+	secureFunc := func() gin.HandlerFunc {
+		return func(c *gin.Context) {
+			err := secureMiddleware.Process(c.Writer, c.Request)
+
+			// If there was an error, do not continue.
+			if err != nil {
+				c.Abort()
+				return
+			}
+
+			// Avoid header rewrite if response is a redirection.
+			if status := c.Writer.Status(); status > 300 && status < 399 {
+				c.Abort()
+			}
+		}
+	}()
+
 	port, found := os.LookupEnv("PORT")
 	if !found {
 		port = "8080"
 	}
 
 	r := gin.Default()
+	r.Use(secureFunc)
 
 	secretKey := os.Getenv("SECRET_KEY_BASE")
 	stripe.Key = os.Getenv("STRIPE_KEY")
