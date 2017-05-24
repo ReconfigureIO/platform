@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/auth"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -62,6 +63,25 @@ func main() {
 		c.String(200, "pong pong")
 	})
 
+	// cors
+	corsConfig := cors.DefaultConfig()
+
+	switch os.Getenv("RECO_ENV") {
+	case "production":
+		corsConfig.AllowOrigins = []string{
+			"http://app.reconfigure.io",
+			"https://app.reconfigure.io",
+		}
+	default:
+		corsConfig.AllowOrigins = []string{
+			"http://app-staging.reconfigure.io",
+			"https://app-staging.reconfigure.io",
+		}
+	}
+
+	r.Use(cors.New(corsConfig))
+
+	// routes
 	routes.SetupRoutes(r, db)
 
 	// Listen and Server in 0.0.0.0:$PORT
