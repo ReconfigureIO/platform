@@ -66,8 +66,9 @@ func main() {
 	}
 
 	r := gin.Default()
-	r.Use(secureFunc)
-
+	if !gin.IsDebugging() {
+		r.Use(secureFunc)
+	}
 	secretKey := os.Getenv("SECRET_KEY_BASE")
 	stripe.Key = os.Getenv("STRIPE_KEY")
 
