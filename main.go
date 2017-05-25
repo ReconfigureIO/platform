@@ -41,7 +41,15 @@ func setupDB() *gorm.DB {
 func main() {
 
 	secureMiddleware := secure.New(secure.Options{
-		FrameDeny: true,
+		AllowedHosts:          []string{},
+		HostsProxyHeaders:     []string{"X-Forwarded-Hosts"},
+		SSLRedirect:           true,
+		SSLTemporaryRedirect:  false,
+		STSSeconds:            315360000,
+		ForceSTSHeader:        false,
+		ContentSecurityPolicy: "default-src 'self'",
+		PublicKey:             `pin-sha256="base64+primary=="; pin-sha256="base64+backup=="; max-age=5184000; includeSubdomains; report-uri="https://www.example.com/hpkp-report"`, // PublicKey implements HPKP to prevent MITM attacks with forged certificates. Default is "".
+		ReferrerPolicy:        "same-origin",
 	})
 	secureFunc := func() gin.HandlerFunc {
 		return func(c *gin.Context) {
