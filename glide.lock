@@ -1,10 +1,10 @@
-hash: 9c2651676be75153c5e772ae90d21a382637f75c43f6f360ee3db1fb77bf2bc4
-updated: 2017-05-19T14:01:23.14787034Z
+hash: 64e2bdec30cde47bae554e1945ce67ce05c596a4678097229e43a11984640b1f
+updated: 2017-05-23T16:58:06.279681205+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: 42b3fcff7074a30e8c369806679bd0e983326bd4
 - name: github.com/aws/aws-sdk-go
-  version: 0b6039ef3d10c1eda49843ebf9773dcc5bba0169
+  version: 48385c808742c8f5f3d3a466d172a52b961ecd7c
   subpackages:
   - aws
   - aws/awserr
@@ -38,16 +38,18 @@ imports:
   - service/s3
   - service/sts
 - name: github.com/boj/redistore
-  version: 3f631e1df8711f449f7b1796f5b8b7716e4319d0
+  version: 4562487a4bee9a7c272b72bfaeda4917d0a47ab9
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
 - name: github.com/garyburd/redigo
-  version: 0d253a66e6e1349f4581d6d2b300ee434ee2da9f
+  version: 433969511232c397de61b1442f9fd49ec06ae9ba
   subpackages:
   - internal
   - redis
+- name: github.com/gin-contrib/cors
+  version: cf4846e6a636a76237a28d9286f163c132e841bc
 - name: github.com/gin-gonic/contrib
-  version: ffa12cf90b52a4af3ae604f6452e61f8218a517c
+  version: 2332af67366e42c9215101b4d5a0805f3292b17b
   subpackages:
   - sessions
 - name: github.com/gin-gonic/gin
@@ -56,7 +58,7 @@ imports:
   - binding
   - render
 - name: github.com/go-ini/ini
-  version: 1730955e3146956d6a087861380f9b4667ed5071
+  version: e7fea39b01aea8d5671f6858f0532f56e8bff3a5
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
@@ -66,7 +68,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: de33c46a823d3f723514fc5333b75ef2e937b7df
+  version: ebfec748347a9af6793c723f8859afcd906860fb
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -78,9 +80,9 @@ imports:
 - name: github.com/gorilla/securecookie
   version: e59506cc896acb7f7bf732d4fdf5e25f7ccd8983
 - name: github.com/gorilla/sessions
-  version: ba78acc856fe7c79891d516131b3d903cc8d9367
+  version: 8b6b4cd75f07f7ee036eb37b8127bd40ab1efc49
 - name: github.com/jinzhu/gorm
-  version: 572d0a0ab1eb75410a2729e96239152d1da7a91f
+  version: 45ccb134373e7d9fa76d5987a6fed6cd5a5adfd4
   subpackages:
   - dialects/postgres
 - name: github.com/jinzhu/inflection
@@ -88,7 +90,7 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/lib/pq
-  version: 472a0745531a17dbac346e828b4c60e73ddff30c
+  version: 2704adc878c21e1329f46f6e56a1c387d788ff94
   subpackages:
   - hstore
   - oid
@@ -108,16 +110,16 @@ imports:
   subpackages:
   - context
 - name: golang.org/x/oauth2
-  version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
+  version: f047394b6d14284165300fd82dad67edb3a4d7f6
   subpackages:
   - github
   - internal
 - name: golang.org/x/sys
-  version: 99f16d856c9836c42d24e7ab64ea72916925fa97
+  version: f3918c30c5c2cb527c0b071a27c35120a6c0719a
   subpackages:
   - unix
 - name: google.golang.org/appengine
-  version: 170382fa85b10b94728989dfcf6cc818b335c952
+  version: a2f4131514e563cedfdb6e7d267df9ad48591e93
   subpackages:
   - internal
   - internal/app_identity
@@ -133,5 +135,5 @@ imports:
 - name: gopkg.in/validator.v2
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: gopkg.in/yaml.v2
-  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []
