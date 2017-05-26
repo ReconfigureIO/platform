@@ -15,6 +15,8 @@ const (
 	StatusQueued = "QUEUED"
 	// StatusStarted is started job state.
 	StatusStarted = "STARTED"
+	// StatusTerminating is terminating job state.
+	StatusTerminating = "TERMINATING"
 	// StatusTerminated is terminated job state.
 	StatusTerminated = "TERMINATED"
 	// StatusCompleted is completed job state.
@@ -178,7 +180,7 @@ var statuses = struct {
 	finished []string
 }{
 	started:  []string{StatusStarted, StatusCompleted, StatusErrored},
-	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
+	finished: []string{StatusCompleted, StatusErrored, StatusTerminated, StatusTerminating},
 }
 
 // BatchJob model.
@@ -270,11 +272,11 @@ func hasFinished(status string) bool {
 func CanTransition(current string, next string) bool {
 	switch current {
 	case StatusSubmitted:
-		return inSlice([]string{StatusQueued, StatusTerminated}, next)
+		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating}, next)
 	case StatusQueued:
-		return inSlice([]string{StatusStarted, StatusTerminated}, next)
+		return inSlice([]string{StatusStarted, StatusTerminated, StatusTerminating}, next)
 	case StatusStarted:
-		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored}, next)
+		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored, StatusTerminating}, next)
 	default:
 		return false
 	}
