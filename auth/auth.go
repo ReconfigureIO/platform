@@ -59,7 +59,7 @@ func Index(c *gin.Context) {
 		})
 	} else {
 		user, exists := CheckUser(c)
-		if exists {
+		if exists && user != (models.User{}) {
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": true,
 				"login":     user.GithubName,

@@ -15,6 +15,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	strInviteToken = "invite_token"
+	strLoginToken  = "login_token"
+	strRedirectURL = "redirect_url"
+)
+
 type signupUser struct {
 	db *gorm.DB
 	gh *github.Service
@@ -26,10 +32,21 @@ func (s *signupUser) GetAuthToken(token string) (models.InviteToken, error) {
 	return i, err
 }
 
+func checkRedirURL(c *gin.Context, session sessions.Session) {
+	// new auth flow. clear redirect url if still part of session.
+	session.Delete(strRedirectURL)
+
+	redirURL := c.Query(strRedirectURL)
+	if redirURL != "" {
+		session.Set(strRedirectURL, redirURL)
+	}
+}
+
 func (s *signupUser) ResignIn(c *gin.Context) {
 	newState := uniuri.NewLen(64)
 	session := sessions.Default(c)
 	session.Set("login_token", newState)
+	checkRedirURL(c, session)
 	session.Save()
 
 	url := s.gh.OauthConf.AuthCodeURL(newState, oauth2.AccessTypeOnline)
@@ -47,9 +64,9 @@ func (s *signupUser) SignUp(c *gin.Context) {
 		sugar.NotFoundOrError(c, err)
 		return
 	}
-
 	session := sessions.Default(c)
-	session.Set("invite_token", invite.Token)
+	session.Set(strInviteToken, invite.Token)
+	checkRedirURL(c, session)
 	session.Save()
 
 	url := s.gh.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
@@ -59,19 +76,19 @@ func (s *signupUser) SignUp(c *gin.Context) {
 func (s *signupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
 	stateToken := c.Query("state")
 
-	storedToken := session.Get("invite_token")
+	storedToken := session.Get(strInviteToken)
 	if storedToken != nil {
-		session.Delete("invite_token")
-		if storedToken.(string) == stateToken {
+		session.Delete(strInviteToken)
+		if s, ok := storedToken.(string); ok && s == stateToken {
 			return storedToken.(string), true, nil
 		}
 	}
 
-	loginToken := session.Get("login_token")
+	loginToken := session.Get(strLoginToken)
 	if loginToken != nil {
-		session.Delete("login_token")
+		session.Delete(strLoginToken)
 
-		if loginToken.(string) == stateToken {
+		if s, ok := loginToken.(string); ok && s == stateToken {
 			return loginToken.(string), false, nil
 		}
 	}
@@ -106,20 +123,22 @@ func (s *signupUser) Callback(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if newUser {
-		user, err = s.gh.GetOrCreateUser(c, token.AccessToken)
-	} else {
-		user, err = s.gh.GetUser(c, token.AccessToken)
-	}
-
+	user, err := s.gh.GetOrCreateUser(c, token.AccessToken)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 
+	location := "/"
+
+	redirURL, _ := session.Get(strRedirectURL).(string)
+	if redirURL != "" {
+		location = redirURL
+		// done with redirect_url
+		session.Delete(strRedirectURL)
+	}
 	session.Set("user_id", user.ID)
 	session.Save()
 
-	c.Redirect(http.StatusMovedPermanently, "/")
+	c.Redirect(http.StatusFound, location)
 }
