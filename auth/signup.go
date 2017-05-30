@@ -121,5 +121,5 @@ func (s *signupUser) Callback(c *gin.Context) {
 	session.Set("user_id", user.ID)
 	session.Save()
 
-	c.Redirect(http.StatusMovedPermanently, "/")
+	c.Redirect(http.StatusFound, "/")
 }
