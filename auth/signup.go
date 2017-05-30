@@ -32,10 +32,21 @@ func (s *signupUser) GetAuthToken(token string) (models.InviteToken, error) {
 	return i, err
 }
 
+func checkRedirURL(c *gin.Context, session sessions.Session) {
+	// new auth flow. clear redirect url if still part of session.
+	session.Delete(strRedirectURL)
+
+	redirURL := c.Query(strRedirectURL)
+	if redirURL != "" {
+		session.Set(strRedirectURL, redirURL)
+	}
+}
+
 func (s *signupUser) ResignIn(c *gin.Context) {
 	newState := uniuri.NewLen(64)
 	session := sessions.Default(c)
 	session.Set("login_token", newState)
+	checkRedirURL(c, session)
 	session.Save()
 
 	url := s.gh.OauthConf.AuthCodeURL(newState, oauth2.AccessTypeOnline)
@@ -54,16 +65,8 @@ func (s *signupUser) SignUp(c *gin.Context) {
 		return
 	}
 	session := sessions.Default(c)
-
-	// new auth flow. clear redirect url if still part of session.
-	session.Delete(strRedirectURL)
-
-	redirURL := c.Query(strRedirectURL)
-	if redirURL != "" {
-		session.Set(strRedirectURL, redirURL)
-	}
-
 	session.Set(strInviteToken, invite.Token)
+	checkRedirURL(c, session)
 	session.Save()
 
 	url := s.gh.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
@@ -120,13 +123,7 @@ func (s *signupUser) Callback(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if newUser {
-		user, err = s.gh.GetOrCreateUser(c, token.AccessToken)
-	} else {
-		user, err = s.gh.GetUser(c, token.AccessToken)
-	}
-
+	user, err := s.gh.GetOrCreateUser(c, token.AccessToken)
 	if err != nil {
 		c.Error(err)
 		return
