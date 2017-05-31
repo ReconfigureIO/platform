@@ -123,6 +123,50 @@ func (d Deployment) Get(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, outputdep)
 }
 
+func (d Deployment) Stop(c *gin.Context) {
+	// set deployment status to "terminating"
+
+	dep, err := d.unauthOne(c)
+	if err != nil {
+		return
+	}
+
+	if !d.canPostEvent(c, dep) {
+		c.AbortWithStatus(403)
+		return
+	}
+
+	event := models.PostDepEvent{
+		Status:  "TERMINATING",
+		Message: "TERMINATING",
+		Code:    0,
+	}
+
+	if !sugar.ValidateRequest(c, event) {
+		return
+	}
+
+	currentStatus := dep.Status()
+
+	if !models.CanTransition(currentStatus, event.Status) {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
+		return
+	}
+
+	newEvent, err := addEvent(&dep.DepJob, event)
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+	// stop instance (ID)
+
+	err = mockDeploy.StopDeployment(context.Background(), dep)
+
+	sugar.SuccessResponse(c, 200, newEvent)
+}
+
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
 	targetdep, err := d.ByID(c)

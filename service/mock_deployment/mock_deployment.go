@@ -101,7 +101,22 @@ func (s *Service) RunDeployment(ctx context.Context, deployment models.Deploymen
 	return InstanceId, nil
 }
 
-func (s *Service) HaltDep(id int) error {
+func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
+	InstanceId := deployment.InstanceID
+	ec2Session := ec2.New(s.session)
+
+	cfg := ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(InstanceId),
+		},
+		DryRun: aws.Bool(true),
+	}
+
+	_, err := ec2Session.TerminateInstances(&cfg)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
