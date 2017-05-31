@@ -180,8 +180,8 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored},
-	finished: []string{StatusCompleted, StatusErrored, StatusTerminated, StatusTerminating},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating},
+	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
 // BatchJob model.
