@@ -150,13 +150,14 @@ type PostSimulation struct {
 // Deployment model.
 type Deployment struct {
 	uuidHook
-	ID       string `gorm:"primary_key" json:"id"`
-	Build    Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID  string `json:"-"`
-	Command  string `json:"command"`
-	Token    string `json:"-"`
-	DepJobID string `json:"-"`
-	DepJob   DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
+	ID         string `gorm:"primary_key" json:"id"`
+	Build      Build  `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID    string `json:"-"`
+	Command    string `json:"command"`
+	Token      string `json:"-"`
+	DepJobID   string `json:"-"`
+	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
+	InstanceID string `json:"-"`
 }
 
 // PostDeployment is post request body for new deployment.

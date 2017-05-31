@@ -91,12 +91,14 @@ func (s *Service) RunDeployment(ctx context.Context, deployment models.Deploymen
 		},
 	}
 
-	_, err = ec2Session.RunInstancesWithContext(ctx, &cfg)
+	resp, err := ec2Session.RunInstancesWithContext(ctx, &cfg)
 	if err != nil {
 		return "", err
 	}
 
-	return "Hello", nil
+	InstanceId := *resp.Instances[0].InstanceId
+
+	return InstanceId, nil
 }
 
 func (s *Service) HaltDep(id int) error {
