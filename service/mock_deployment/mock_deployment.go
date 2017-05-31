@@ -112,7 +112,18 @@ func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployme
 		DryRun: aws.Bool(true),
 	}
 
-	_, err := ec2Session.TerminateInstances(&cfg)
+	_, err := ec2Session.TerminateInstancesWithContext(ctx, &cfg)
+	if err != nil {
+		return err
+	}
+
+	cfg = ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(InstanceId),
+		},
+	}
+
+	_, err = ec2Session.TerminateInstancesWithContext(ctx, &cfg)
 	if err != nil {
 		return err
 	}

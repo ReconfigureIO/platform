@@ -131,10 +131,10 @@ func (d Deployment) Stop(c *gin.Context) {
 		return
 	}
 
-	if !d.canPostEvent(c, dep) {
-		c.AbortWithStatus(403)
-		return
-	}
+	// if !d.canPostEvent(c, dep) {
+	// 	c.AbortWithStatus(403)
+	// 	return
+	// }
 
 	event := models.PostDepEvent{
 		Status:  "TERMINATING",
