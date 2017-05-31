@@ -65,6 +65,8 @@ func main() {
 
 	// cors
 	corsConfig := cors.DefaultConfig()
+	// allow cookies from other domains
+	corsConfig.AllowCredentials = true
 
 	switch os.Getenv("RECO_ENV") {
 	case "production":
