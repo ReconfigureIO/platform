@@ -80,7 +80,7 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
+	err = db.Model(&newDep).Update("instance_id", instanceID).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
