@@ -74,13 +74,13 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	InstanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
 
-	err = db.Model(&newDep).Update("InstanceID", InstanceID).Error
+	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -131,14 +131,9 @@ func (d Deployment) Stop(c *gin.Context) {
 		return
 	}
 
-	// if !d.canPostEvent(c, dep) {
-	// 	c.AbortWithStatus(403)
-	// 	return
-	// }
-
 	event := models.PostDepEvent{
 		Status:  "TERMINATING",
-		Message: "TERMINATING",
+		Message: "USER REQUESTED TERMINATION",
 		Code:    0,
 	}
 
