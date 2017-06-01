@@ -3,3 +3,6 @@ cron:
  - name: "hello"
    url: "/hello"
    schedule: "* * * * *"
+ - name: "terminated deployments"
+   url: "/terminateddeployments"
+   schedule: "* * * * *"
