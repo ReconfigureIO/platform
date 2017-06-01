@@ -108,7 +108,6 @@ OptionSettings:
     ConnectionDrainingTimeout: '20'
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
-    GIN_MODE: release
     PORT: '8080'
     GITHUB_CLIENT_ID: 96df7fdbb95aba673730
     GITHUB_CLIENT_SECRET: 29ffb97f1e33a6203c63fdc35362016f0bb74a74
