@@ -14,12 +14,21 @@ import (
 // Build handles requests for builds.
 type Build struct{}
 
+// Common preload functionality.
+func (b Build) Preload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Project").
+		Preload("BatchJob").
+		Preload("BatchJob.Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
 // Query fetches builds for user and project.
 func (b Build) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
-	return db.Joins("join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID).
-		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	joined := db.Joins("join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", user.ID)
+	return b.Preload(joined)
 }
 
 // ByID gets the first build by ID, 404 if it doesn't exist.
@@ -44,7 +53,7 @@ func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 	if !bindID(c, &id) {
 		return build, errNotFound
 	}
-	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	q := b.Preload(db)
 	err := q.First(&build, "id = ?", id).Error
 	return build, err
 }
