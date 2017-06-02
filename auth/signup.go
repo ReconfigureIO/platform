@@ -53,6 +53,14 @@ func (s *signupUser) ResignIn(c *gin.Context) {
 	c.Redirect(http.StatusFound, url)
 }
 
+func (s *signupUser) Logout(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Save()
+
+	c.Status(http.StatusNoContent)
+}
+
 func (s *signupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
 	if token == "" {
@@ -100,6 +108,7 @@ func (s *signupUser) Callback(c *gin.Context) {
 	session := sessions.Default(c)
 
 	storedToken, newUser, err := s.StoredToken(c, session)
+	session.Save()
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())

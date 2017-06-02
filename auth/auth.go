@@ -32,6 +32,7 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 		authRoutes.GET("/signin", signup.ResignIn)
 		authRoutes.GET("/signup/:token", signup.SignUp)
 		authRoutes.GET("/callback", signup.Callback)
+		authRoutes.GET("/logout", signup.Logout)
 	}
 
 	tokenRoutes := r.Group("/token", RequiresUser())
@@ -70,6 +71,7 @@ func Index(c *gin.Context) {
 			})
 		} else {
 			session.Clear()
+			session.Save()
 			c.HTML(http.StatusOK, "index.tmpl", gin.H{
 				"logged_in": false,
 			})
