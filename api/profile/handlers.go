@@ -33,7 +33,9 @@ func (p Profile) Update(c *gin.Context) {
 		return
 	}
 
-	err := p.DB.Model(&user).Updates(prof).Error
+	prof.Apply(&user)
+
+	err := p.DB.Save(&user).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
