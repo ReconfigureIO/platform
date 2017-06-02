@@ -108,6 +108,7 @@ func (s *signupUser) Callback(c *gin.Context) {
 	session := sessions.Default(c)
 
 	storedToken, newUser, err := s.StoredToken(c, session)
+	session.Save()
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
