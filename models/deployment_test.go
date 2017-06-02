@@ -10,6 +10,11 @@ import (
 
 func TestGetWithStatus(t *testing.T) {
 	gormConnDets := os.Getenv("DATABASE_URL")
+	if gormConnDets == "" {
+		t.Skip()
+		return
+	}
+
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		t.Error(err)
