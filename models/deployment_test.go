@@ -8,7 +8,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func TestGetWithStatus(t *testing.T) {
+func TestDeploymentGetWithStatus(t *testing.T) {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	if gormConnDets == "" {
 		t.Skip()
