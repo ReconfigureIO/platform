@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -46,6 +47,10 @@ type User struct {
 	StripeToken       string `json:"-"`
 	// We'll ignore this in the db for now, to provide mock data
 	BillingPlan string `gorm:"-" json:"billing_plan"`
+}
+
+func (u *User) LoginToken() string {
+	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.

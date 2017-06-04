@@ -31,10 +31,19 @@ type ProfileData struct {
 	Name        string `json:"name"`
 	Email       string `json:"email"`
 	BillingPlan string `json:"billing_plan" validate:"is_billing_plan"`
+	Token       string `json:"token"` // read only
 }
 
 func (p *ProfileData) FromUser(user models.User) {
 	p.Name = user.Name
 	p.Email = user.Email
 	p.BillingPlan = models.OpenSource
+	p.Token = user.LoginToken()
+}
+
+func (p *ProfileData) Apply(user *models.User) {
+	user.Name = p.Name
+	user.Email = p.Email
+	user.BillingPlan = p.BillingPlan
+	// skip token, because it's read only
 }
