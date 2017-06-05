@@ -34,6 +34,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		{
 			billingRoutes.GET("", profile.Get)
 			billingRoutes.PUT("", profile.Update)
+			billingRoutes.GET("/payment-info", billing.Get)
 			billingRoutes.POST("/payment-info", billing.Replace)
 		}
 	}

@@ -18,6 +18,31 @@ type TokenUpdate struct {
 	Token string `json:"token"`
 }
 
+// DefaultSource doesn't actually include the card info
+func (b Billing) DefaultSource(cust *stripe.Customer) *stripe.Card {
+	def := cust.DefaultSource.ID
+	for _, source := range cust.Sources.Values {
+		if source.ID == def {
+			return source.Card
+		}
+	}
+	return nil
+}
+
+func (b Billing) Get(c *gin.Context) {
+	user := auth.GetUser(c)
+	if user.StripeToken == "" {
+		sugar.ErrResponse(c, 404, nil)
+		return
+	}
+	cust, err := customer.Get(user.StripeToken, nil)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
+}
+
 // Update the customer info for the current user
 func (b Billing) Replace(c *gin.Context) {
 	post := TokenUpdate{}
@@ -52,6 +77,5 @@ func (b Billing) Replace(c *gin.Context) {
 		return
 
 	}
-	// TODO: return something that's not a user
-	sugar.SuccessResponse(c, 200, user)
+	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
 }
