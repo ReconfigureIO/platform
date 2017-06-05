@@ -60,7 +60,7 @@ func main() {
 		c.String(200, "hello")
 	})
 
-	r.POST("/terminateddeployments", func(c *gin.Context) {
+	r.POST("/terminate-deployments", func(c *gin.Context) {
 		instanceIDs, err := mockDeploy.ListTerminatedDeployments(context.Background())
 		deployment := models.Deployment{}
 		for _, instanceID := range instanceIDs {
