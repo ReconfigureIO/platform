@@ -108,11 +108,10 @@ OptionSettings:
     ConnectionDrainingTimeout: '20'
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
-    GIN_MODE: release
     PORT: '8080'
-    GITHUB_CLIENT_ID: 50089c1be8bb0e0106de
-    GITHUB_CLIENT_SECRET: 8055ae03ef97d09eb075d73c1f9f81174994ae01
-    RECO_FEATURE_BILLING: '1'
+    GITHUB_CLIENT_ID: 96df7fdbb95aba673730
+    GITHUB_CLIENT_SECRET: 29ffb97f1e33a6203c63fdc35362016f0bb74a74
+    RECO_FEATURE_BILLING: 1
     STRIPE_KEY: sk_test_NvEpeLnLAV15b9TWJzZKLkvW
     DATABASE_URL: host=test-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
       dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254

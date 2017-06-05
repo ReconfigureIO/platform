@@ -20,6 +20,11 @@ curl -v -XPOST https://admin:ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3
 2. Login with Github
 3. Use the generated token with our tooling
 4. If you need to view this token again visit https://api.reconfigureio/oauth/signin
+5. Optional `redirect_url` query param to get redirected to specific url after login.
+
+## Logging out
+
+Visit `https://api.reconfigure.io/oauth/logout`. This will return a 204.
 
 # API
 
@@ -218,19 +223,19 @@ Stream the logs for a given build
 Get a list of deployments, can be filtered by parent `build ID`.
 
 <TODO> examples
-		
+
 #### POST /deployments
-		
+
 Create and process a deployment. Requires a parent `build ID` and a `command`
 
-<TODO> examples 
-		
+<TODO> examples
+
 #### GET /deployments/{id}
 
 Get the details of an individual deployment.
 
 <TODO> examples
-		
+
 #### GET /deployments/{id}/logs
 Stream the logs of an individual deployment.
 

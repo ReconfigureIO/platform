@@ -65,6 +65,8 @@ func main() {
 
 	// cors
 	corsConfig := cors.DefaultConfig()
+	// allow cookies from other domains
+	corsConfig.AllowCredentials = true
 
 	switch os.Getenv("RECO_ENV") {
 	case "production":
@@ -72,12 +74,14 @@ func main() {
 			"http://app.reconfigure.io",
 			"https://app.reconfigure.io",
 			"http://local.reconfigure.io",
+			"http://local.reconfigure.io:4200",
 		}
 	default:
 		corsConfig.AllowOrigins = []string{
 			"http://app-staging.reconfigure.io",
 			"https://app-staging.reconfigure.io",
 			"http://local.reconfigure.io",
+			"http://local.reconfigure.io:4200",
 		}
 	}
 

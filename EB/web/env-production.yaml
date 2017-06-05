@@ -115,6 +115,7 @@ OptionSettings:
     GITHUB_CLIENT_ID: 50089c1be8bb0e0106de
     GITHUB_CLIENT_SECRET: 8055ae03ef97d09eb075d73c1f9f81174994ae01
     RECO_ENV: production
+    RECO_FEATURE_BILLING: 1
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0
