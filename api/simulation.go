@@ -22,12 +22,21 @@ func NewSimulation() Simulation {
 	return Simulation{Aws: awsSession}
 }
 
+// Common preload functionality.
+func (s Simulation) Preload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Project").
+		Preload("BatchJob").
+		Preload("BatchJob.Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
 // Query fetches simulations for user and project.
 func (s Simulation) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
-	return db.Joins("join projects on projects.id = simulations.project_id").
-		Where("projects.user_id=?", user.ID).
-		Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	joined := db.Joins("join projects on projects.id = simulations.project_id").
+		Where("projects.user_id=?", user.ID)
+	return s.Preload(joined)
 }
 
 // ByID gets the first simulation by ID, 404 if it doesn't exist
@@ -52,7 +61,7 @@ func (s Simulation) unauthOne(c *gin.Context) (models.Simulation, error) {
 	if !bindID(c, &id) {
 		return sim, errNotFound
 	}
-	q := db.Preload("Project").Preload("BatchJob").Preload("BatchJob.Events")
+	q := s.Preload(db)
 	err := q.First(&sim, "simulations.id = ?", id).Error
 	return sim, err
 }

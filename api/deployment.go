@@ -16,12 +16,21 @@ import (
 // Deployment handles request for deployments.
 type Deployment struct{}
 
+// Common preload functionality.
+func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Build").
+		Preload("DepJob").
+		Preload("DepJob.Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
 // Query fetches deployment for user and project.
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
-	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID).
-		Preload("Build").Preload("DepJob.Events").Preload("DepJob")
+	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", user.ID)
+	return d.Preload(joined)
 }
 
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
@@ -197,7 +206,7 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	q := db.Preload("DepJob").Preload("DepJob.Events")
+	q := d.Preload(db)
 	err := q.First(&dep, "deployments.id = ?", id).Error
 	return dep, err
 }
