@@ -4,9 +4,31 @@ import (
 	"log"
 	"os"
 
+	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+)
+
+type ServiceConfig struct {
+	LogGroup string
+	Image    string
+	AMI      string
+}
+
+type Service struct {
+	session *session.Session
+	Conf    ServiceConfig
+}
+
+var (
+	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
+		LogGroup: "josh-test-sdaccel",
+		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
+		AMI:      "ami-850c7293",
+	})
 )
 
 func main() {
@@ -36,6 +58,28 @@ func main() {
 	r.POST("/hello", func(c *gin.Context) {
 		log.Printf("Hello world\n")
 		c.String(200, "hello")
+	})
+
+	r.POST("/terminateddeployments", func(c *gin.Context) {
+		instanceIDs, err := mockDeploy.ListTerminatedDeployments(context.Background())
+		deployment := models.Deployment{}
+		for _, instanceID := range instanceIDs {
+			db.Where(&models.Deployment{InstanceID: instanceID})
+			err := db.Find(&deployment).Error
+			if deployment.status == "terminating" {
+				event := models.PostDepEvent{
+					Status:  "TERMINATED",
+					Message: "TERMINATED",
+					Code:    0,
+				}
+				_, err := addEvent(&dep.DepJob, event)
+				if err != nil {
+					c.JSON(500, err)
+					return
+				}
+				c.JSON(200, event)
+			}
+		}
 	})
 
 	// Listen and Server in 0.0.0.0:$PORT
