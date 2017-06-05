@@ -141,7 +141,7 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 }
 
-func (s *Service) ListTerminatedInstances(ctx context.Context) ([]string, error) {
+func (s *Service) ListTerminatedDeployments(ctx context.Context) ([]string, error) {
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeInstancesInput{
