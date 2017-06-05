@@ -151,25 +151,27 @@ func (s *Service) ListTerminatedDeployments(ctx context.Context) ([]string, erro
 				Values: []*string{
 					aws.String("f1.2xlarge"),
 				},
+			},
+			{
 				Name: aws.String("instance-state-name"),
 				Values: []*string{
 					aws.String("terminated"),
 				},
 			},
 		},
-	}
+	},
 
 	results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var instanceIDs []string
 	for _, reservation := range results.Reservations {
 		for _, instance := range reservation.Instances {
-			instanceIDs = append(instanceIDs, *instance.InstanceID)
+			instanceIDs = append(instanceIDs, *instance.InstanceId)
 		}
 	}
 
-	return instanceIDs
+	return instanceIDs, nil
 }
