@@ -124,17 +124,12 @@ func (d Deployment) Get(c *gin.Context) {
 }
 
 //terminate a deployment
-func stop(DepJob *models.DepJob) error {
-	dep := models.Deployment{}
-	err := d.Query(c).First(&dep, "deployments.id = ?", DepJob.DepID).Error
+func stop(dep models.Deployment) error {
+	err := mockDeploy.StopDeployment(context.Background(), dep)
 	if err != nil {
 		return err
 	}
-
-	err = mockDeploy.StopDeployment(context.Background(), dep)
-	if err != nil {
-		return err
-	}
+	return nil
 }
 
 // Logs stream logs for deployments.
@@ -184,7 +179,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent, err := addEvent(&dep.DepJob, event)
+	newEvent, err := addEvent(dep, event)
 
 	if err != nil {
 		c.Error(err)
@@ -195,7 +190,8 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
+func addEvent(dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
+	DepJob := dep.DepJob
 	newEvent := models.DepJobEvent{
 		DepJobID:  DepJob.ID,
 		Timestamp: time.Now(),
@@ -210,7 +206,7 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 	}
 
 	if event.Status == "TERMINATING" {
-		err = stop(DepJob)
+		err = stop(dep)
 		if err != nil {
 			return newEvent, err
 		}
