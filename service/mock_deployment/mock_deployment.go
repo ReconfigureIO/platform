@@ -174,7 +174,7 @@ func (s *Service) ListTerminatedDeployments(ctx context.Context) ([]string, erro
 				},
 			},
 		},
-	},
+	}
 
 	results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
 	if err != nil {
