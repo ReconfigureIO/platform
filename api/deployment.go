@@ -80,7 +80,7 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	err = db.Model(&newDep).Update("instance_id", instanceID).Error
+	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -123,43 +123,18 @@ func (d Deployment) Get(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, outputdep)
 }
 
-func (d Deployment) Stop(c *gin.Context) {
-	// set deployment status to "terminating"
-
-	dep, err := d.unauthOne(c)
+//terminate a deployment
+func stop(DepJob *models.DepJob) error {
+	dep := models.Deployment{}
+	err := d.Query(c).First(&dep, "deployments.id = ?", DepJob.DepID).Error
 	if err != nil {
-		return
+		return err
 	}
-
-	event := models.PostDepEvent{
-		Status:  "TERMINATING",
-		Message: "USER REQUESTED TERMINATION",
-		Code:    0,
-	}
-
-	if !sugar.ValidateRequest(c, event) {
-		return
-	}
-
-	currentStatus := dep.Status()
-
-	if !models.CanTransition(currentStatus, event.Status) {
-		sugar.ErrResponse(c, 400, fmt.Sprintf("%s not valid when current status is %s", event.Status, currentStatus))
-		return
-	}
-
-	newEvent, err := addEvent(&dep.DepJob, event)
-
-	if err != nil {
-		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
-		return
-	}
-	// stop instance (ID)
 
 	err = mockDeploy.StopDeployment(context.Background(), dep)
-
-	sugar.SuccessResponse(c, 200, newEvent)
+	if err != nil {
+		return err
+	}
 }
 
 // Logs stream logs for deployments.
@@ -233,6 +208,14 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 	if err != nil {
 		return models.DepJobEvent{}, err
 	}
+
+	if event.Status == "TERMINATING" {
+		err = stop(DepJob)
+		if err != nil {
+			return newEvent, err
+		}
+	}
+
 	return newEvent, nil
 }
 

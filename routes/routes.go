@@ -74,7 +74,6 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		deploymentRoute.POST("", deployment.Create)
 		deploymentRoute.GET("/:id", deployment.Get)
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
-		deploymentRoute.POST("/:id/stop", deployment.Stop)
 	}
 
 	eventRoutes := r.Group("", auth.TokenAuth(db))
