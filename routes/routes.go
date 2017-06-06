@@ -8,12 +8,18 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(r gin.IRouter, db *gorm.DB) {
+func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
+	// setup common routes
+	store := sessions.NewCookieStore([]byte(secretKey))
+	r.Use(sessions.Sessions("paus", store))
+	r.Use(middleware.SessionAuth(db))
+
 	// setup index
 	r.GET("/", handlers.Index)
 
@@ -87,5 +93,5 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
 		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
-
+	return r
 }

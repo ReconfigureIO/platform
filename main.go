@@ -5,11 +5,9 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -52,12 +50,6 @@ func main() {
 	// setup components
 	db := setupDB()
 
-	store := sessions.NewCookieStore([]byte(secretKey))
-	r.Use(sessions.Sessions("paus", store))
-	r.Use(middleware.SessionAuth(db))
-
-	r.LoadHTMLGlob("templates/*")
-
 	// ping test
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong pong")
@@ -86,9 +78,10 @@ func main() {
 	}
 
 	r.Use(cors.New(corsConfig))
+	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(r, db)
+	routes.SetupRoutes(secretKey, r, db)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
