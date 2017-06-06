@@ -112,11 +112,8 @@ func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployme
 	}
 
 	_, err = ec2Session.TerminateInstancesWithContext(ctx, &cfg)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func (s *Service) GetDepDetail(id int) (string, error) {
