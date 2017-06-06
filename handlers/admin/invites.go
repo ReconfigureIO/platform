@@ -1,4 +1,4 @@
-package auth
+package admin
 
 import (
 	"github.com/ReconfigureIO/platform/models"
