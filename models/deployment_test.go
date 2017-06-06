@@ -21,7 +21,7 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 		return
 	}
 
-	d := (*DB)(db)
+	d := PostgresRepo{db}
 
 	_, err = d.GetWithStatus([]string{"COMPLETED"}, 10)
 	if err != nil {

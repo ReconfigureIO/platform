@@ -4,12 +4,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type DB gorm.DB
-
 type DeploymentRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
+}
+
+type PostgresRepo struct {
+	DB *gorm.DB
 }
 
 const (
@@ -27,8 +29,8 @@ LIMIT ?
 `
 )
 
-func (d *DB) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
-	db := (*gorm.DB)(d)
+func (repo *PostgresRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
+	db := repo.DB
 	rows, err := db.Raw(SQL_DEPLOYMENT_STATUS, statuses, limit).Rows()
 	if err != nil {
 		return nil, err
