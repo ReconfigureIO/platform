@@ -91,16 +91,29 @@ func (s *Service) RunDeployment(ctx context.Context, deployment models.Deploymen
 		},
 	}
 
-	_, err = ec2Session.RunInstancesWithContext(ctx, &cfg)
+	resp, err := ec2Session.RunInstancesWithContext(ctx, &cfg)
 	if err != nil {
 		return "", err
 	}
 
-	return "Hello", nil
+	InstanceId := *resp.Instances[0].InstanceId
+
+	return InstanceId, nil
 }
 
-func (s *Service) HaltDep(id int) error {
-	return nil
+func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
+	InstanceId := deployment.InstanceID
+	ec2Session := ec2.New(s.session)
+
+	cfg := ec2.TerminateInstancesInput{
+		InstanceIds: []*string{
+			aws.String(InstanceId),
+		},
+	}
+
+	_, err := ec2Session.TerminateInstancesWithContext(ctx, &cfg)
+
+	return err
 }
 
 func (s *Service) GetDepDetail(id int) (string, error) {

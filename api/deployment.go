@@ -83,7 +83,13 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -173,7 +179,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent, err := addEvent(&dep.DepJob, event)
+	newEvent, err := addEvent(c, dep, event)
 
 	if err != nil {
 		c.Error(err)
@@ -184,7 +190,8 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
+func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
+	DepJob := dep.DepJob
 	newEvent := models.DepJobEvent{
 		DepJobID:  DepJob.ID,
 		Timestamp: time.Now(),
@@ -197,7 +204,12 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 	if err != nil {
 		return models.DepJobEvent{}, err
 	}
-	return newEvent, nil
+
+	if event.Status == "TERMINATING" {
+		err = mockDeploy.StopDeployment(c, dep)
+	}
+
+	return newEvent, err
 }
 
 func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
