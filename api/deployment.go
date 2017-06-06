@@ -16,12 +16,21 @@ import (
 // Deployment handles request for deployments.
 type Deployment struct{}
 
+// Common preload functionality.
+func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
+	return db.Preload("Build").
+		Preload("DepJob").
+		Preload("DepJob.Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
 // Query fetches deployment for user and project.
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := auth.GetUser(c)
-	return db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID).
-		Preload("Build").Preload("DepJob.Events").Preload("DepJob")
+	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", user.ID)
+	return d.Preload(joined)
 }
 
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
@@ -74,7 +83,13 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	_, err = mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -164,7 +179,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent, err := addEvent(&dep.DepJob, event)
+	newEvent, err := addEvent(c, dep, event)
 
 	if err != nil {
 		c.Error(err)
@@ -175,7 +190,8 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEvent, error) {
+func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
+	DepJob := dep.DepJob
 	newEvent := models.DepJobEvent{
 		DepJobID:  DepJob.ID,
 		Timestamp: time.Now(),
@@ -188,7 +204,12 @@ func addEvent(DepJob *models.DepJob, event models.PostDepEvent) (models.DepJobEv
 	if err != nil {
 		return models.DepJobEvent{}, err
 	}
-	return newEvent, nil
+
+	if event.Status == "TERMINATING" {
+		err = mockDeploy.StopDeployment(c, dep)
+	}
+
+	return newEvent, err
 }
 
 func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
@@ -197,7 +218,7 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	q := db.Preload("DepJob").Preload("DepJob.Events")
+	q := d.Preload(db)
 	err := q.First(&dep, "deployments.id = ?", id).Error
 	return dep, err
 }
