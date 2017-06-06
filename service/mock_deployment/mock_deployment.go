@@ -105,13 +105,13 @@ func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployme
 	InstanceId := deployment.InstanceID
 	ec2Session := ec2.New(s.session)
 
-	cfg = ec2.TerminateInstancesInput{
+	cfg := ec2.TerminateInstancesInput{
 		InstanceIds: []*string{
 			aws.String(InstanceId),
 		},
 	}
 
-	_, err = ec2Session.TerminateInstancesWithContext(ctx, &cfg)
+	_, err := ec2Session.TerminateInstancesWithContext(ctx, &cfg)
 
 	return err
 }
