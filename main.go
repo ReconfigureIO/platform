@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ReconfigureIO/platform/api"
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/handlers/api"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-contrib/cors"
@@ -54,7 +54,7 @@ func main() {
 
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
-	r.Use(auth.SessionAuth(db))
+	r.Use(middleware.SessionAuth(db))
 
 	r.LoadHTMLGlob("templates/*")
 

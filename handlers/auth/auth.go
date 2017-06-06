@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
 	"github.com/gin-gonic/contrib/sessions"
@@ -35,10 +36,10 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 		authRoutes.GET("/logout", signup.Logout)
 	}
 
-	tokenRoutes := r.Group("/token", RequiresUser())
+	tokenRoutes := r.Group("/token", middleware.RequiresUser())
 	{
 		tokenRoutes.POST("/refresh", func(c *gin.Context) {
-			user := GetUser(c)
+			user := middleware.GetUser(c)
 			err := db.Model(&user).Update("token", models.NewUser().Token).Error
 			if err != nil {
 				c.AbortWithError(500, err)
@@ -52,29 +53,23 @@ func Setup(r gin.IRouter, db *gorm.DB) {
 // Index handles request to the site root.
 func Index(c *gin.Context) {
 	session := sessions.Default(c)
-	userID := session.Get(strUserID)
+	user, loggedIn := middleware.CheckUser(c)
 
-	if userID == nil {
+	if !loggedIn {
+		session.Clear()
+		session.Save()
+
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"logged_in": false,
 		})
-	} else {
-		user, exists := CheckUser(c)
-		if exists && user != (models.User{}) {
-			c.HTML(http.StatusOK, "index.tmpl", gin.H{
-				"logged_in": true,
-				"login":     user.GithubName,
-				"name":      user.Name,
-				"gh_id":     user.GithubID,
-				"email":     user.Email,
-				"token":     user.Token,
-			})
-		} else {
-			session.Clear()
-			session.Save()
-			c.HTML(http.StatusOK, "index.tmpl", gin.H{
-				"logged_in": false,
-			})
-		}
+		return
 	}
+	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		"logged_in": true,
+		"login":     user.GithubName,
+		"name":      user.Name,
+		"gh_id":     user.GithubID,
+		"email":     user.Email,
+		"token":     user.Token,
+	})
 }

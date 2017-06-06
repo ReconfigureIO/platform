@@ -1,7 +1,7 @@
 package profile
 
 import (
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -13,7 +13,7 @@ type Profile struct {
 }
 
 func (p Profile) Get(c *gin.Context) {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 
 	prof := ProfileData{}
 	prof.FromUser(user)
@@ -22,7 +22,7 @@ func (p Profile) Get(c *gin.Context) {
 }
 
 func (p Profile) Update(c *gin.Context) {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 
 	prof := ProfileData{}
 	prof.FromUser(user)

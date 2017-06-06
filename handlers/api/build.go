@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
@@ -25,7 +25,7 @@ func (b Build) Preload(db *gorm.DB) *gorm.DB {
 
 // Query fetches builds for user and project.
 func (b Build) Query(c *gin.Context) *gorm.DB {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	joined := db.Joins("join projects on projects.id = builds.project_id").
 		Where("projects.user_id=?", user.ID)
 	return b.Preload(joined)
@@ -161,7 +161,7 @@ func (b Build) Logs(c *gin.Context) {
 }
 
 func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {
-	user, loggedIn := auth.CheckUser(c)
+	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && build.Project.UserID == user.ID {
 		return true
 	}

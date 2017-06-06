@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ReconfigureIO/platform/api"
-	"github.com/ReconfigureIO/platform/api/profile"
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/handlers/api"
+	"github.com/ReconfigureIO/platform/handlers/auth"
+	"github.com/ReconfigureIO/platform/handlers/profile"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
@@ -23,7 +24,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	admin := r.Group("/admin", authMiddleware)
 	auth.SetupAdmin(admin, db)
 
-	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
+	apiRoutes := r.Group("/", middleware.TokenAuth(db), middleware.RequiresUser())
 
 	if os.Getenv("RECO_FEATURE_BILLING") == "1" {
 		fmt.Println("enabling billing api endpoints")
@@ -77,7 +78,7 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
-	eventRoutes := r.Group("", auth.TokenAuth(db))
+	eventRoutes := r.Group("", middleware.TokenAuth(db))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
