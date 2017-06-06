@@ -7,17 +7,17 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type inviteAdmin struct {
-	db *gorm.DB
+type InviteAdmin struct {
+	DB *gorm.DB
 }
 
-func (inv inviteAdmin) Query(c *gin.Context) *gorm.DB {
-	return inv.db
+func (inv InviteAdmin) Query(c *gin.Context) *gorm.DB {
+	return inv.DB
 }
 
-func (inv inviteAdmin) Create(c *gin.Context) {
+func (inv InviteAdmin) Create(c *gin.Context) {
 	invite := models.NewInviteToken()
-	err := inv.db.Create(&invite).Error
+	err := inv.DB.Create(&invite).Error
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

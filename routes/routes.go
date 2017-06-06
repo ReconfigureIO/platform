@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/handlers/auth"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/gin-gonic/gin"
@@ -15,14 +14,14 @@ import (
 // SetupRoutes sets up api routes.
 func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 	// Setup index & signup flow
-	auth.Setup(r, db)
+	SetupProfile(r, db)
 
 	// Setup admin
 	authMiddleware := gin.BasicAuth(gin.Accounts{
 		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
 	})
 	admin := r.Group("/admin", authMiddleware)
-	auth.SetupAdmin(admin, db)
+	SetupAdmin(admin, db)
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db), middleware.RequiresUser())
 
