@@ -123,15 +123,6 @@ func (d Deployment) Get(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, outputdep)
 }
 
-//terminate a deployment
-func stop(dep models.Deployment) error {
-	err := mockDeploy.StopDeployment(context.Background(), dep)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
 	targetdep, err := d.ByID(c)
@@ -179,7 +170,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent, err := addEvent(dep, event)
+	newEvent, err := addEvent(c, dep, event)
 
 	if err != nil {
 		c.Error(err)
@@ -190,7 +181,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
+func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
 	DepJob := dep.DepJob
 	newEvent := models.DepJobEvent{
 		DepJobID:  DepJob.ID,
@@ -206,13 +197,10 @@ func addEvent(dep models.Deployment, event models.PostDepEvent) (models.DepJobEv
 	}
 
 	if event.Status == "TERMINATING" {
-		err = stop(dep)
-		if err != nil {
-			return newEvent, err
-		}
+		err = mockDeploy.StopDeployment(c, dep)
 	}
 
-	return newEvent, nil
+	return newEvent, err
 }
 
 func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
