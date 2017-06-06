@@ -11,11 +11,9 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Setup sets all routes.
-func SetupProfile(r gin.IRouter, db *gorm.DB) {
+// Setup sets all auth routes.
+func SetupAuth(r gin.IRouter, db *gorm.DB) {
 	gh := github.New(db)
-
-	r.GET("/", auth.Index)
 
 	authRoutes := r.Group("/oauth")
 	{
