@@ -16,6 +16,8 @@ const (
 	StatusQueued = "QUEUED"
 	// StatusStarted is started job state.
 	StatusStarted = "STARTED"
+	// StatusTerminating is terminating job state.
+	StatusTerminating = "TERMINATING"
 	// StatusTerminated is terminated job state.
 	StatusTerminated = "TERMINATED"
 	// StatusCompleted is completed job state.
@@ -153,13 +155,14 @@ type PostSimulation struct {
 // Deployment model.
 type Deployment struct {
 	uuidHook
-	ID       string `gorm:"primary_key" json:"id"`
-	Build    Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID  string `json:"-"`
-	Command  string `json:"command"`
-	Token    string `json:"-"`
-	DepJobID string `json:"-"`
-	DepJob   DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
+	ID         string `gorm:"primary_key" json:"id"`
+	Build      Build  `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID    string `json:"-"`
+	Command    string `json:"command"`
+	Token      string `json:"-"`
+	DepJobID   string `json:"-"`
+	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
+	InstanceID string `json:"-"`
 }
 
 // PostDeployment is post request body for new deployment.
@@ -182,7 +185,7 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating},
 	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
@@ -275,11 +278,11 @@ func hasFinished(status string) bool {
 func CanTransition(current string, next string) bool {
 	switch current {
 	case StatusSubmitted:
-		return inSlice([]string{StatusQueued, StatusTerminated}, next)
+		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating}, next)
 	case StatusQueued:
-		return inSlice([]string{StatusStarted, StatusTerminated}, next)
+		return inSlice([]string{StatusStarted, StatusTerminated, StatusTerminating}, next)
 	case StatusStarted:
-		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored}, next)
+		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored, StatusTerminating}, next)
 	default:
 		return false
 	}
