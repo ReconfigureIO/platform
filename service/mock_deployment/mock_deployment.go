@@ -141,24 +141,11 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 }
 
-func (s *Service) ListTerminatedDeployments(ctx context.Context) ([]string, error) {
+func (s *Service) DescribeInstanceStatus(ctx context.Context, instanceids []string) ([]models.InstanceStatus, error) {
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeInstancesInput{
-		Filters: []*ec2.Filter{
-			{
-				Name: aws.String("instance-type"),
-				Values: []*string{
-					aws.String("f1.2xlarge"),
-				},
-			},
-			{
-				Name: aws.String("instance-state-name"),
-				Values: []*string{
-					aws.String("terminated"),
-				},
-			},
-		},
+		InstanceIds: instanceids,
 	}
 
 	results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
@@ -166,12 +153,16 @@ func (s *Service) ListTerminatedDeployments(ctx context.Context) ([]string, erro
 		return nil, err
 	}
 
-	var instanceIDs []string
+	var instancestatuses []models.InstanceStatus
 	for _, reservation := range results.Reservations {
 		for _, instance := range reservation.Instances {
-			instanceIDs = append(instanceIDs, *instance.InstanceId)
+			instancestatus = models.InstanceStatus{
+				ID:     instance.InstanceID,
+				Status: instance.InstanceState,
+			}
+			instancestatuses = append(instancestatuses, instancestatus)
 		}
 	}
 
-	return instanceIDs, nil
+	return instancestatuses, nil
 }
