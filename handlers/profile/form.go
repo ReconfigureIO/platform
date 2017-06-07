@@ -17,10 +17,10 @@ func isBillingPlan(v interface{}, param string) error {
 	if st.String() == models.PlanOpenSource {
 		return nil
 	}
-	if st.String() == models.SingleUser {
+	if st.String() == models.PlanSingleUser {
 		return nil
 	}
-	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.PlanOpenSource, models.SingleUser))
+	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.PlanOpenSource, models.PlanSingleUser))
 }
 
 func init() {
