@@ -291,3 +291,8 @@ func inSlice(slice []string, val string) bool {
 	}
 	return false
 }
+
+type InstanceStatus struct {
+	ID     string
+	Status string
+}
