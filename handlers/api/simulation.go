@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -33,7 +33,7 @@ func (s Simulation) Preload(db *gorm.DB) *gorm.DB {
 
 // Query fetches simulations for user and project.
 func (s Simulation) Query(c *gin.Context) *gorm.DB {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	joined := db.Joins("join projects on projects.id = simulations.project_id").
 		Where("projects.user_id=?", user.ID)
 	return s.Preload(joined)
@@ -173,7 +173,7 @@ func (s Simulation) Logs(c *gin.Context) {
 }
 
 func (s Simulation) canPostEvent(c *gin.Context, sim models.Simulation) bool {
-	user, loggedIn := auth.CheckUser(c)
+	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && sim.Project.UserID == user.ID {
 		return true
 	}

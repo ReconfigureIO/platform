@@ -4,26 +4,36 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ReconfigureIO/platform/api"
-	"github.com/ReconfigureIO/platform/api/profile"
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/handlers"
+	"github.com/ReconfigureIO/platform/handlers/api"
+	"github.com/ReconfigureIO/platform/handlers/profile"
+	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(r gin.IRouter, db *gorm.DB) {
-	// Setup index & signup flow
-	auth.Setup(r, db)
+func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
+	// setup common routes
+	store := sessions.NewCookieStore([]byte(secretKey))
+	r.Use(sessions.Sessions("paus", store))
+	r.Use(middleware.SessionAuth(db))
 
-	// Setup admin
+	// setup index
+	r.GET("/", handlers.Index)
+
+	// Setup authenticated admin
 	authMiddleware := gin.BasicAuth(gin.Accounts{
 		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
 	})
 	admin := r.Group("/admin", authMiddleware)
-	auth.SetupAdmin(admin, db)
+	SetupAdmin(admin, db)
 
-	apiRoutes := r.Group("/", auth.TokenAuth(db), auth.RequiresUser())
+	// signup & login flow
+	SetupAuth(r, db)
+
+	apiRoutes := r.Group("/", middleware.TokenAuth(db), middleware.RequiresUser())
 
 	if os.Getenv("RECO_FEATURE_BILLING") == "1" {
 		fmt.Println("enabling billing api endpoints")
@@ -77,11 +87,11 @@ func SetupRoutes(r gin.IRouter, db *gorm.DB) {
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
-	eventRoutes := r.Group("", auth.TokenAuth(db))
+	eventRoutes := r.Group("", middleware.TokenAuth(db))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
 		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
-
+	return r
 }

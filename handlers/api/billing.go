@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
@@ -32,7 +32,7 @@ func (b Billing) DefaultSource(cust *stripe.Customer) *stripe.Card {
 
 // Get the default card info for the customer for frontend display
 func (b Billing) Get(c *gin.Context) {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	if user.StripeToken == "" {
 		sugar.ErrResponse(c, 404, nil)
 		return
@@ -52,7 +52,7 @@ func (b Billing) Replace(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 
 	customerParams := &stripe.CustomerParams{
 		Desc:  fmt.Sprintf("%s (github: %d)", user.Name, user.GithubID),

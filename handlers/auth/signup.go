@@ -21,14 +21,14 @@ const (
 	strRedirectURL = "redirect_url"
 )
 
-type signupUser struct {
-	db *gorm.DB
-	gh *github.Service
+type SignupUser struct {
+	DB *gorm.DB
+	GH *github.Service
 }
 
-func (s *signupUser) GetAuthToken(token string) (models.InviteToken, error) {
+func (s *SignupUser) GetAuthToken(token string) (models.InviteToken, error) {
 	var i models.InviteToken
-	err := s.db.Where(&models.InviteToken{Token: token}).First(&i).Error
+	err := s.DB.Where(&models.InviteToken{Token: token}).First(&i).Error
 	return i, err
 }
 
@@ -42,18 +42,18 @@ func checkRedirURL(c *gin.Context, session sessions.Session) {
 	}
 }
 
-func (s *signupUser) ResignIn(c *gin.Context) {
+func (s *SignupUser) ResignIn(c *gin.Context) {
 	newState := uniuri.NewLen(64)
 	session := sessions.Default(c)
 	session.Set("login_token", newState)
 	checkRedirURL(c, session)
 	session.Save()
 
-	url := s.gh.OauthConf.AuthCodeURL(newState, oauth2.AccessTypeOnline)
+	url := s.GH.OauthConf.AuthCodeURL(newState, oauth2.AccessTypeOnline)
 	c.Redirect(http.StatusFound, url)
 }
 
-func (s *signupUser) Logout(c *gin.Context) {
+func (s *SignupUser) Logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
 	session.Save()
@@ -61,7 +61,7 @@ func (s *signupUser) Logout(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (s *signupUser) SignUp(c *gin.Context) {
+func (s *SignupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
 	if token == "" {
 		sugar.ErrResponse(c, 400, "invite token required")
@@ -77,11 +77,11 @@ func (s *signupUser) SignUp(c *gin.Context) {
 	checkRedirURL(c, session)
 	session.Save()
 
-	url := s.gh.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
+	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
 	c.Redirect(http.StatusFound, url)
 }
 
-func (s *signupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
+func (s *SignupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
 	stateToken := c.Query("state")
 
 	storedToken := session.Get(strInviteToken)
@@ -104,7 +104,7 @@ func (s *signupUser) StoredToken(c *gin.Context, session sessions.Session) (stri
 	return "", true, errors.New("Error: No valid tokens")
 }
 
-func (s *signupUser) Callback(c *gin.Context) {
+func (s *SignupUser) Callback(c *gin.Context) {
 	session := sessions.Default(c)
 
 	storedToken, newUser, err := s.StoredToken(c, session)
@@ -120,19 +120,19 @@ func (s *signupUser) Callback(c *gin.Context) {
 			sugar.NotFoundOrError(c, err)
 			return
 		}
-		defer s.db.Delete(&invite)
+		defer s.DB.Delete(&invite)
 	}
 
 	code := c.Query("code")
 
-	token, err := s.gh.OauthConf.Exchange(context.Background(), code)
+	token, err := s.GH.OauthConf.Exchange(context.Background(), code)
 
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error: %s", err)
 		return
 	}
 
-	user, err := s.gh.GetOrCreateUser(c, token.AccessToken)
+	user, err := s.GH.GetOrCreateUser(c, token.AccessToken)
 	if err != nil {
 		c.Error(err)
 		return

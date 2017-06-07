@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
@@ -27,7 +27,7 @@ func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
 
 // Query fetches deployment for user and project.
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
 		Where("projects.user_id=?", user.ID)
 	return d.Preload(joined)
@@ -142,7 +142,7 @@ func (d Deployment) Logs(c *gin.Context) {
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
-	user, loggedIn := auth.CheckUser(c)
+	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && dep.Build.Project.UserID == user.ID {
 		return true
 	}

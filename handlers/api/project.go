@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/ReconfigureIO/platform/auth"
+	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
@@ -18,7 +18,7 @@ type PostProject struct {
 
 // Query queries the db for current user's projects.
 func (p Project) Query(c *gin.Context) *gorm.DB {
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	return db.Where("projects.user_id=?", user.ID)
 }
 
@@ -45,7 +45,7 @@ func (p Project) Create(c *gin.Context) {
 	if !sugar.ValidateRequest(c, post) {
 		return
 	}
-	user := auth.GetUser(c)
+	user := middleware.GetUser(c)
 	newProject := models.Project{UserID: user.ID, Name: post.Name}
 	if err := db.Create(&newProject).Error; err != nil {
 		sugar.ErrResponse(c, 500, err)
