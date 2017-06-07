@@ -23,6 +23,9 @@ $250/seat for 80 total hours across the org
 $4 / hour over
 Relies on Github's org model (not implemented yet)
 
+## Monthly plans
+All plans are calculated to begin at 00:00 GMT of every month.
+
 # Payment info
 
 We'll use Stripe for billing.

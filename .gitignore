@@ -5,3 +5,4 @@ runner-build
 *_mock.go
 debug.test
 .idea/
+*.log

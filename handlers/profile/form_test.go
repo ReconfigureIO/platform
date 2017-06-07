@@ -9,7 +9,7 @@ import (
 
 func TestProfileCanBeOpenSource(t *testing.T) {
 	err := validator.Validate(ProfileData{
-		BillingPlan: models.OpenSource,
+		BillingPlan: models.PlanOpenSource,
 	})
 	if err != nil {
 		t.Fail()

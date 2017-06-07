@@ -25,8 +25,10 @@ const (
 	// StatusErrored is errored job state.
 	StatusErrored = "ERRORED"
 
-	OpenSource = "open-source"
-	SingleUser = "single-user"
+	// PlanOpenSource is open source plan.
+	PlanOpenSource = "open-source"
+	// PlanSingleUser is single user plan.
+	PlanSingleUser = "single-user"
 
 	// DefaultHours is the amount of hours a new user gets.
 	DefaultHours = time.Hour * 20
@@ -55,13 +57,14 @@ type User struct {
 	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
 
+// LoginToken return the user's login token.
 func (u User) LoginToken() string {
 	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.
 func NewUser() User {
-	return User{Token: uniuri.NewLen(64), BillingPlan: OpenSource, Hours: DefaultHours}
+	return User{Token: uniuri.NewLen(64), BillingPlan: PlanOpenSource, Hours: DefaultHours}
 }
 
 // Project model.
@@ -268,6 +271,14 @@ type DepJobEvent struct {
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`
 	Code      int       `json:"code"`
+}
+
+// Usages stores the duration of deployments.
+type Usages struct {
+	uuidHook
+	User      User          `json:"-" gorm:"ForeignKey:UserID"`
+	Hours     time.Duration `json:"hours" gorm:"type:float"`
+	Timestamp time.Time     `json:"timestamp"`
 }
 
 func hasStarted(status string) bool {

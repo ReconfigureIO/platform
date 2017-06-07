@@ -14,13 +14,13 @@ func isBillingPlan(v interface{}, param string) error {
 	if st.Kind() != reflect.String {
 		return errors.New("isBillingPlan only validates strings")
 	}
-	if st.String() == models.OpenSource {
+	if st.String() == models.PlanOpenSource {
 		return nil
 	}
 	if st.String() == models.SingleUser {
 		return nil
 	}
-	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.OpenSource, models.SingleUser))
+	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.PlanOpenSource, models.SingleUser))
 }
 
 func init() {
@@ -37,7 +37,7 @@ type ProfileData struct {
 func (p *ProfileData) FromUser(user models.User) {
 	p.Name = user.Name
 	p.Email = user.Email
-	p.BillingPlan = models.OpenSource
+	p.BillingPlan = models.PlanOpenSource
 	p.Token = user.LoginToken()
 }
 
