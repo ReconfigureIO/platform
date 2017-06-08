@@ -156,7 +156,11 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 }
 
-func (s *Service) DescribeInstanceStatus(ctx context.Context, instanceids []string) ([]models.InstanceStatus, error) {
+func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) ([]models.InstanceStatus, error) {
+	var instanceids []string
+	for _, deployment := range terminatingdeps {
+		instanceids = append(instanceids, terminatingdeps.ID)
+	}
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeInstancesInput{

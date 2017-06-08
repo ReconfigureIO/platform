@@ -61,25 +61,34 @@ func main() {
 	})
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
-		instanceIDs, err := mockDeploy.ListTerminatedDeployments(context.Background())
-		deployment := models.Deployment{}
-		for _, instanceID := range instanceIDs {
-			db.Where(&models.Deployment{InstanceID: instanceID})
-			err := db.Find(&deployment).Error
-			if deployment.status == "terminating" {
-				event := models.PostDepEvent{
-					Status:  "TERMINATED",
-					Message: "TERMINATED",
-					Code:    0,
+		d := PostgresRepo{db}
+		terminatingdeps, err = d.GetWithStatus([]string{"TERMINATING"}, 10)
+
+		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeps)
+		if err != nil {
+			c.JSON(500, err)
+			return
+		}
+
+		for _, status := range statuses {
+			for dep := range terminatingdeps {
+				if terminatingdeps[dep].InstanceID == status.ID {
+					if status.Status == "TERMINATED" {
+						event := models.PostDepEvent{
+							Status:  "TERMINATED",
+							Message: "TERMINATED",
+							Code:    0,
+						}
+						_, err := addEvent(&dep.DepJob, event)
+						if err != nil {
+							c.JSON(500, err)
+							return
+						}
+					}
 				}
-				_, err := addEvent(&dep.DepJob, event)
-				if err != nil {
-					c.JSON(500, err)
-					return
-				}
-				c.JSON(200, event)
 			}
 		}
+		c.JSON(200, "events posted")
 	})
 
 	// Listen and Server in 0.0.0.0:$PORT
