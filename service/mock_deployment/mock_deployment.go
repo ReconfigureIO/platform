@@ -162,7 +162,7 @@ func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 		for _, instance := range reservation.Instances {
 			instancestatus := models.InstanceStatus{
 				ID:     instance.InstanceId,
-				Status: instance.InstanceState.Name,
+				Status: instance.State.Name,
 			}
 			instancestatuses = append(instancestatuses, instancestatus)
 		}
