@@ -143,8 +143,8 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) ([]models.InstanceStatus, error) {
 	var instanceids []string
-	for _, deployment := range terminatingdeps {
-		instanceids = append(instanceids, terminatingdeps.ID)
+	for _, deployment := range deployments {
+		instanceids = append(instanceids, deployments.ID)
 	}
 	ec2Session := ec2.New(s.session)
 
@@ -160,8 +160,8 @@ func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	var instancestatuses []models.InstanceStatus
 	for _, reservation := range results.Reservations {
 		for _, instance := range reservation.Instances {
-			instancestatus = models.InstanceStatus{
-				ID:     instance.InstanceID,
+			instancestatus := models.InstanceStatus{
+				ID:     instance.InstanceId,
 				Status: instance.InstanceState,
 			}
 			instancestatuses = append(instancestatuses, instancestatus)
