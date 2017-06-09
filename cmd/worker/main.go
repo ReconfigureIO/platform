@@ -110,7 +110,7 @@ func main() {
 func CheckUserHours(db *gorm.DB) error {
 	var users []models.User
 	// fetch all users with instance hours
-	err := db.Model(&models.User{}).Find(&users, "hours > 0").Error
+	err := db.Model(&models.User{}).Find(&users).Error
 	if err != nil {
 		return err
 	}
