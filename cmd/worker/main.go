@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"time"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
@@ -95,7 +94,7 @@ func main() {
 		log.Printf("terminated %d deployments", terminating)
 		c.Status(200)
 	r.POST("/check-hours", func(c *gin.Context) {
-		if err := CheckAndUpdateHours(db); err == nil {
+		if err := CheckUserHours(db); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())
@@ -106,9 +105,9 @@ func main() {
 	r.Run(":" + port)
 }
 
-// CheckAndUpdateHours check running deployments and deduct a minute (cron interval) from
+// CheckUserHours check running deployments and deduct a minute (cron interval) from
 // instance hours of the user.
-func CheckAndUpdateHours(db *gorm.DB) error {
+func CheckUserHours(db *gorm.DB) error {
 	var users []models.User
 	// fetch all users with instance hours
 	err := db.Model(&models.User{}).Find(&users, "hours > 0").Error
@@ -116,29 +115,9 @@ func CheckAndUpdateHours(db *gorm.DB) error {
 		return err
 	}
 	for _, user := range users {
-		var deployments []models.Deployment
-		// deduct a minute for each running deployment
-		err := db.Model(&models.Deployment{}).
-			Joins("left join builds on builds.id = deployments.build_id").
-			Joins("left join projects on projects.id = builds.project_id").
-			Where("projects.user_id=?", user.ID).
-			Find(&deployments).Error
-		if l := len(deployments); l > 0 && err == nil {
-			err = deductInstanceTime(db, user, time.Minute*time.Duration(l))
+		if api.NetHours(db, user.ID) <= 0 {
+			// TODO terminate all deployments for user
 		}
-		if err != nil {
-			// only log errors
-			log.Println(err)
-		}
-
 	}
 	return nil
-}
-
-func deductInstanceTime(db *gorm.DB, user models.User, period time.Duration) error {
-	user.Hours -= period
-	if user.Hours <= 0 {
-		// kill deployments here after PR-63 is merged.
-	}
-	return db.Model(&models.User{}).Save(user).Error
 }

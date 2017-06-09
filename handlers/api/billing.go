@@ -2,11 +2,13 @@ package api
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 )
@@ -45,7 +47,7 @@ func (b Billing) Get(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
 }
 
-// Update the customer info for the current user, returning the card info
+// Replace updates the customer info for the current user, returning the card info
 func (b Billing) Replace(c *gin.Context) {
 	post := TokenUpdate{}
 	err := c.BindJSON(&post)
@@ -80,4 +82,51 @@ func (b Billing) Replace(c *gin.Context) {
 
 	}
 	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
+}
+
+// NetHours return the net instance hours for the user after
+// deducting deployment time from available hours.
+func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
+	hours, err := currentMonthHours(db, userID)
+	if err != nil {
+		return 0, err
+	}
+	used, err := currentMonthDeployments(db, userID)
+	if err != nil {
+		return 0, err
+	}
+	return used - hours, nil
+}
+
+// currentMonthHours returns the number of user time for the month.
+// `time.Duration` is returned for ease of calculation.
+// It can always be rounded up the nearest hour for frontend display.
+func currentMonthHours(db *gorm.DB, userID string) (t time.Duration, err error) {
+	var hours []models.Hours
+	err = db.Model(&models.Hours{}).
+		Where("user_id=?", userID).
+		Where("year=?", time.Now().Year()).
+		Where("month=?", time.Now().Month()).
+		Find(&hours).Error
+	if err != nil {
+		return
+	}
+	for _, hour := range hours {
+		t += hour.Hours
+	}
+	return
+}
+
+// currentMonthDeployments returns the duration of all deployments
+// for the user. This is still a WIP.
+func currentMonthDeployments(db *gorm.DB, userID string) (t time.Duration, err error) {
+	// TODO simply deployments models.
+	var deployments []models.Deployment
+	// deduct a minute for each running deployment
+	err = db.Model(&models.Deployment{}).
+		Joins("left join builds on builds.id = deployments.build_id").
+		Joins("left join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", userID).
+		Find(&deployments).Error
+	return
 }

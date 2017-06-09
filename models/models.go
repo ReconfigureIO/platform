@@ -44,15 +44,14 @@ func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
 // User model.
 type User struct {
 	uuidHook
-	ID                string        `gorm:"primary_key" json:"id"`
-	GithubID          int           `gorm:"unique_index" json:"-"`
-	GithubName        string        `json:"github_name"`
-	Name              string        `json:"name"`
-	Email             string        `gorm:"type:varchar(100);unique_index" json:"email"`
-	GithubAccessToken string        `json:"-"`
-	Token             string        `json:"-"`
-	StripeToken       string        `json:"-"`
-	Hours             time.Duration `gorm:"type:float" json:"hours"`
+	ID                string `gorm:"primary_key" json:"id"`
+	GithubID          int    `gorm:"unique_index" json:"-"`
+	GithubName        string `json:"github_name"`
+	Name              string `json:"name"`
+	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
+	GithubAccessToken string `json:"-"`
+	Token             string `json:"-"`
+	StripeToken       string `json:"-"`
 	// We'll ignore this in the db for now, to provide mock data
 	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
@@ -64,7 +63,7 @@ func (u User) LoginToken() string {
 
 // NewUser creates a new User.
 func NewUser() User {
-	return User{Token: uniuri.NewLen(64), BillingPlan: PlanOpenSource, Hours: DefaultHours}
+	return User{Token: uniuri.NewLen(64), BillingPlan: PlanOpenSource}
 }
 
 // Project model.
@@ -168,7 +167,7 @@ type Deployment struct {
 	Command    string `json:"command"`
 	Token      string `json:"-"`
 	DepJobID   string `json:"-"`
-	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
+	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobID"`
 	InstanceID string `json:"-"`
 }
 
@@ -208,7 +207,7 @@ type DepJob struct {
 	uuidHook
 	ID     string        `gorm:"primary_key" json:"-"`
 	DepID  string        `json:"-" validate:"nonzero"`
-	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`
+	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobID"`
 }
 
 // Status returns the status of the job.
@@ -273,12 +272,17 @@ type DepJobEvent struct {
 	Code      int       `json:"code"`
 }
 
-// Usages stores the duration of deployments.
-type Usages struct {
+// Hours stores the duration of deployments.
+type Hours struct {
 	uuidHook
+	ID        string        `gorm:"primary_key" json:"-"`
+	UserID    string        `json:"user_id"`
 	User      User          `json:"-" gorm:"ForeignKey:UserID"`
 	Hours     time.Duration `json:"hours" gorm:"type:float"`
 	Timestamp time.Time     `json:"timestamp"`
+	Month     int           `json:"month,omitempty"`
+	Year      int           `json:"year,omitempty"`
+	Remark    string        `json:"remark,omitempty"`
 }
 
 func hasStarted(status string) bool {
