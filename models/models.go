@@ -187,6 +187,17 @@ func (d *Deployment) Status() string {
 	return StatusSubmitted
 }
 
+// StartTime returns the time that the deployment
+// begins.
+func (d Deployment) StartTime() (t time.Time) {
+	for _, e := range d.Events {
+		if e.Status == StatusStarted {
+			return e.Timestamp
+		}
+	}
+	return
+}
+
 var statuses = struct {
 	started  []string
 	finished []string

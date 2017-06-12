@@ -95,7 +95,7 @@ func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
 	if err != nil {
 		return 0, err
 	}
-	return used - hours, nil
+	return hours - used, nil
 }
 
 // currentMonthHours returns the number of user time for the month.
@@ -120,13 +120,38 @@ func currentMonthHours(db *gorm.DB, userID string) (t time.Duration, err error) 
 // currentMonthDeployments returns the duration of all deployments
 // for the user. This is still a WIP.
 func currentMonthDeployments(db *gorm.DB, userID string) (t time.Duration, err error) {
-	// TODO simply deployments models.
 	var deployments []models.Deployment
-	// deduct a minute for each running deployment
 	err = db.Model(&models.Deployment{}).
 		Joins("left join builds on builds.id = deployments.build_id").
 		Joins("left join projects on projects.id = builds.project_id").
 		Where("projects.user_id=?", userID).
 		Find(&deployments).Error
+	if err != nil {
+		return
+	}
+	for _, deployment := range deployments {
+		// TODO this queries the db for each deployment.
+		// there should be a better way of lazy loading
+		// and filtering outside of database.
+		err := db.Model(&models.DeploymentEvent{}).
+			Where("DepID=?", deployment.ID).
+			Order("timestamp").
+			Find(&deployment.Events).Error
+		if err != nil {
+			// TODO decide if this should stop this calculation
+			// or it should be ignored and calculation should continue
+			// as it currently is.
+			fmt.Println(err)
+			continue
+		}
+		if deployment.HasFinished() {
+			stopTime := deployment.Events[len(deployment.Events)-1].Timestamp
+			duration := stopTime.Sub(deployment.StartTime())
+			t += duration
+		} else if deployment.HasStarted() {
+			duration := time.Now().Sub(deployment.StartTime())
+			t += duration
+		}
+	}
 	return
 }
