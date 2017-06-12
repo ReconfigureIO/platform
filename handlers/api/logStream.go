@@ -105,10 +105,8 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		cancel()
 	}()
 
-	depJob := deployment.DepJob
-
 	refresh := func() error {
-		return db.Model(&depJob).Association("Events").Find(&depJob.Events).Error
+		return db.Model(&deployment).Association("Events").Find(&deployment.Events).Error
 	}
 
 	ticker := time.NewTicker(10 * time.Second)
@@ -118,7 +116,7 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 	defer refreshTicker.Stop()
 
 	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
-		if depJob.HasStarted() {
+		if deployment.HasStarted() {
 			return false
 		}
 		select {
@@ -147,7 +145,7 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 	lstream := awsSession.NewStream(*logStream)
 
 	go func() {
-		for !depJob.HasFinished() {
+		for !deployment.HasFinished() {
 			select {
 			case <-ctx.Done():
 				return

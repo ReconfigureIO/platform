@@ -161,14 +161,14 @@ type PostSimulation struct {
 // Deployment model.
 type Deployment struct {
 	uuidHook
-	ID         string `gorm:"primary_key" json:"id"`
-	Build      Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID    string `json:"-"`
-	Command    string `json:"command"`
-	Token      string `json:"-"`
-	DepJobID   string `json:"-"`
-	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobID"`
-	InstanceID string `json:"-"`
+	ID         string            `gorm:"primary_key" json:"id"`
+	Build      Build             `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID    string            `json:"-"`
+	Command    string            `json:"command"`
+	Token      string            `json:"-"`
+	DepJobID   string            `json:"-"`
+	InstanceID string            `json:"-"`
+	Events     []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
 }
 
 // PostDeployment is post request body for new deployment.
@@ -179,7 +179,7 @@ type PostDeployment struct {
 
 // Status returns deployment status.
 func (d *Deployment) Status() string {
-	events := d.DepJob.Events
+	events := d.Events
 	length := len(events)
 	if len(events) > 0 {
 		return events[length-1].Status
@@ -202,14 +202,6 @@ type BatchJob struct {
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
-// DepJob model.
-type DepJob struct {
-	uuidHook
-	ID     string        `gorm:"primary_key" json:"-"`
-	DepID  string        `json:"-" validate:"nonzero"`
-	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobID"`
-}
-
 // Status returns the status of the job.
 func (b *BatchJob) Status() string {
 	events := b.Events
@@ -230,16 +222,6 @@ func (b *BatchJob) HasFinished() bool {
 	return hasFinished(b.Status())
 }
 
-// Status returns the status of the job.
-func (d *DepJob) Status() string {
-	events := d.Events
-	length := len(events)
-	if len(events) > 0 {
-		return events[length-1].Status
-	}
-	return StatusSubmitted
-}
-
 // BatchJobEvent model.
 type BatchJobEvent struct {
 	uuidHook
@@ -252,20 +234,20 @@ type BatchJobEvent struct {
 }
 
 // HasStarted returns if the job has started.
-func (d *DepJob) HasStarted() bool {
+func (d *Deployment) HasStarted() bool {
 	return hasStarted(d.Status())
 }
 
 // HasFinished returns if the job has finished.
-func (d *DepJob) HasFinished() bool {
+func (d *Deployment) HasFinished() bool {
 	return hasFinished(d.Status())
 }
 
-// DepJobEvent model.
-type DepJobEvent struct {
+// DeploymentEvent model.
+type DeploymentEvent struct {
 	uuidHook
 	ID        string    `gorm:"primary_key" json:"-"`
-	DepJobID  string    `json:"-" validate:"nonzero"`
+	DepID     string    `json:"-" validate:"nonzero"`
 	Timestamp time.Time `json:"timestamp"`
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`

@@ -74,6 +74,7 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
+<<<<<<< HEAD
 	depJob := models.DepJob{}
 	err = db.Create(&depJob).Error
 	if err != nil {
@@ -87,6 +88,12 @@ func (d Deployment) Create(c *gin.Context) {
 		DepJobID: depJob.ID,
 		Token:    uniuri.NewLen(64),
 		DepJob:   depJob,
+=======
+	newDep := models.Deployment{
+		BuildID: post.BuildID,
+		Command: post.Command,
+		Token:   uniuri.NewLen(64),
+>>>>>>> flatten deployment and remove DepJob
 	}
 
 	err = db.Create(&newDep).Error
@@ -213,10 +220,9 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
-	DepJob := dep.DepJob
-	newEvent := models.DepJobEvent{
-		DepJobID:  DepJob.ID,
+func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DeploymentEvent, error) {
+	newEvent := models.DeploymentEvent{
+		DepID:     dep.ID,
 		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
@@ -225,7 +231,7 @@ func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models
 
 	err := db.Create(&newEvent).Error
 	if err != nil {
-		return models.DepJobEvent{}, err
+		return models.DeploymentEvent{}, err
 	}
 
 	if event.Status == "TERMINATING" {

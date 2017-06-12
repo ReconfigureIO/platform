@@ -20,23 +20,11 @@ func TestProjValidation(t *testing.T) {
 }
 
 func TestDepJobEventValidation(t *testing.T) {
-	newDepJobEvent := models.DepJobEvent{
-		DepJobID: "1",
-	}
-
-	err := validator.Validate(newDepJobEvent)
-	if err != nil {
-		t.Error()
-	}
-
-}
-
-func TestDepJobValidation(t *testing.T) {
-	newDepJob := models.DepJob{
+	newDepJobEvent := models.DeploymentEvent{
 		DepID: "1",
 	}
 
-	err := validator.Validate(newDepJob)
+	err := validator.Validate(newDepJobEvent)
 	if err != nil {
 		t.Error()
 	}
