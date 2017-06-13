@@ -6,7 +6,6 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -50,25 +49,25 @@ func main() {
 	})
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
-		d := PostgresRepo{db}
-		terminatingdeps, err = d.GetWithStatus([]string{"TERMINATING"}, 10)
+		d := models.PostgresRepo{db}
+		terminatingdeployments, err := d.GetWithStatus([]string{"TERMINATING"}, 10)
 
-		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeps)
+		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
 			c.JSON(500, err)
 			return
 		}
 
 		for _, status := range statuses {
-			for dep := range terminatingdeps {
-				if terminatingdeps[dep].InstanceID == status.ID {
+			for deployment := range terminatingdeployments {
+				if terminatingdeployments[deployment].InstanceID == status.ID {
 					if status.Status == "TERMINATED" {
 						event := models.PostDepEvent{
 							Status:  "TERMINATED",
 							Message: "TERMINATED",
 							Code:    0,
 						}
-						_, err := addEvent(&dep.DepJob, event)
+						_, err := addEvent(&deployment.DepJob, event)
 						if err != nil {
 							c.JSON(500, err)
 							return
