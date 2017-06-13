@@ -12,17 +12,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-type ServiceConfig struct {
-	LogGroup string
-	Image    string
-	AMI      string
-}
-
-type Service struct {
-	session *session.Session
-	Conf    ServiceConfig
-}
-
 var (
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
 		LogGroup: "josh-test-sdaccel",
