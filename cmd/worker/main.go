@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/gin-gonic/gin"
@@ -61,8 +62,8 @@ func main() {
 
 		for _, status := range statuses {
 			for deployment := range terminatingdeployments {
-				if terminatingdeployments[deployment].InstanceID == status.ID {
-					if status.Status == "TERMINATED" {
+				if terminatingdeployments[deployment].InstanceID == fmt.Sprintf("%v", status.ID) {
+					if fmt.Sprintf("%v", status.Status) == "TERMINATED" {
 						event := models.PostDepEvent{
 							Status:  "TERMINATED",
 							Message: "TERMINATED",
