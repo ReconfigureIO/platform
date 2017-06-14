@@ -94,8 +94,11 @@ type stripeSub struct {
 	Hours     int
 }
 
-// currentPlan returns the plan the user is on.
-func currentPlan(userID string) (sub stripeSub) {
+// subscriptionInfo returns information about the
+// user subscription.
+// If the user is without an active subscription, default
+// open source subscription info is returned.
+func subscriptionInfo(userID string) (sub stripeSub) {
 	sub = stripeSub{
 		UserID:    userID,
 		StartDate: timeToSQLStr(monthStart(time.Now())),
@@ -143,7 +146,7 @@ func currentPlan(userID string) (sub stripeSub) {
 // NetHours return the net instance hours for the user after
 // deducting deployment time from available hours.
 func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
-	sub := currentPlan(userID)
+	sub := subscriptionInfo(userID)
 	return netHours(db, sub)
 }
 
