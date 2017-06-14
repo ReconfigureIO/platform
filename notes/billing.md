@@ -24,7 +24,7 @@ $4 / hour over
 Relies on Github's org model (not implemented yet)
 
 ## Monthly plans
-All plans are calculated to begin at 00:00 GMT of every month.
+For users without active subscriptions, plans are calculated to begin at 00:00 GMT of every month.
 
 # Payment info
 
