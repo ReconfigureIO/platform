@@ -163,7 +163,7 @@ func netHours(db *gorm.DB, sub stripeSub) (t time.Duration, err error) {
 		// and filtering outside of database.
 		err := db.Model(&models.DeploymentEvent{}).
 			Where("DepID=?", deployment.ID).
-			Where("timestamp>=?", monthStart(time.Now())).
+			Where("timestamp>=?", sub.StartDate).
 			Order("timestamp").
 			Find(&deployment.Events).Error
 		if err != nil {
