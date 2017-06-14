@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -16,6 +17,7 @@ import (
 // Billing handles requests for billing.
 type Billing struct{}
 
+// TokenUpdate is token update payload.
 type TokenUpdate struct {
 	Token string `json:"token"`
 }
@@ -84,47 +86,73 @@ func (b Billing) Replace(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
 }
 
-// NetHours return the net instance hours for the user after
-// deducting deployment time from available hours.
-func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
-	hours, err := currentMonthHours(db, userID)
-	if err != nil {
-		return 0, err
-	}
-	used, err := currentMonthDeployments(db, userID)
-	if err != nil {
-		return 0, err
-	}
-	return hours - used, nil
+// stripeSub holds info about a user
+// stripe subscription.
+type stripeSub struct {
+	UserID    string
+	StartDate string
+	Hours     int
 }
 
-// currentMonthHours returns the number of user time for the month.
-// `time.Duration` is returned for ease of calculation.
-// It can always be rounded up the nearest hour for frontend display.
-func currentMonthHours(db *gorm.DB, userID string) (t time.Duration, err error) {
-	var hours []models.Hours
-	err = db.Model(&models.Hours{}).
-		Where("user_id=?", userID).
-		Where("year=?", time.Now().Year()).
-		Where("month=?", time.Now().Month()).
-		Find(&hours).Error
-	if err != nil {
+// currentPlan returns the plan the user is on.
+func currentPlan(userID string) (sub stripeSub) {
+	sub = stripeSub{
+		UserID:    userID,
+		StartDate: timeToSQLStr(monthStart(time.Now())),
+		Hours:     models.DefaultHours,
+	}
+	var user models.User
+	err := db.Model(&models.User{}).Where("id=?", userID).First(&user).Error
+	switch {
+	case err != nil:
+		fmt.Println(err)
+		fallthrough
+	case user.StripeToken == "":
 		return
 	}
-	for _, hour := range hours {
-		t += hour.Hours
+	stripeCustomer, err := customer.Get(user.StripeToken, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// this may not be necessary if we are guaranteed the user
+	// is always gonna have at most one subscription. In which
+	// case, we can just return Values[0].Plan.ID directly.
+	for _, val := range stripeCustomer.Subs.Values {
+		if val.Status != "active " {
+			continue
+		}
+		// check if one of the subscriptions is a valid subscription.
+		switch val.Plan.ID {
+		case models.PlanSingleUser, models.PlanOpenSource:
+			hours, err := strconv.Atoi(val.Plan.Meta["HOURS"])
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			return stripeSub{
+				UserID:    userID,
+				StartDate: timeToSQLStr(time.Unix(val.PeriodStart, 0)),
+				Hours:     hours,
+			}
+		}
 	}
 	return
 }
 
-// currentMonthDeployments returns the duration of all deployments
-// for the user. This is still a WIP.
-func currentMonthDeployments(db *gorm.DB, userID string) (t time.Duration, err error) {
+// NetHours return the net instance hours for the user after
+// deducting deployment time from available hours.
+func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
+	sub := currentPlan(userID)
+	return netHours(db, sub)
+}
+
+func netHours(db *gorm.DB, sub stripeSub) (t time.Duration, err error) {
 	var deployments []models.Deployment
 	err = db.Model(&models.Deployment{}).
 		Joins("left join builds on builds.id = deployments.build_id").
 		Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", userID).
+		Where("projects.user_id=?", sub.UserID).
 		Find(&deployments).Error
 	if err != nil {
 		return
@@ -135,6 +163,7 @@ func currentMonthDeployments(db *gorm.DB, userID string) (t time.Duration, err e
 		// and filtering outside of database.
 		err := db.Model(&models.DeploymentEvent{}).
 			Where("DepID=?", deployment.ID).
+			Where("timestamp>=?", monthStart(time.Now())).
 			Order("timestamp").
 			Find(&deployment.Events).Error
 		if err != nil {
@@ -153,5 +182,17 @@ func currentMonthDeployments(db *gorm.DB, userID string) (t time.Duration, err e
 			t += duration
 		}
 	}
-	return
+	// substract total deployment time from available hours.
+	return time.Hour*time.Duration(sub.Hours) - t, err
+}
+
+// monthStart changes t to the beginning of the month.
+func monthStart(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// timeToSQLStr formats t in sql format YYYY-MM-DD HH:MM:SS.
+func timeToSQLStr(t time.Time) string {
+	return fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }

@@ -26,5 +26,4 @@ func MigrateSchema() {
 	db.AutoMigrate(&models.BatchJobEvent{})
 	db.AutoMigrate(&models.Deployment{})
 	db.AutoMigrate(&models.DeploymentEvent{})
-	db.AutoMigrate(&models.Hours{})
 }

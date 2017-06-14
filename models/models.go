@@ -31,7 +31,7 @@ const (
 	PlanSingleUser = "single-user"
 
 	// DefaultHours is the amount of hours a new user gets.
-	DefaultHours = time.Hour * 20
+	DefaultHours = 20
 )
 
 // uuidHook hooks new uuid as primary key for models before creation.
@@ -263,19 +263,6 @@ type DeploymentEvent struct {
 	Status    string    `json:"status"`
 	Message   string    `json:"message,omitempty"`
 	Code      int       `json:"code"`
-}
-
-// Hours stores the duration of deployments.
-type Hours struct {
-	uuidHook
-	ID        string        `gorm:"primary_key" json:"-"`
-	UserID    string        `json:"user_id"`
-	User      User          `json:"-" gorm:"ForeignKey:UserID"`
-	Hours     time.Duration `json:"hours" gorm:"type:float"`
-	Timestamp time.Time     `json:"timestamp"`
-	Month     int           `json:"month,omitempty"`
-	Year      int           `json:"year,omitempty"`
-	Remark    string        `json:"remark,omitempty"`
 }
 
 func hasStarted(status string) bool {
