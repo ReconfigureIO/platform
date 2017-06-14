@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"fmt"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
@@ -61,15 +62,16 @@ func main() {
 		}
 
 		for _, status := range statuses {
-			for deployment := range terminatingdeployments {
-				if terminatingdeployments[deployment].InstanceID == fmt.Sprintf("%v", status.ID) {
+			for deploymentIndex, deployment := range terminatingdeployments {
+				if terminatingdeployments[deploymentIndex].InstanceID == fmt.Sprintf("%v", status.ID) {
 					if fmt.Sprintf("%v", status.Status) == "TERMINATED" {
 						event := models.PostDepEvent{
 							Status:  "TERMINATED",
 							Message: "TERMINATED",
 							Code:    0,
 						}
-						_, err := addEvent(&deployment.DepJob, event)
+						apideployment := api.Deployment{}
+						_, err := apideployment.AddEvent(c, deployment, event)
 						if err != nil {
 							c.JSON(500, err)
 							return

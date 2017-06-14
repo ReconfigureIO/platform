@@ -179,7 +179,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	newEvent, err := addEvent(c, dep, event)
+	newEvent, err := d.AddEvent(c, dep, event)
 
 	if err != nil {
 		c.Error(err)
@@ -190,7 +190,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
+func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
 	DepJob := dep.DepJob
 	newEvent := models.DepJobEvent{
 		DepJobID:  DepJob.ID,
