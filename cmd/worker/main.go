@@ -115,7 +115,7 @@ func CheckUserHours(db *gorm.DB) error {
 		return err
 	}
 	for _, user := range users {
-		if api.NetHours(db, user.ID) <= 0 {
+		if h, err := api.NetHours(db, user.ID); err == nil && h <= 0 {
 			// TODO terminate all deployments for user
 		}
 	}
