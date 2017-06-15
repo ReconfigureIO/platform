@@ -18,7 +18,7 @@ type Deployment struct{}
 
 // Common preload functionality.
 func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Build").
+	return db.Preload("Build").Preload("Build.Project").
 		Preload("DepJob").
 		Preload("DepJob.Events", func(db *gorm.DB) *gorm.DB {
 			return db.Order("timestamp ASC")
@@ -67,14 +67,20 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	depJob := models.DepJob{}
-	db.Create(&depJob)
+	err = db.Create(&depJob).Error
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
 
 	newDep := models.Deployment{
 		BuildID:  post.BuildID,
 		Command:  post.Command,
 		DepJobID: depJob.ID,
 		Token:    uniuri.NewLen(64),
+		DepJob:   depJob,
 	}
+
 	err = db.Create(&newDep).Error
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -90,6 +96,15 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
+
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	newEvent := models.DepJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
+	err = db.Model(&depJob).Association("Events").Append(newEvent).Error
+
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
