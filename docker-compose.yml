@@ -2,18 +2,13 @@ version: '2'
 services:
   db:
     image: postgres:alpine
-  web:
+  web-base:
     build: build
-    command: bash -c "glide install && fresh"
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
     ports:
       - "8080:8080"
-    depends_on:
-      - db
-    links:
-      - db
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -25,3 +20,18 @@ services:
       - RECO_FEATURE_BILLING=1
       - RECO_ENV=development
       - STRIPE_KEY=sk_test_NvEpeLnLAV15b9TWJzZKLkvW
+  web:
+    command: bash -c "glide install && fresh"
+    extends: web-base
+    depends_on:
+      - db
+    links:
+      - db
+
+  cron:
+    extends: web-base
+    depends_on:
+      - db
+    links:
+      - db
+    command: bash -c "make clean all && ./dist-image/dist/worker"
