@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -56,20 +57,25 @@ func main() {
 		apideployment := api.Deployment{}
 		d := models.PostgresRepo{db}
 
-		terminatingdeployments, err := d.GetWithStatus([]string{"TERMINATING", "COMPLETED", "ERRORED"}, 10)
+		terminatingdeployments, err := d.GetWithStatus([]string{models.StatusTerminating, models.StatusCompleted, models.StatusErrored}, 100)
 		log.Printf("Looking up %d deployments", len(terminatingdeployments))
+
+		if len(terminatingdeployments) == 0 {
+			c.JSON(200, "events posted")
+			return
+		}
 
 		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
 			c.JSON(500, err)
 			return
 		}
-
+		log.Printf("statuses of %v", statuses)
 		terminating := 0
 
 		for _, deployment := range terminatingdeployments {
 			status, found := statuses[deployment.InstanceID]
-			if found && status == models.StatusTerminated {
+			if found && status == ec2.InstanceStateNameTerminated {
 				event := models.PostDepEvent{
 					Status:  models.StatusTerminated,
 					Message: models.StatusTerminated,
