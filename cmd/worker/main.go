@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"fmt"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
@@ -25,6 +24,8 @@ var (
 func main() {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
+	db.LogMode(true)
+	api.DB(db)
 
 	if err != nil {
 		log.Fatalf("failed to connect to database: %s", err.Error())
@@ -52,8 +53,11 @@ func main() {
 	})
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
+		apideployment := api.Deployment{}
 		d := models.PostgresRepo{db}
-		terminatingdeployments, err := d.GetWithStatus([]string{"TERMINATING"}, 10)
+
+		terminatingdeployments, err := d.GetWithStatus([]string{"TERMINATING", "COMPLETED", "ERRORED"}, 10)
+		log.Printf("Looking up %d deployments", len(terminatingdeployments))
 
 		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
@@ -61,25 +65,26 @@ func main() {
 			return
 		}
 
-		for _, status := range statuses {
-			for deploymentIndex, deployment := range terminatingdeployments {
-				if terminatingdeployments[deploymentIndex].InstanceID == fmt.Sprintf("%v", status.ID) {
-					if fmt.Sprintf("%v", status.Status) == "TERMINATED" {
-						event := models.PostDepEvent{
-							Status:  "TERMINATED",
-							Message: "TERMINATED",
-							Code:    0,
-						}
-						apideployment := api.Deployment{}
-						_, err := apideployment.AddEvent(c, deployment, event)
-						if err != nil {
-							c.JSON(500, err)
-							return
-						}
-					}
+		terminating := 0
+
+		for _, deployment := range terminatingdeployments {
+			status, found := statuses[deployment.InstanceID]
+			if found && status == models.StatusTerminated {
+				event := models.PostDepEvent{
+					Status:  models.StatusTerminated,
+					Message: models.StatusTerminated,
+					Code:    0,
 				}
+				_, err := apideployment.AddEvent(c, deployment, event)
+				if err != nil {
+					c.JSON(500, err)
+					return
+				}
+				terminating += 1
 			}
 		}
+
+		log.Printf("terminated %d deployments", terminating)
 		c.JSON(200, "events posted")
 	})
 
