@@ -69,7 +69,11 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure there is enough instance hours
 	user := middleware.GetUser(c)
-	if h, err := NetHours(db, user.ID); err == nil && h <= 0 {
+	billingHours := FetchBillingHours(user.ID)
+	// considering the complexity in calculating instance hours,
+	// a cache would be ideal here.
+	// this is not optimal yet :(
+	if h, err := billingHours.Net(); err == nil && h <= 0 {
 		sugar.ErrResponse(c, http.StatusUnauthorized, "No available instance hours")
 		return
 	}

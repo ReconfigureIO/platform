@@ -93,6 +93,8 @@ func main() {
 
 		log.Printf("terminated %d deployments", terminating)
 		c.Status(200)
+	}
+	
 	r.POST("/check-hours", func(c *gin.Context) {
 		if err := CheckUserHours(db); err == nil {
 			c.String(200, "done")
@@ -108,14 +110,17 @@ func main() {
 // CheckUserHours check running deployments and deduct a minute (cron interval) from
 // instance hours of the user.
 func CheckUserHours(db *gorm.DB) error {
-	var users []models.User
-	// fetch all users with instance hours
-	err := db.Model(&models.User{}).Find(&users).Error
+	api.DB(db)
+
+	ds := models.SubscriptionDataSource(db)
+	users, err := ds.ActiveUsers()
 	if err != nil {
 		return err
 	}
+
 	for _, user := range users {
-		if h, err := api.NetHours(db, user.ID); err == nil && h <= 0 {
+		h, err := api.FetchBillingHours(user.ID).Net()
+		if err == nil && h <= 0 {
 			// TODO terminate all deployments for user
 		}
 	}

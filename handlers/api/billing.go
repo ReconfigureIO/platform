@@ -2,14 +2,12 @@ package api
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 )
@@ -86,116 +84,72 @@ func (b Billing) Replace(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
 }
 
-// stripeSub holds info about a user
-// stripe subscription.
-type stripeSub struct {
-	UserID    string
-	StartDate string
-	Hours     int
+// BillingHours returns information about billing hours for user.
+// Hours are rounded up. i.e. 0 == 0, 1 hour == [1-60]minutes. e.t.c.
+type BillingHours interface {
+	// Available returns available number of hours.
+	Available() (int, error)
+	// Used returns total hours used by deployments.
+	Used() (int, error)
+	// Net returns hours after deducting used hours.
+	// i.e. net = available - used.
+	Net() (int, error)
 }
 
-// subscriptionInfo returns information about the
-// user subscription.
-// If the user is without an active subscription, default
-// open source subscription info is returned.
-func subscriptionInfo(userID string) (sub stripeSub) {
-	sub = stripeSub{
-		UserID:    userID,
-		StartDate: timeToSQLStr(monthStart(time.Now())),
-		Hours:     models.DefaultHours,
-	}
+// FetchBillingHours fetches and return billing hours for a user.
+func FetchBillingHours(userID string) BillingHours {
 	var user models.User
-	err := db.Model(&models.User{}).Where("id=?", userID).First(&user).Error
-	switch {
-	case err != nil:
-		fmt.Println(err)
-		fallthrough
-	case user.StripeToken == "":
-		return
-	}
-	stripeCustomer, err := customer.Get(user.StripeToken, nil)
+	err := db.Model(&models.User{}).Where("id = ?", userID).First(&user).Error
 	if err != nil {
-		fmt.Println(err)
-		return
+		return billingHours{err: err}
 	}
-	// this may not be necessary if we are guaranteed the user
-	// is always gonna have at most one subscription. In which
-	// case, we can just return Values[0].Plan.ID directly.
-	for _, val := range stripeCustomer.Subs.Values {
-		if val.Status != "active " {
-			continue
-		}
-		// check if one of the subscriptions is a valid subscription.
-		switch val.Plan.ID {
-		case models.PlanSingleUser, models.PlanOpenSource:
-			hours, err := strconv.Atoi(val.Plan.Meta["HOURS"])
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			return stripeSub{
-				UserID:    userID,
-				StartDate: timeToSQLStr(time.Unix(val.PeriodStart, 0)),
-				Hours:     hours,
-			}
-		}
+	return billingHours{
+		user:    user,
+		depRepo: models.DeploymentDataSource(db),
+		subRepo: models.SubscriptionDataSource(db),
 	}
-	return
 }
 
-// NetHours return the net instance hours for the user after
-// deducting deployment time from available hours.
-func NetHours(db *gorm.DB, userID string) (time.Duration, error) {
-	sub := subscriptionInfo(userID)
-	return netHours(db, sub)
+type billingHours struct {
+	user    models.User
+	depRepo models.DeploymentRepo
+	subRepo models.SubscriptionRepo
+	err     error
 }
 
-func netHours(db *gorm.DB, sub stripeSub) (t time.Duration, err error) {
-	var deployments []models.Deployment
-	err = db.Model(&models.Deployment{}).
-		Joins("left join builds on builds.id = deployments.build_id").
-		Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", sub.UserID).
-		Find(&deployments).Error
+func (b billingHours) Available() (int, error) {
+	if b.err != nil {
+		return 0, b.err
+	}
+	sub, err := b.subRepo.Current(b.user)
+	return sub.Hours, err
+}
+
+func (b billingHours) Used() (int, error) {
+	if b.err != nil {
+		return 0, b.err
+	}
+	sub, err := b.subRepo.Current(b.user)
 	if err != nil {
-		return
+		return 0, err
 	}
-	for _, deployment := range deployments {
-		// TODO this queries the db for each deployment.
-		// there should be a better way of lazy loading
-		// and filtering outside of database.
-		err := db.Model(&models.DeploymentEvent{}).
-			Where("DepID=?", deployment.ID).
-			Where("timestamp>=?", sub.StartDate).
-			Order("timestamp").
-			Find(&deployment.Events).Error
-		if err != nil {
-			// TODO decide if this should stop this calculation
-			// or it should be ignored and calculation should continue
-			// as it currently is.
-			fmt.Println(err)
-			continue
-		}
-		if deployment.HasFinished() {
-			stopTime := deployment.Events[len(deployment.Events)-1].Timestamp
-			duration := stopTime.Sub(deployment.StartTime())
-			t += duration
-		} else if deployment.HasStarted() {
-			duration := time.Now().Sub(deployment.StartTime())
-			t += duration
-		}
-	}
-	// substract total deployment time from available hours.
-	return time.Hour*time.Duration(sub.Hours) - t, err
+	used, err := b.depRepo.DeploymentHoursSince(b.user.ID, sub.StartTime)
+	return int(used.Hours()), err
 }
 
-// monthStart changes t to the beginning of the month.
-func monthStart(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
-}
-
-// timeToSQLStr formats t in sql format YYYY-MM-DD HH:MM:SS.
-func timeToSQLStr(t time.Time) string {
-	return fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d",
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+func (b billingHours) Net() (int, error) {
+	if b.err != nil {
+		return 0, b.err
+	}
+	sub, err := b.subRepo.Current(b.user)
+	used, err := b.depRepo.DeploymentHoursSince(b.user.ID, sub.StartTime)
+	if err != nil {
+		return 0, err
+	}
+	net := time.Duration(sub.Hours)*time.Hour - used
+	// round up the hour
+	if net%time.Hour > 0 {
+		return int(net.Hours()) + 1, nil
+	}
+	return int(net.Hours()), nil
 }
