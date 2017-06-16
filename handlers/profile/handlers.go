@@ -1,8 +1,8 @@
 package profile
 
 import (
-	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -13,6 +13,7 @@ import (
 // Profile handles requests for profile get & update
 type Profile struct {
 	DB *gorm.DB
+	// subs models.SubscriptionDataSource I want to do this, but the cache makes it an issue cross request
 }
 
 func CustInfo(user models.User) (*stripe.Customer, error) {
@@ -26,29 +27,30 @@ func CustInfo(user models.User) (*stripe.Customer, error) {
 func (p Profile) Get(c *gin.Context) {
 	user := middleware.GetUser(c)
 
-	cust, err := CustInfo(user)
+	sub, err := models.SubscriptionDataSource(p.DB).Current(user)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
-	
+
 	prof := ProfileData{}
-	prof.FromUser(user, cust)
+	prof.FromUser(user, sub)
 
 	sugar.SuccessResponse(c, 200, prof)
 }
 
 func (p Profile) Update(c *gin.Context) {
 	user := middleware.GetUser(c)
+	subs := models.SubscriptionDataSource(p.DB)
 
-	cust, err := CustInfo(user)
+	sub, err := subs.Current(user)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
 
 	prof := ProfileData{}
-	prof.FromUser(user, cust)
+	prof.FromUser(user, sub)
 
 	c.BindJSON(&prof)
 
@@ -56,7 +58,18 @@ func (p Profile) Update(c *gin.Context) {
 		return
 	}
 
-	prof.Apply(&user, cust)
+	prof.Apply(&user)
+
+	err = subs.CanUpdatePlan(user, prof.BillingPlan)
+	if err != nil {
+		sugar.ErrResponse(c, 400, err)
+	}
+	sub, err = subs.UpdatePlan(user, prof.BillingPlan)
+
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
 
 	err = p.DB.Save(&user).Error
 
@@ -65,6 +78,6 @@ func (p Profile) Update(c *gin.Context) {
 		return
 	}
 
-	prof.FromUser(user, cust)
+	prof.FromUser(user, sub)
 	sugar.SuccessResponse(c, 200, prof)
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/ReconfigureIO/platform/models"
-	stripe "github.com/stripe/stripe-go"
 	validator "gopkg.in/validator.v2"
 )
 
@@ -35,26 +34,16 @@ type ProfileData struct {
 	Token       string `json:"token"` // read only
 }
 
-func UserSubscription(cust *stripe.Customer) string {
-	if cust != nil {
-		subs := cust.Subs.Values
-		if len(subs) > 0 {
-			return subs[0].Plan.ID
-		}
-	}
-	return models.OpenSource
-}
-
-func (p *ProfileData) FromUser(user models.User, cust *stripe.Customer) {
+func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
 	p.Name = user.Name
 	p.Email = user.Email
 	p.Token = user.LoginToken()
-	p.BillingPlan = UserSubscription(cust)
+	p.BillingPlan = sub.Identifier
 }
 
-func (p *ProfileData) Apply(user *models.User, cust *stripe.Customer) {
+func (p *ProfileData) Apply(user *models.User) {
 	user.Name = p.Name
 	user.Email = p.Email
-	
+
 	// skip token, because it's read only
 }
