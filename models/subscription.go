@@ -1,12 +1,14 @@
 package models
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
+	subscriptions "github.com/stripe/stripe-go/sub"
 )
 
 // SubscriptionRepo handles user subscription details.
@@ -16,7 +18,7 @@ type SubscriptionRepo interface {
 	// ActiveUsers returns a list of active users.
 	ActiveUsers() ([]User, error)
 	// CanUpdatePlan returns an error if the user can't update to a plan.
-	CanUpdatePlan(User, string) error
+	CanUpdatePlan(User, string) (string, error)
 	// UpdatePlan sets the user's plan
 	UpdatePlan(User, string) (SubscriptionInfo, error)
 }
@@ -24,6 +26,7 @@ type SubscriptionRepo interface {
 // SubscriptionInfo holds information about a user subscription.
 type SubscriptionInfo struct {
 	UserID     string    `json:-`
+	StripeID   string    `json:-`
 	Identifier string    `json:id`
 	StartTime  time.Time `json:start`
 	EndTime    time.Time `json:end`
@@ -50,6 +53,18 @@ type subscriptionRepo struct {
 	cache         map[string]SubscriptionInfo
 }
 
+// DefaultSource doesn't actually include the card info, so search the
+// sources on the customer for the card info
+func DefaultSource(cust *stripe.Customer) *stripe.Card {
+	def := cust.DefaultSource.ID
+	for _, source := range cust.Sources.Values {
+		if source.ID == def {
+			return source.Card
+		}
+	}
+	return nil
+}
+
 func (s subscriptionRepo) ActiveUsers() (u []User, err error) {
 	// there is no clear way to determine active users yet.
 	// let's return all users for now.
@@ -68,6 +83,23 @@ func (s *subscriptionRepo) cachedCustomer(user User) (cust *stripe.Customer, err
 	stripeCustomer, err := customer.Get(user.StripeToken, nil)
 	s.customerCache[user.ID] = *stripeCustomer
 	return stripeCustomer, err
+}
+
+func fromSub(user User, val stripe.Sub) (SubscriptionInfo, error) {
+	sub := SubscriptionInfo{}
+	hours, err := strconv.Atoi(val.Plan.Meta["HOURS"])
+	if err != nil {
+		return sub, err
+	}
+	sub = SubscriptionInfo{
+		UserID:     user.ID,
+		StartTime:  time.Unix(val.PeriodStart, 0),
+		EndTime:    time.Unix(val.PeriodEnd, 0),
+		Hours:      hours,
+		StripeID:   val.ID,
+		Identifier: val.Plan.ID,
+	}
+	return sub, nil
 }
 
 func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) {
@@ -101,18 +133,11 @@ func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) 
 		if val.Status != "active" {
 			continue
 		}
-
-		hours, err := strconv.Atoi(val.Plan.Meta["HOURS"])
+		subInfo, err := fromSub(user, *val)
 		if err != nil {
 			return sub, err
 		}
-		sub = SubscriptionInfo{
-			UserID:     user.ID,
-			StartTime:  time.Unix(val.PeriodStart, 0),
-			EndTime:    time.Unix(val.PeriodEnd, 0),
-			Hours:      hours,
-			Identifier: val.Plan.ID,
-		}
+		sub = subInfo
 		// set value only if information is retrived from stripe.
 		s.cache[user.ID] = sub
 		return sub, nil
@@ -120,10 +145,47 @@ func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) 
 	return
 }
 
-func (s *subscriptionRepo) CanUpdatePlan(user User, plan string) (err error) {
-	return nil
+func (s *subscriptionRepo) CanUpdatePlan(user User, plan string) (reason string, err error) {
+	cust, err := s.cachedCustomer(user)
+	if err != nil {
+		return "", err
+	}
+
+	if plan != PlanOpenSource && DefaultSource(cust) == nil {
+		return fmt.Sprintf("Plan %s requires billing information", plan), nil
+	}
+	return "", nil
 }
 
 func (s *subscriptionRepo) UpdatePlan(user User, plan string) (sub SubscriptionInfo, err error) {
-	return SubscriptionInfo{}, nil
+	subInfo := SubscriptionInfo{}
+	cust, err := s.cachedCustomer(user)
+	if err != nil {
+		return subInfo, err
+	}
+	subInfo, err = s.Current(user)
+	if err != nil {
+		return subInfo, err
+	}
+	var newSub *stripe.Sub
+	if subInfo.StripeID == "" {
+		newSub, err = subscriptions.New(&stripe.SubParams{
+			Customer: cust.ID,
+			Plan:     plan,
+		})
+	} else {
+		newSub, err = subscriptions.Update(
+			subInfo.StripeID,
+			&stripe.SubParams{
+				Plan:      plan,
+				NoProrate: true,
+			},
+		)
+	}
+
+	if err != nil {
+		return subInfo, err
+	}
+	subInfo, err = fromSub(user, *newSub)
+	return subInfo, err
 }

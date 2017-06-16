@@ -60,10 +60,15 @@ func (p Profile) Update(c *gin.Context) {
 
 	prof.Apply(&user)
 
-	err = subs.CanUpdatePlan(user, prof.BillingPlan)
+	reason, err := subs.CanUpdatePlan(user, prof.BillingPlan)
 	if err != nil {
-		sugar.ErrResponse(c, 400, err)
+		sugar.InternalError(c, err)
+		return
 	}
+	if reason != "" {
+		sugar.ErrResponse(c, 400, reason)
+	}
+
 	sub, err = subs.UpdatePlan(user, prof.BillingPlan)
 
 	if err != nil {

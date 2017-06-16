@@ -20,18 +20,6 @@ type TokenUpdate struct {
 	Token string `json:"token"`
 }
 
-// DefaultSource doesn't actually include the card info, so search the
-// sources on the customer for the card info
-func (b Billing) DefaultSource(cust *stripe.Customer) *stripe.Card {
-	def := cust.DefaultSource.ID
-	for _, source := range cust.Sources.Values {
-		if source.ID == def {
-			return source.Card
-		}
-	}
-	return nil
-}
-
 // Get the default card info for the customer for frontend display
 func (b Billing) Get(c *gin.Context) {
 	user := middleware.GetUser(c)
@@ -44,7 +32,7 @@ func (b Billing) Get(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
+	sugar.SuccessResponse(c, 200, models.DefaultSource(cust))
 }
 
 // Replace updates the customer info for the current user, returning the card info
@@ -81,7 +69,7 @@ func (b Billing) Replace(c *gin.Context) {
 		return
 
 	}
-	sugar.SuccessResponse(c, 200, b.DefaultSource(cust))
+	sugar.SuccessResponse(c, 200, models.DefaultSource(cust))
 }
 
 // BillingHours returns information about billing hours for user.
