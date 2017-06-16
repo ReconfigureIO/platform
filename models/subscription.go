@@ -11,14 +11,20 @@ import (
 	subscriptions "github.com/stripe/stripe-go/sub"
 )
 
+type SubscriptionValidationError struct {
+	s string
+}
+
+func (e *SubscriptionValidationError) Error() string {
+	return e.s
+}
+
 // SubscriptionRepo handles user subscription details.
 type SubscriptionRepo interface {
 	// Current retrieves the current subscription of the user.
 	Current(User) (SubscriptionInfo, error)
 	// ActiveUsers returns a list of active users.
 	ActiveUsers() ([]User, error)
-	// CanUpdatePlan returns an error if the user can't update to a plan.
-	CanUpdatePlan(User, string) (string, error)
 	// UpdatePlan sets the user's plan
 	UpdatePlan(User, string) (SubscriptionInfo, error)
 }
@@ -145,24 +151,19 @@ func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) 
 	return
 }
 
-func (s *subscriptionRepo) CanUpdatePlan(user User, plan string) (reason string, err error) {
-	cust, err := s.cachedCustomer(user)
-	if err != nil {
-		return "", err
-	}
-
-	if plan != PlanOpenSource && DefaultSource(cust) == nil {
-		return fmt.Sprintf("Plan %s requires billing information", plan), nil
-	}
-	return "", nil
-}
-
 func (s *subscriptionRepo) UpdatePlan(user User, plan string) (sub SubscriptionInfo, err error) {
 	subInfo := SubscriptionInfo{}
 	cust, err := s.cachedCustomer(user)
+
 	if err != nil {
 		return subInfo, err
 	}
+
+	if plan != PlanOpenSource && DefaultSource(cust) == nil {
+		e := SubscriptionValidationError{fmt.Sprintf("Plan %s requires billing information", plan)}
+		return subInfo, &e
+	}
+
 	subInfo, err = s.Current(user)
 	if err != nil {
 		return subInfo, err
