@@ -61,7 +61,7 @@ func main() {
 		log.Printf("Looking up %d deployments", len(terminatingdeployments))
 
 		if len(terminatingdeployments) == 0 {
-			c.JSON(200, "events posted")
+			c.Status(200)
 			return
 		}
 
@@ -91,7 +91,7 @@ func main() {
 		}
 
 		log.Printf("terminated %d deployments", terminating)
-		c.JSON(200, "events posted")
+		c.Status(200)
 	})
 
 	// Listen and Server in 0.0.0.0:$PORT
