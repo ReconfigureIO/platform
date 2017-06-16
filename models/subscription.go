@@ -11,12 +11,12 @@ import (
 	subscriptions "github.com/stripe/stripe-go/sub"
 )
 
-type SubscriptionValidationError struct {
-	s string
-}
+// SubscriptionValidationError is an error returned when validation
+// fails for user subscription.
+type SubscriptionValidationError string
 
-func (e *SubscriptionValidationError) Error() string {
-	return e.s
+func (s SubscriptionValidationError) Error() string {
+	return string(s)
 }
 
 // SubscriptionRepo handles user subscription details.
@@ -31,12 +31,12 @@ type SubscriptionRepo interface {
 
 // SubscriptionInfo holds information about a user subscription.
 type SubscriptionInfo struct {
-	UserID     string    `json:-`
-	StripeID   string    `json:-`
-	Identifier string    `json:id`
-	StartTime  time.Time `json:start`
-	EndTime    time.Time `json:end`
-	Hours      int       `json:hours`
+	UserID     string    `json:"-"`
+	StripeID   string    `json:"-"`
+	Identifier string    `json:"id"`
+	StartTime  time.Time `json:"start"`
+	EndTime    time.Time `json:"end"`
+	Hours      int       `json:"hours"`
 }
 
 // Empty returns if the subscription info is empty.
@@ -160,8 +160,8 @@ func (s *subscriptionRepo) UpdatePlan(user User, plan string) (sub SubscriptionI
 	}
 
 	if plan != PlanOpenSource && DefaultSource(cust) == nil {
-		e := SubscriptionValidationError{fmt.Sprintf("Plan %s requires billing information", plan)}
-		return subInfo, &e
+		e := SubscriptionValidationError(fmt.Sprintf("Plan %s requires billing information", plan))
+		return subInfo, e
 	}
 
 	subInfo, err = s.Current(user)
