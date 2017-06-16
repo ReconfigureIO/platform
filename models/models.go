@@ -27,6 +27,9 @@ const (
 
 	OpenSource = "open-source"
 	SingleUser = "single-user"
+
+	// DefaultHours is the amount of hours a new user gets.
+	DefaultHours = time.Hour * 20
 )
 
 // uuidHook hooks new uuid as primary key for models before creation.
@@ -39,25 +42,26 @@ func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
 // User model.
 type User struct {
 	uuidHook
-	ID                string `gorm:"primary_key" json:"id"`
-	GithubID          int    `gorm:"unique_index" json:"-"`
-	GithubName        string `json:"github_name"`
-	Name              string `json:"name"`
-	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
-	GithubAccessToken string `json:"-"`
-	Token             string `json:"-"`
-	StripeToken       string `json:"-"`
+	ID                string        `gorm:"primary_key" json:"id"`
+	GithubID          int           `gorm:"unique_index" json:"-"`
+	GithubName        string        `json:"github_name"`
+	Name              string        `json:"name"`
+	Email             string        `gorm:"type:varchar(100);unique_index" json:"email"`
+	GithubAccessToken string        `json:"-"`
+	Token             string        `json:"-"`
+	StripeToken       string        `json:"-"`
+	Hours             time.Duration `gorm:"type:float" json:"hours"`
 	// We'll ignore this in the db for now, to provide mock data
 	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
 
-func (u *User) LoginToken() string {
+func (u User) LoginToken() string {
 	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.
 func NewUser() User {
-	return User{Token: uniuri.NewLen(64), BillingPlan: OpenSource}
+	return User{Token: uniuri.NewLen(64), BillingPlan: OpenSource, Hours: DefaultHours}
 }
 
 // Project model.

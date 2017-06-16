@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -63,6 +64,13 @@ func (d Deployment) Create(c *gin.Context) {
 	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	// Ensure there is enough instance hours
+	user := auth.GetUser(c)
+	if user.Hours <= 0 {
+		sugar.ErrResponse(c, http.StatusUnauthorized, "No available instance hours")
 		return
 	}
 
@@ -140,20 +148,20 @@ func (d Deployment) List(c *gin.Context) {
 
 // Get fetches a deployment.
 func (d Deployment) Get(c *gin.Context) {
-	outputdep, err := d.ByID(c)
+	outputDep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
-	sugar.SuccessResponse(c, 200, outputdep)
+	sugar.SuccessResponse(c, 200, outputDep)
 }
 
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
-	targetdep, err := d.ByID(c)
+	targetDep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(mockDeploy, c, &targetdep)
+	streamDeploymentLogs(mockDeploy, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {

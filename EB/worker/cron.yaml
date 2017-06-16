@@ -6,3 +6,6 @@ cron:
  - name: "terminate deployments"
    url: "/terminate-deployments"
    schedule: "* * * * *"
+ - name: "check-hours"
+   url: "/check-hours"
+   schedule: "0 * * * *"
