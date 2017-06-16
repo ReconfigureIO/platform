@@ -34,16 +34,16 @@ type ProfileData struct {
 	Token       string `json:"token"` // read only
 }
 
-func (p *ProfileData) FromUser(user models.User) {
+func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
 	p.Name = user.Name
 	p.Email = user.Email
-	p.BillingPlan = models.PlanOpenSource
 	p.Token = user.LoginToken()
+	p.BillingPlan = sub.Identifier
 }
 
 func (p *ProfileData) Apply(user *models.User) {
 	user.Name = p.Name
 	user.Email = p.Email
-	user.BillingPlan = p.BillingPlan
+
 	// skip token, because it's read only
 }
