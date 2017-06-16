@@ -16,14 +16,6 @@ type Profile struct {
 	// subs models.SubscriptionDataSource I want to do this, but the cache makes it an issue cross request
 }
 
-func CustInfo(user models.User) (*stripe.Customer, error) {
-	if user.StripeToken == "" {
-		return nil, nil
-	}
-	c, err := customer.Get(user.StripeToken, nil)
-	return c, err
-}
-
 func (p Profile) Get(c *gin.Context) {
 	user := middleware.GetUser(c)
 
