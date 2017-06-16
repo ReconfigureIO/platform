@@ -9,7 +9,6 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/ReconfigureIO/platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -56,7 +55,7 @@ func main() {
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
 		apideployment := api.Deployment{}
-		d := models.PostgresRepo{db}
+		d := models.DeploymentDataSource(db)
 
 		terminatingdeployments, err := d.GetWithStatus([]string{models.StatusTerminating, models.StatusCompleted, models.StatusErrored}, 100)
 		log.Printf("Looking up %d deployments", len(terminatingdeployments))
@@ -87,14 +86,14 @@ func main() {
 					c.JSON(500, err)
 					return
 				}
-				terminating += 1
+				terminating++
 			}
 		}
 
 		log.Printf("terminated %d deployments", terminating)
 		c.Status(200)
-	}
-	
+	})
+
 	r.POST("/check-hours", func(c *gin.Context) {
 		if err := CheckUserHours(db); err == nil {
 			c.String(200, "done")

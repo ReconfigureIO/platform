@@ -37,4 +37,8 @@ func TestTimeToSQLStr(t *testing.T) {
 	if ms := timeToSQLStr(monthStart(utcTime)); ms != expected {
 		t.Errorf("Expected %v found %v", expected, ms)
 	}
+	expected = "2010-02-28 23:59:59"
+	if ms := timeToSQLStr(monthEnd(utcTime)); ms != expected {
+		t.Errorf("Expected %v found %v", expected, ms)
+	}
 }

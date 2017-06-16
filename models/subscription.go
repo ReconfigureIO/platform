@@ -20,6 +20,7 @@ type SubscriptionRepo interface {
 type SubscriptionInfo struct {
 	UserID    string
 	StartTime time.Time
+	EndTime   time.Time
 	Hours     int
 }
 
@@ -82,6 +83,7 @@ func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) 
 		sub = SubscriptionInfo{
 			UserID:    user.ID,
 			StartTime: time.Unix(val.PeriodStart, 0),
+			EndTime:   time.Unix(val.PeriodEnd, 0),
 			Hours:     hours,
 		}
 		// set value only if information is retrived from stripe.

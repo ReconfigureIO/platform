@@ -133,7 +133,7 @@ func (b billingHours) Used() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	used, err := b.depRepo.DeploymentHoursSince(b.user.ID, sub.StartTime)
+	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
 	return int(used.Hours()), err
 }
 
@@ -142,7 +142,7 @@ func (b billingHours) Net() (int, error) {
 		return 0, b.err
 	}
 	sub, err := b.subRepo.Current(b.user)
-	used, err := b.depRepo.DeploymentHoursSince(b.user.ID, sub.StartTime)
+	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
 	if err != nil {
 		return 0, err
 	}

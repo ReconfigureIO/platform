@@ -12,9 +12,9 @@ type DeploymentRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
-	// DeploymentHoursSince returns the total time used for deployments since
+	// DeploymentHoursBtw returns the total time used for deployments since
 	// startTime.
-	DeploymentHoursSince(userID string, startTime time.Time) (time.Duration, error)
+	DeploymentHoursBtw(userID string, startTime, stopTime time.Time) (time.Duration, error)
 }
 
 type deploymentRepo struct{ db *gorm.DB }
@@ -29,11 +29,11 @@ const (
 FROM deployments j
 LEFT join deployment_events e
 ON j.id = e.dep_id
-    AND e.timestamp = (
-        SELECT max(timestamp)
-        FROM deployment_events e1
-        WHERE j.id = e1.dep_id
-    )
+	AND e.timestamp = (
+		SELECT max(timestamp)
+		FROM deployment_events e1
+		WHERE j.id = e1.dep_id
+	)
 WHERE (e.status in (?))
 LIMIT ?
 `
@@ -63,7 +63,7 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	return deps, nil
 }
 
-func (repo *deploymentRepo) DeploymentHoursSince(userID string, startTime time.Time) (t time.Duration, err error) {
+func (repo *deploymentRepo) DeploymentHoursBtw(userID string, startTime, endTime time.Time) (t time.Duration, err error) {
 	db := repo.db
 	var deployments []Deployment
 	err = db.Model(&Deployment{}).
@@ -81,6 +81,7 @@ func (repo *deploymentRepo) DeploymentHoursSince(userID string, startTime time.T
 		err := db.Model(&DeploymentEvent{}).
 			Where("dep_id=?", deployment.ID).
 			Where("timestamp>=?", timeToSQLStr(startTime)).
+			Where("timestamp<=?", timeToSQLStr(endTime)).
 			Order("timestamp").
 			Find(&deployment.Events).Error
 		if err != nil {
@@ -105,6 +106,11 @@ func (repo *deploymentRepo) DeploymentHoursSince(userID string, startTime time.T
 // monthStart changes t to the beginning of the month in UTC.
 func monthStart(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// monthEnd changes t to the end of the month in UTC.
+func monthEnd(t time.Time) time.Time {
+	return monthStart(t).AddDate(0, 1, 0).Add(-1 * time.Second)
 }
 
 // timeToSQLStr formats t in sql format YYYY-MM-DD HH:MM:SS.
