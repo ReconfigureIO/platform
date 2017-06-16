@@ -78,26 +78,10 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-<<<<<<< HEAD
-	depJob := models.DepJob{}
-	err = db.Create(&depJob).Error
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	newDep := models.Deployment{
-		BuildID:  post.BuildID,
-		Command:  post.Command,
-		DepJobID: depJob.ID,
-		Token:    uniuri.NewLen(64),
-		DepJob:   depJob,
-=======
 	newDep := models.Deployment{
 		BuildID: post.BuildID,
 		Command: post.Command,
 		Token:   uniuri.NewLen(64),
->>>>>>> flatten deployment and remove DepJob
 	}
 
 	err = db.Create(&newDep).Error
@@ -121,8 +105,8 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	newEvent := models.DepJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&depJob).Association("Events").Append(newEvent).Error
+	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+	err = db.Model(&models.Deployment{}).Association("Events").Append(newEvent).Error
 
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -224,7 +208,8 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func addEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DeploymentEvent, error) {
+// AddEvent adds a deployment event.
+func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DeploymentEvent, error) {
 	newEvent := models.DeploymentEvent{
 		DepID:     dep.ID,
 		Timestamp: time.Now(),
