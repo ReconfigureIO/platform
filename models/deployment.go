@@ -15,14 +15,14 @@ type PostgresRepo struct {
 }
 
 const (
-	SQL_DEPLOYMENT_STATUS = `SELECT j.dep_id
-FROM dep_jobs j
+	SQL_DEPLOYMENT_STATUS = `SELECT j.id
+FROM deployments j
 LEFT join dep_job_events e
-ON j.id = e.dep_job_id
+ON j.dep_job_id = e.dep_job_id
     AND e.timestamp = (
         SELECT max(timestamp)
         FROM dep_job_events e1
-        WHERE j.id = e1.dep_job_id
+        WHERE j.dep_job_id = e1.dep_job_id
     )
 WHERE (e.status in (?))
 LIMIT ?
@@ -45,7 +45,7 @@ func (repo *PostgresRepo) GetWithStatus(statuses []string, limit int) ([]Deploym
 	rows.Close()
 
 	var deps []Deployment
-	err = db.Where("id in (?)", ids).Find(&deps).Error
+	err = db.Preload("DepJob").Where("id in (?)", ids).Find(&deps).Error
 	if err != nil {
 		return nil, err
 	}

@@ -140,3 +140,30 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 	return resp.LogStreams[0], nil
 
 }
+
+func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	var instanceids []*string
+	for _, deployment := range deployments {
+		instanceids = append(instanceids, &deployment.InstanceID)
+	}
+	ec2Session := ec2.New(s.session)
+
+	cfg := ec2.DescribeInstancesInput{
+		InstanceIds: instanceids,
+	}
+
+	results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, reservation := range results.Reservations {
+		for _, instance := range reservation.Instances {
+			ret[*instance.InstanceId] = *instance.State.Name
+		}
+	}
+
+	return ret, nil
+}
