@@ -59,6 +59,7 @@ func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) 
 	sub = SubscriptionInfo{
 		UserID:    user.ID,
 		StartTime: monthStart(time.Now()),
+		EndTime:   monthEnd(time.Now()),
 		Hours:     DefaultHours,
 	}
 	if user.StripeToken == "" {
