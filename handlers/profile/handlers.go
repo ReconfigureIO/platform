@@ -6,8 +6,6 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	stripe "github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/customer"
 )
 
 // Profile handles requests for profile get & update
