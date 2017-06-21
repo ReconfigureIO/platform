@@ -78,13 +78,16 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
-	deployment := api.Deployment{}
-	deploymentRoute := apiRoutes.Group("/deployments")
-	{
-		deploymentRoute.GET("", deployment.List)
-		deploymentRoute.POST("", deployment.Create)
-		deploymentRoute.GET("/:id", deployment.Get)
-		deploymentRoute.GET("/:id/logs", deployment.Logs)
+	if os.Getenv("RECO_FEATURE_DEPLOY") == "1" {
+
+		deployment := api.Deployment{}
+		deploymentRoute := apiRoutes.Group("/deployments")
+		{
+			deploymentRoute.GET("", deployment.List)
+			deploymentRoute.POST("", deployment.Create)
+			deploymentRoute.GET("/:id", deployment.Get)
+			deploymentRoute.GET("/:id/logs", deployment.Logs)
+		}
 	}
 
 	eventRoutes := r.Group("", middleware.TokenAuth(db))
