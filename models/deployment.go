@@ -12,9 +12,9 @@ type DeploymentRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
-	// DeploymentHoursBtw returns the total time used for deployments since
-	// startTime.
-	DeploymentHoursBtw(userID string, startTime, stopTime time.Time) (time.Duration, error)
+	// DeploymentHoursBtw returns the total time used for deployments between
+	// startTime and endTime.
+	DeploymentHoursBtw(userID string, startTime, endTime time.Time) (time.Duration, error)
 }
 
 type deploymentRepo struct{ db *gorm.DB }
@@ -55,7 +55,7 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	rows.Close()
 
 	var deps []Deployment
-	err = db.Preload("DepJob").Where("id in (?)", ids).Find(&deps).Error
+	err = db.Preload("Events").Where("id in (?)", ids).Find(&deps).Error
 	if err != nil {
 		return nil, err
 	}

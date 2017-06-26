@@ -166,7 +166,6 @@ type Deployment struct {
 	BuildID    string            `json:"-"`
 	Command    string            `json:"command"`
 	Token      string            `json:"-"`
-	DepJobID   string            `json:"-"`
 	InstanceID string            `json:"-"`
 	Events     []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
 }
