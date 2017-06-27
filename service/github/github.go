@@ -11,6 +11,12 @@ import (
 	ghoauth "golang.org/x/oauth2/github"
 )
 
+type UserError string
+
+func (e UserError) Error() string {
+	return string(e)
+}
+
 // Service is Github service.
 type Service struct {
 	OauthConf *oauth2.Config
@@ -47,6 +53,24 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, creat
 		Name:              ghUser.GetName(),
 		Email:             ghUser.GetEmail(),
 		GithubAccessToken: accessToken,
+	}
+
+	// The email we got back was empty, we search for a new one
+	if u.Email == "" {
+		emails, _, err := client.Users.ListEmails(ctx, nil)
+		if err != nil {
+			return u, err
+		}
+		for _, e := range emails {
+			if e.GetPrimary() {
+				u.Email = e.GetEmail()
+			}
+		}
+	}
+
+	// If we still have no email, error
+	if u.Email == "" {
+		return u, UserError("No valid email found")
 	}
 
 	q := s.db.Where(models.User{GithubID: ghUser.GetID()})
