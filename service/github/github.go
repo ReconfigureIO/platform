@@ -31,7 +31,7 @@ func New(db *gorm.DB) *Service {
 // GetOrCreateUser fetches or create a user.
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
-func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string) (models.User, error) {
+func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, createNew bool) (models.User, error) {
 	oauthClient := s.OauthConf.Client(context.Background(), &oauth2.Token{AccessToken: accessToken})
 	client := github.NewClient(oauthClient)
 
@@ -55,6 +55,12 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string) (mode
 	if err = q.First(&user).Error; err != nil {
 		// not found
 		user = models.NewUser()
+		if err != gorm.ErrRecordNotFound {
+			return user, err
+		}
+		if !createNew {
+			return user, err
+		}
 	}
 
 	err = q.Attrs(user).Assign(u).FirstOrInit(&u).Error
