@@ -133,7 +133,13 @@ func (s *SignupUser) Callback(c *gin.Context) {
 	}
 
 	user, err := s.GH.GetOrCreateUser(c, token.AccessToken, newUser)
+
 	if err != nil {
+		if _, ok := err.(github.UserError); ok {
+			sugar.ErrResponse(c, 400, err)
+			return
+		}
+
 		sugar.NotFoundOrError(c, err)
 		return
 	}
