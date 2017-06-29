@@ -7,8 +7,6 @@ services:
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
-    ports:
-      - "8080:8080"
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -24,6 +22,8 @@ services:
   web:
     command: bash -c "glide install && fresh"
     extends: web-base
+    ports:
+      - "8080:8080"
     depends_on:
       - db
     links:
@@ -31,8 +31,11 @@ services:
 
   cron:
     extends: web-base
+    ports:
+      - "8000:8080"
     depends_on:
       - db
+      - web
     links:
       - db
-    command: bash -c "make clean all && ./dist-image/dist/worker"
+    command: bash -c "make clean all && glide install && ./dist-image/dist/worker"
