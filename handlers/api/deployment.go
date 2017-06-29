@@ -20,8 +20,7 @@ type Deployment struct{}
 // Preload is common preload functionality.
 func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Build").Preload("Build.Project").
-		Preload("DepJob").
-		Preload("DepJob.Events", func(db *gorm.DB) *gorm.DB {
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
 			return db.Order("timestamp ASC")
 		})
 }
@@ -211,11 +210,11 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 // AddEvent adds a deployment event.
 func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DeploymentEvent, error) {
 	newEvent := models.DeploymentEvent{
-		DepID:     dep.ID,
-		Timestamp: time.Now(),
-		Status:    event.Status,
-		Message:   event.Message,
-		Code:      event.Code,
+		DeploymentID: dep.ID,
+		Timestamp:    time.Now(),
+		Status:       event.Status,
+		Message:      event.Message,
+		Code:         event.Code,
 	}
 
 	err := db.Create(&newEvent).Error

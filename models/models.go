@@ -256,12 +256,12 @@ func (d *Deployment) HasFinished() bool {
 // DeploymentEvent model.
 type DeploymentEvent struct {
 	uuidHook
-	ID        string    `gorm:"primary_key" json:"-"`
-	DepID     string    `json:"-" validate:"nonzero"`
-	Timestamp time.Time `json:"timestamp"`
-	Status    string    `json:"status"`
-	Message   string    `json:"message,omitempty"`
-	Code      int       `json:"code"`
+	ID           string    `gorm:"primary_key" json:"-"`
+	DeploymentID string    `json:"-" validate:"nonzero"`
+	Timestamp    time.Time `json:"timestamp"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message,omitempty"`
+	Code         int       `json:"code"`
 }
 
 func hasStarted(status string) bool {
