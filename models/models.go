@@ -14,6 +14,8 @@ const (
 	StatusSubmitted = "SUBMITTED"
 	// StatusQueued is queued job state.
 	StatusQueued = "QUEUED"
+	// StatusCreatingImage is creating image job state.
+	StatusCreatingImage = "CREATING_IMAGE"
 	// StatusStarted is started job state.
 	StatusStarted = "STARTED"
 	// StatusTerminating is terminating job state.
@@ -185,7 +187,7 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage},
 	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
@@ -278,7 +280,7 @@ func hasFinished(status string) bool {
 func CanTransition(current string, next string) bool {
 	switch current {
 	case StatusSubmitted:
-		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating}, next)
+		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating, StatusCreatingImage}, next)
 	case StatusQueued:
 		return inSlice([]string{StatusStarted, StatusTerminated, StatusTerminating}, next)
 	case StatusStarted:
