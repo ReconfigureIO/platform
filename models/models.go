@@ -81,6 +81,8 @@ type Build struct {
 	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobID  int64        `json:"-"`
+	FPGAImage   FPGAImage    `json:"image" gorm:"ForeignKey:FPGAImageID"`
+	FPGAImageID int64        `json:"-"`
 	Token       string       `json:"-"`
 	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
@@ -196,6 +198,12 @@ type BatchJob struct {
 	ID      int64           `gorm:"primary_key" json:"-"`
 	BatchID string          `json:"-"`
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+}
+
+// FPGAImage model.
+type FPGAImage struct {
+	ID    int64  `gorm:"primary_key" json:"-"`
+	AFIID string `json:"-"`
 }
 
 // DepJob model.
