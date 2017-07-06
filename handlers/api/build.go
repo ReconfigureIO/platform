@@ -200,6 +200,12 @@ func (b Build) CreateEvent(c *gin.Context) {
 
 	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
 
+	if event.Status == "CREATING_IMAGE" {
+		FPGAImage := models.FPGAImage{}
+		FPGAImage.AFIID = event.Message
+		err = tx.Model(&build).Association("FPGAImage").Append(FPGAImage).Error
+	}
+
 	if err != nil {
 		c.Error(err)
 		sugar.ErrResponse(c, 500, nil)
