@@ -30,13 +30,13 @@ all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 generate:
 	go generate -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
-test: generate
+test:
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
-integration-tests: generate
+integration-tests:
 	go test -tags=integration -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
-install:
+install: generate
 	glide install && go test -i $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 dist-image/dist:
