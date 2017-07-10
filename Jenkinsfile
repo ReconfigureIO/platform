@@ -30,26 +30,26 @@ pipeline {
 
         stage('install') {
             steps {
-                sh 'docker build -t "reco-api-builder:latest" build'
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make install'
+                sh 'docker-compose run --rm web-base make install'
             }
         }
 
         stage('test') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make test'
+                sh 'docker-compose run --rm test make test'
             }
         }
 
         stage('clean') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make clean'
+                sh 'docker-compose run --rm web-base make clean'
+                sh 'docker-compose down'
             }
         }
 
         stage('build') {
             steps {
-                sh 'docker run -v $PWD:/go/src/github.com/ReconfigureIO/platform -w /go/src/github.com/ReconfigureIO/platform "reco-api-builder:latest" make all'
+                sh 'docker-compose run --rm web-base make all'
                 sh 'make image'
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
                 sh 'docker tag reco-api:latest-worker 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker'
