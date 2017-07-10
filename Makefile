@@ -14,7 +14,7 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production deploy-staging vet
+.PHONY: test install clean all generate deploy-production deploy-staging vet integration-tests
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -32,6 +32,9 @@ generate:
 
 test: generate
 	go test -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
+
+integration-tests: generate
+	go test -tags=integration -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 install:
 	glide install && go test -i $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)

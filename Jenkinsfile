@@ -36,7 +36,7 @@ pipeline {
 
         stage('test') {
             steps {
-                sh 'docker-compose run --rm test make vet test'
+                sh 'docker-compose run --rm test make vet integration-tests'
             }
         }
 
