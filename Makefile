@@ -8,13 +8,13 @@ BUILDTIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 BUILDDATE := $(shell date -u +"%B %d, %Y")
 BUILDER := $(shell echo "`git config user.name` <`git config user.email`>")
 PKG_RELEASE ?= 1
-PROJECT_URL := "https://github.com/ReconfigueIO/$(NAME)"
+PROJECT_URL := "https://github.com/ReconfigureIO/$(NAME)"
 LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.buildTime=$(BUILDTIME)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production deploy-staging
+.PHONY: test install clean all generate deploy-production deploy-staging vet
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -22,6 +22,8 @@ TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
 
+vet:
+	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
