@@ -305,3 +305,28 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	})
 	return err
 }
+
+func (s *Service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	var afiids []*string
+	for _, build := range builds {
+		afiids = append(afiids, &build.FPGAImageID)
+	}
+	ec2Session := ec2.New(s.session)
+
+	cfg := ec2.DescribeFpgaImagesInput{
+		FpgaImageIds: afiids,
+	}
+
+	results, err := ec2Session.DescribeFpgaImagesWithContext(ctx, &cfg)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, image := range results.FpgaImages {
+		ret[*image.FpgaImageId] = *image.State.Code
+	}
+
+	return ret, nil
+}
