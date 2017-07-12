@@ -11,11 +11,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
