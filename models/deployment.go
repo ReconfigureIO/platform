@@ -10,10 +10,6 @@ type DeploymentRepo interface {
 	GetWithStatus([]string, int) ([]Deployment, error)
 }
 
-type PostgresRepo struct {
-	DB *gorm.DB
-}
-
 const (
 	SQL_DEPLOYMENT_STATUS = `SELECT j.id
 FROM deployments j

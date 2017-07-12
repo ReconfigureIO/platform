@@ -10,10 +10,6 @@ type BuildRepo interface {
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 }
 
-type PostgresRepo struct {
-	DB *gorm.DB
-}
-
 const (
 	SQL_BUILD_STATUS = `SELECT j.id
 FROM builds j
