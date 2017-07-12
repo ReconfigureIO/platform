@@ -308,12 +308,12 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	return err
 }
 
-func (s *Service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error) {
+func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error) {
 	ret := make(map[string]string)
 
 	var afiids []*string
 	for _, build := range builds {
-		afiids = append(afiids, &build.FPGAImageID)
+		afiids = append(afiids, &build.FPGAImage.AFIID)
 	}
 	ec2Session := ec2.New(s.session)
 

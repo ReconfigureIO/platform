@@ -203,7 +203,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 	if event.Status == "CREATING_IMAGE" {
 		FPGAImage := models.FPGAImage{}
 		FPGAImage.AFIID = event.Message
-		err = tx.Model(&build).Association("FPGAImage").Append(FPGAImage).Error
+		err = db.Model(&build).Association("FPGAImage").Append(FPGAImage).Error
 	}
 
 	if err != nil {

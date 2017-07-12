@@ -1,9 +1,5 @@
 package models
 
-import (
-	"github.com/jinzhu/gorm"
-)
-
 type BuildRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
