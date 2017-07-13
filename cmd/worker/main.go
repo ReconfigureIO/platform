@@ -21,10 +21,11 @@ var (
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
 		AMI:      "ami-850c7293",
 	})
-	aws = aws.New(aws.ServiceConfig{
-		LogGroup: "josh-test-sdaccel",
-		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-		AMI:      "ami-850c7293",
+	awsService = aws.New(aws.ServiceConfig{
+		LogGroup:      "/aws/batch/job",
+		Bucket:        "reconfigureio-builds",
+		Queue:         "build-jobs",
+		JobDefinition: "sdaccel-builder-build",
 	})
 )
 
@@ -101,7 +102,6 @@ func main() {
 	})
 
 	r.POST("/generated-afis", func(c *gin.Context) {
-		tempbuild := api.Build{}
 		d := models.PostgresRepo{db}
 		//get list of builds waiting for AFI generation to finish
 		buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
@@ -112,13 +112,13 @@ func main() {
 			return
 		}
 		//get the status of the associated AFIs
-		statuses, err := aws.DescribeAFIStatus(context.Background(), buildswaitingonafis)
+		statuses, err := awsService.DescribeAFIStatus(context.Background(), buildswaitingonafis)
 		if err != nil {
 			c.JSON(500, err)
 			return
 		}
 		log.Printf("statuses of %v", statuses)
-		waiting := 0
+		afigenerated := 0
 		//for each build check associated AFI, if done, post event
 		for _, build := range buildswaitingonafis {
 			status, found := statuses[build.FPGAImage.AFIID]
@@ -128,16 +128,16 @@ func main() {
 					Message: models.StatusCompleted,
 					Code:    0,
 				}
-				_, err := tempbuild.AddEvent(c, build, event)
+				_, err := api.BatchService{}.AddEvent(&build.BatchJob, event)
 				if err != nil {
 					c.JSON(500, err)
 					return
 				}
-				waiting += 1
+				afigenerated += 1
 			}
 		}
 
-		log.Printf("%d builds have finished generating AFIs", waiting)
+		log.Printf("%d builds have finished generating AFIs", afigenerated)
 		c.Status(200)
 	})
 

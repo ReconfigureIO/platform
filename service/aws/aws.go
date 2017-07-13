@@ -32,6 +32,7 @@ type Service interface {
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
+	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
