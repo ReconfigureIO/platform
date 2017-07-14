@@ -292,10 +292,12 @@ func hasFinished(status string) bool {
 func CanTransition(current string, next string) bool {
 	switch current {
 	case StatusSubmitted:
-		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating, StatusCreatingImage}, next)
+		return inSlice([]string{StatusQueued, StatusTerminated, StatusTerminating}, next)
 	case StatusQueued:
 		return inSlice([]string{StatusStarted, StatusTerminated, StatusTerminating}, next)
 	case StatusStarted:
+		return inSlice([]string{StatusTerminated, StatusCreatingImage, StatusCompleted, StatusErrored, StatusTerminating}, next)
+	case StatusCreatingImage:
 		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored, StatusTerminating}, next)
 	default:
 		return false
