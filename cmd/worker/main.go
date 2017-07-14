@@ -7,6 +7,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -102,43 +103,12 @@ func main() {
 	})
 
 	r.POST("/generated-afis", func(c *gin.Context) {
-		d := models.PostgresRepo{db}
-		//get list of builds waiting for AFI generation to finish
-		buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
-		log.Printf("Looking up %d builds", len(buildswaitingonafis))
-
-		if len(buildswaitingonafis) == 0 {
-			c.Status(200)
-			return
-		}
-		//get the status of the associated AFIs
-		statuses, err := awsService.DescribeAFIStatus(context.Background(), buildswaitingonafis)
+		err := afi_watcher.FindAfi(models.PostgresRepo{db}, awsService, api.BatchService{})
 		if err != nil {
 			c.JSON(500, err)
-			return
+		} else {
+			c.Status(200)
 		}
-		log.Printf("statuses of %v", statuses)
-		afigenerated := 0
-		//for each build check associated AFI, if done, post event
-		for _, build := range buildswaitingonafis {
-			status, found := statuses[build.FPGAImage.AFIID]
-			if found && status == "available" {
-				event := models.PostBatchEvent{
-					Status:  models.StatusCompleted,
-					Message: models.StatusCompleted,
-					Code:    0,
-				}
-				_, err := api.BatchService{}.AddEvent(&build.BatchJob, event)
-				if err != nil {
-					c.JSON(500, err)
-					return
-				}
-				afigenerated += 1
-			}
-		}
-
-		log.Printf("%d builds have finished generating AFIs", afigenerated)
-		c.Status(200)
 	})
 
 	// Listen and Server in 0.0.0.0:$PORT

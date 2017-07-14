@@ -1,11 +1,15 @@
 package afi_watcher
 
 import (
+	"context"
+	"log"
+
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/aws"
 )
 
-func FindAfi(d models.BuildRepo, awsService aws, batch api.BatchService) error {
+func FindAfi(d models.PostgresRepo, awsService aws.Service, bs api.BatchService) error {
 	//get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
 	log.Printf("Looking up %d builds", len(buildswaitingonafis))
@@ -31,17 +35,21 @@ func FindAfi(d models.BuildRepo, awsService aws, batch api.BatchService) error {
 					Message: models.StatusCompleted,
 					Code:    0,
 				}
+				_, err := bs.AddEvent(&build.BatchJob, event)
+				if err != nil {
+					return err
+				}
 			case "failed":
 				event := models.PostBatchEvent{
 					Status:  models.StatusErrored,
 					Message: models.StatusErrored,
 					Code:    0,
 				}
+				_, err := bs.AddEvent(&build.BatchJob, event)
+				if err != nil {
+					return err
+				}
 			default:
-			}
-			_, err := batch.AddEvent(&build.BatchJob, event)
-			if err != nil {
-				return err
 			}
 			afigenerated += 1
 		}
