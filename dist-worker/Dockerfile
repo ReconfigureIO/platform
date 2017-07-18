@@ -1,2 +1,2 @@
 FROM reco-api:latest
-CMD ssm-env env && /worker
+CMD ssm-env /worker
