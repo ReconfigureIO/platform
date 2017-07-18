@@ -55,7 +55,7 @@ func main() {
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
 		apideployment := api.Deployment{}
-		d := models.PostgresRepo{db}
+		d := models.DeploymentDataSource(db)
 
 		terminatingdeployments, err := d.GetWithStatus([]string{models.StatusTerminating, models.StatusCompleted, models.StatusErrored}, 100)
 		log.Printf("Looking up %d deployments", len(terminatingdeployments))
@@ -86,7 +86,7 @@ func main() {
 					c.JSON(500, err)
 					return
 				}
-				terminating += 1
+				terminating++
 			}
 		}
 
@@ -94,6 +94,34 @@ func main() {
 		c.Status(200)
 	})
 
+	r.POST("/check-hours", func(c *gin.Context) {
+		if err := CheckUserHours(db); err == nil {
+			c.String(200, "done")
+		} else {
+			c.String(500, err.Error())
+		}
+	})
+
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
+}
+
+// CheckUserHours check running deployments and deduct a minute (cron interval) from
+// instance hours of the user.
+func CheckUserHours(db *gorm.DB) error {
+	api.DB(db)
+
+	ds := models.SubscriptionDataSource(db)
+	users, err := ds.ActiveUsers()
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		h, err := api.FetchBillingHours(user.ID).Net()
+		if err == nil && h <= 0 {
+			// TODO terminate all deployments for user
+		}
+	}
+	return nil
 }

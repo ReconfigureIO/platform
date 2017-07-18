@@ -5,23 +5,20 @@ package models
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
 
 func TestDeploymentGetWithStatus(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
-		d := PostgresRepo{db}
+		d := deploymentRepo{db}
 
 		dep := Deployment{
 			Command: "test",
-			DepJob: DepJob{
-				DepID: "Bar",
-				Events: []DepJobEvent{
-					DepJobEvent{
-						DepJobID: "Bar",
-						Status:   "COMPLETED",
-					},
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status: "COMPLETED",
 				},
 			},
 		}
@@ -44,4 +41,16 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 			return
 		}
 	})
+}
+
+func TestTimeToSQLStr(t *testing.T) {
+	utcTime := time.Date(2010, 2, 11, 3, 20, 30, 0, time.UTC)
+	expected := "2010-02-01 00:00:00"
+	if ms := timeToSQLStr(monthStart(utcTime)); ms != expected {
+		t.Errorf("Expected %v found %v", expected, ms)
+	}
+	expected = "2010-02-28 23:59:59"
+	if ms := timeToSQLStr(monthEnd(utcTime)); ms != expected {
+		t.Errorf("Expected %v found %v", expected, ms)
+	}
 }

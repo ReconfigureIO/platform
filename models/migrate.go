@@ -13,6 +13,5 @@ func MigrateAll(db *gorm.DB) {
 	db.AutoMigrate(&BatchJob{})
 	db.AutoMigrate(&BatchJobEvent{})
 	db.AutoMigrate(&Deployment{})
-	db.AutoMigrate(&DepJob{})
-	db.AutoMigrate(&DepJobEvent{})
+	db.AutoMigrate(&DeploymentEvent{})
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -16,11 +17,10 @@ import (
 // Deployment handles request for deployments.
 type Deployment struct{}
 
-// Common preload functionality.
+// Preload is common preload functionality.
 func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Build").Preload("Build.Project").
-		Preload("DepJob").
-		Preload("DepJob.Events", func(db *gorm.DB) *gorm.DB {
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
 			return db.Order("timestamp ASC")
 		})
 }
@@ -66,19 +66,21 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	depJob := models.DepJob{}
-	err = db.Create(&depJob).Error
-	if err != nil {
-		sugar.InternalError(c, err)
+	// Ensure there is enough instance hours
+	user := middleware.GetUser(c)
+	billingHours := FetchBillingHours(user.ID)
+	// considering the complexity in calculating instance hours,
+	// a cache would be ideal here.
+	// this is not optimal yet :(
+	if h, err := billingHours.Net(); err == nil && h <= 0 {
+		sugar.ErrResponse(c, http.StatusUnauthorized, "No available instance hours")
 		return
 	}
 
 	newDep := models.Deployment{
-		BuildID:  post.BuildID,
-		Command:  post.Command,
-		DepJobID: depJob.ID,
-		Token:    uniuri.NewLen(64),
-		DepJob:   depJob,
+		BuildID: post.BuildID,
+		Command: post.Command,
+		Token:   uniuri.NewLen(64),
 	}
 
 	err = db.Create(&newDep).Error
@@ -87,9 +89,9 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	callbackUrl := fmt.Sprintf("https://%s/deployments/%d/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackUrl)
+	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -102,8 +104,8 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	newEvent := models.DepJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&depJob).Association("Events").Append(newEvent).Error
+	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+	err = db.Model(&models.Deployment{}).Association("Events").Append(newEvent).Error
 
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -140,20 +142,20 @@ func (d Deployment) List(c *gin.Context) {
 
 // Get fetches a deployment.
 func (d Deployment) Get(c *gin.Context) {
-	outputdep, err := d.ByID(c)
+	outputDep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
-	sugar.SuccessResponse(c, 200, outputdep)
+	sugar.SuccessResponse(c, 200, outputDep)
 }
 
 // Logs stream logs for deployments.
 func (d Deployment) Logs(c *gin.Context) {
-	targetdep, err := d.ByID(c)
+	targetDep, err := d.ByID(c)
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(mockDeploy, c, &targetdep)
+	streamDeploymentLogs(mockDeploy, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
@@ -205,19 +207,19 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
-func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DepJobEvent, error) {
-	DepJob := dep.DepJob
-	newEvent := models.DepJobEvent{
-		DepJobID:  DepJob.ID,
-		Timestamp: time.Now(),
-		Status:    event.Status,
-		Message:   event.Message,
-		Code:      event.Code,
+// AddEvent adds a deployment event.
+func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models.PostDepEvent) (models.DeploymentEvent, error) {
+	newEvent := models.DeploymentEvent{
+		DeploymentID: dep.ID,
+		Timestamp:    time.Now(),
+		Status:       event.Status,
+		Message:      event.Message,
+		Code:         event.Code,
 	}
 
 	err := db.Create(&newEvent).Error
 	if err != nil {
-		return models.DepJobEvent{}, err
+		return models.DeploymentEvent{}, err
 	}
 
 	if event.Status == "TERMINATING" {

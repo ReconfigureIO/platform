@@ -25,8 +25,13 @@ const (
 	// StatusErrored is errored job state.
 	StatusErrored = "ERRORED"
 
-	OpenSource = "open-source"
-	SingleUser = "single-user"
+	// PlanOpenSource is open source plan.
+	PlanOpenSource = "open-source"
+	// PlanSingleUser is single user plan.
+	PlanSingleUser = "single-user"
+
+	// DefaultHours is the amount of hours a new user gets.
+	DefaultHours = 20
 )
 
 // uuidHook hooks new uuid as primary key for models before creation.
@@ -51,13 +56,14 @@ type User struct {
 	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
 
-func (u *User) LoginToken() string {
+// LoginToken return the user's login token.
+func (u User) LoginToken() string {
 	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.
 func NewUser() User {
-	return User{Token: uniuri.NewLen(64), BillingPlan: OpenSource}
+	return User{Token: uniuri.NewLen(64), BillingPlan: PlanOpenSource}
 }
 
 // Project model.
@@ -155,14 +161,13 @@ type PostSimulation struct {
 // Deployment model.
 type Deployment struct {
 	uuidHook
-	ID         string `gorm:"primary_key" json:"id"`
-	Build      Build  `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID    string `json:"-"`
-	Command    string `json:"command"`
-	Token      string `json:"-"`
-	DepJobID   string `json:"-"`
-	DepJob     DepJob `json:"job,omitempty" gorm:"ForeignKey:DepJobId"`
-	InstanceID string `json:"-"`
+	ID         string            `gorm:"primary_key" json:"id"`
+	Build      Build             `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID    string            `json:"-"`
+	Command    string            `json:"command"`
+	Token      string            `json:"-"`
+	InstanceID string            `json:"-"`
+	Events     []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
 }
 
 // PostDeployment is post request body for new deployment.
@@ -173,12 +178,23 @@ type PostDeployment struct {
 
 // Status returns deployment status.
 func (d *Deployment) Status() string {
-	events := d.DepJob.Events
+	events := d.Events
 	length := len(events)
 	if len(events) > 0 {
 		return events[length-1].Status
 	}
 	return StatusSubmitted
+}
+
+// StartTime returns the time that the deployment
+// begins.
+func (d Deployment) StartTime() (t time.Time) {
+	for _, e := range d.Events {
+		if e.Status == StatusStarted {
+			return e.Timestamp
+		}
+	}
+	return
 }
 
 var statuses = struct {
@@ -194,14 +210,6 @@ type BatchJob struct {
 	ID      int64           `gorm:"primary_key" json:"-"`
 	BatchID string          `json:"-"`
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
-}
-
-// DepJob model.
-type DepJob struct {
-	uuidHook
-	ID     string        `gorm:"primary_key" json:"-"`
-	DepID  string        `json:"-" validate:"nonzero"`
-	Events []DepJobEvent `json:"events" gorm:"ForeignKey:DepJobId"`
 }
 
 // Status returns the status of the job.
@@ -224,16 +232,6 @@ func (b *BatchJob) HasFinished() bool {
 	return hasFinished(b.Status())
 }
 
-// Status returns the status of the job.
-func (d *DepJob) Status() string {
-	events := d.Events
-	length := len(events)
-	if len(events) > 0 {
-		return events[length-1].Status
-	}
-	return StatusSubmitted
-}
-
 // BatchJobEvent model.
 type BatchJobEvent struct {
 	uuidHook
@@ -246,24 +244,24 @@ type BatchJobEvent struct {
 }
 
 // HasStarted returns if the job has started.
-func (d *DepJob) HasStarted() bool {
+func (d *Deployment) HasStarted() bool {
 	return hasStarted(d.Status())
 }
 
 // HasFinished returns if the job has finished.
-func (d *DepJob) HasFinished() bool {
+func (d *Deployment) HasFinished() bool {
 	return hasFinished(d.Status())
 }
 
-// DepJobEvent model.
-type DepJobEvent struct {
+// DeploymentEvent model.
+type DeploymentEvent struct {
 	uuidHook
-	ID        string    `gorm:"primary_key" json:"-"`
-	DepJobID  string    `json:"-" validate:"nonzero"`
-	Timestamp time.Time `json:"timestamp"`
-	Status    string    `json:"status"`
-	Message   string    `json:"message,omitempty"`
-	Code      int       `json:"code"`
+	ID           string    `gorm:"primary_key" json:"-"`
+	DeploymentID string    `json:"-" validate:"nonzero"`
+	Timestamp    time.Time `json:"timestamp"`
+	Status       string    `json:"status"`
+	Message      string    `json:"message,omitempty"`
+	Code         int       `json:"code"`
 }
 
 func hasStarted(status string) bool {
