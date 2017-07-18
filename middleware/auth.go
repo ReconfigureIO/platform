@@ -28,7 +28,9 @@ func SessionAuth(db *gorm.DB) gin.HandlerFunc {
 				c.AbortWithError(500, err)
 				return
 			}
-			c.Set(strUser, user)
+			if err != gorm.ErrRecordNotFound {
+				c.Set(strUser, user)
+			}
 		}
 	}
 }

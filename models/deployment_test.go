@@ -1,34 +1,46 @@
+// +build integration
+
 package models
 
 import (
-	"os"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 func TestDeploymentGetWithStatus(t *testing.T) {
-	gormConnDets := os.Getenv("DATABASE_URL")
-	if gormConnDets == "" {
-		t.Skip()
-		return
-	}
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
 
-	db, err := gorm.Open("postgres", gormConnDets)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+		dep := Deployment{
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status: "COMPLETED",
+				},
+			},
+		}
+		db.Create(&dep)
 
-	d := deploymentRepo{db}
+		deps, err := d.GetWithStatus([]string{"COMPLETED"}, 10)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 
-	_, err = d.GetWithStatus([]string{"COMPLETED"}, 10)
-	if err != nil {
-		t.Error(err)
-		return
-	}
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, deps)
+			return
+		}
+	})
 }
 
 func TestTimeToSQLStr(t *testing.T) {

@@ -11,6 +11,12 @@ import (
 	ghoauth "golang.org/x/oauth2/github"
 )
 
+type UserError string
+
+func (e UserError) Error() string {
+	return string(e)
+}
+
 // Service is Github service.
 type Service struct {
 	OauthConf *oauth2.Config
@@ -31,7 +37,7 @@ func New(db *gorm.DB) *Service {
 // GetOrCreateUser fetches or create a user.
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
-func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string) (models.User, error) {
+func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, createNew bool) (models.User, error) {
 	oauthClient := s.OauthConf.Client(context.Background(), &oauth2.Token{AccessToken: accessToken})
 	client := github.NewClient(oauthClient)
 
@@ -49,12 +55,36 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string) (mode
 		GithubAccessToken: accessToken,
 	}
 
+	// The email we got back was empty, we search for a new one
+	if u.Email == "" {
+		emails, _, err := client.Users.ListEmails(ctx, nil)
+		if err != nil {
+			return u, err
+		}
+		for _, e := range emails {
+			if e.GetPrimary() {
+				u.Email = e.GetEmail()
+			}
+		}
+	}
+
+	// If we still have no email, error
+	if u.Email == "" {
+		return u, UserError("No valid email found")
+	}
+
 	q := s.db.Where(models.User{GithubID: ghUser.GetID()})
 
 	var user models.User
 	if err = q.First(&user).Error; err != nil {
 		// not found
 		user = models.NewUser()
+		if err != gorm.ErrRecordNotFound {
+			return user, err
+		}
+		if !createNew {
+			return user, err
+		}
 	}
 
 	err = q.Attrs(user).Assign(u).FirstOrInit(&u).Error

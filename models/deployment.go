@@ -28,11 +28,11 @@ const (
 	sqlDeploymentStatus = `SELECT j.id
 FROM deployments j
 LEFT join deployment_events e
-ON j.id = e.dep_id
+ON j.id = e.deployment_id
 	AND e.timestamp = (
 		SELECT max(timestamp)
 		FROM deployment_events e1
-		WHERE j.id = e1.dep_id
+		WHERE j.id = e1.deployment_id
 	)
 WHERE (e.status in (?))
 LIMIT ?
