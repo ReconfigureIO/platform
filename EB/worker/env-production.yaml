@@ -6,8 +6,10 @@ Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux/2.5.2
 OptionSettings:
   aws:elasticbeanstalk:application:environment:
-    DATABASE_URL: host=production-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
-      dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
+    GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client
+    GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
+    DATABASE_URL: ssm:///reconfigureio/platform/production/db
+    STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
     PORT: 80
   AWSEBAutoScalingScaleDownPolicy.aws:autoscaling:trigger:
     LowerBreachScaleIncrement: '-1'

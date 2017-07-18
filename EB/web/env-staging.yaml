@@ -109,12 +109,11 @@ OptionSettings:
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
     PORT: '8080'
-    GITHUB_CLIENT_ID: 96df7fdbb95aba673730
-    GITHUB_CLIENT_SECRET: 29ffb97f1e33a6203c63fdc35362016f0bb74a74
     RECO_FEATURE_BILLING: 1
-    STRIPE_KEY: sk_test_NvEpeLnLAV15b9TWJzZKLkvW
-    DATABASE_URL: host=test-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
-      dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
+    GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/staging/github_client
+    GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/staging/github_secret
+    STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
+    DATABASE_URL: ssm:///reconfigureio/platform/staging/db
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0
