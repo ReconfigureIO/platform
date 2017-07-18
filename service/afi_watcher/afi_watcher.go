@@ -9,7 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 )
 
-func FindAfi(d models.PostgresRepo, awsService aws.Service, bs api.BatchService) error {
+func FindAfi(d models.PostgresRepo, awsService aws.Service, batch api.BatchService) error {
 	//get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
 	log.Printf("Looking up %d builds", len(buildswaitingonafis))
@@ -35,7 +35,7 @@ func FindAfi(d models.PostgresRepo, awsService aws.Service, bs api.BatchService)
 					Message: models.StatusCompleted,
 					Code:    0,
 				}
-				_, err := bs.AddEvent(&build.BatchJob, event)
+				_, err := batch.AddEvent(&build.BatchJob, event)
 				if err != nil {
 					return err
 				}
@@ -45,7 +45,7 @@ func FindAfi(d models.PostgresRepo, awsService aws.Service, bs api.BatchService)
 					Message: models.StatusErrored,
 					Code:    0,
 				}
-				_, err := bs.AddEvent(&build.BatchJob, event)
+				_, err := batch.AddEvent(&build.BatchJob, event)
 				if err != nil {
 					return err
 				}
