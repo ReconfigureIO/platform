@@ -72,16 +72,14 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	var e errs.Group
 	var tmpFile *os.File
 
-	// remove tmpFile when done
-	defer func() {
-		if tmpFile != nil {
-			os.Remove(tmpFile.Name())
-		}
-	}()
-
 	e.Add(func() (err error) {
 		tmpFile, err = ioutil.TempFile("", "")
 		return
+	})
+	e.Defer(func() {
+		if tmpFile != nil {
+			os.Remove(tmpFile.Name())
+		}
 	})
 	e.Add(func() error {
 		_, err := io.Copy(tmpFile, r)

@@ -14,13 +14,13 @@ func isBillingPlan(v interface{}, param string) error {
 	if st.Kind() != reflect.String {
 		return errors.New("isBillingPlan only validates strings")
 	}
-	if st.String() == models.OpenSource {
+	if st.String() == models.PlanOpenSource {
 		return nil
 	}
-	if st.String() == models.SingleUser {
+	if st.String() == models.PlanSingleUser {
 		return nil
 	}
-	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.OpenSource, models.SingleUser))
+	return errors.New(fmt.Sprintf("value must be one of \"%s\" or \"%s\"", models.PlanOpenSource, models.PlanSingleUser))
 }
 
 func init() {
@@ -34,16 +34,16 @@ type ProfileData struct {
 	Token       string `json:"token"` // read only
 }
 
-func (p *ProfileData) FromUser(user models.User) {
+func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
 	p.Name = user.Name
 	p.Email = user.Email
-	p.BillingPlan = models.OpenSource
 	p.Token = user.LoginToken()
+	p.BillingPlan = sub.Identifier
 }
 
 func (p *ProfileData) Apply(user *models.User) {
 	user.Name = p.Name
 	user.Email = p.Email
-	user.BillingPlan = p.BillingPlan
+
 	// skip token, because it's read only
 }

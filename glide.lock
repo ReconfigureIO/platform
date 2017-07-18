@@ -1,10 +1,10 @@
 hash: 33ee85823565750e4c676f7418104f0e290bfe4ca27ca1f8dd483e87d5cfe2f7
-updated: 2017-07-13T10:06:29.550122145Z
+updated: 2017-07-18T17:56:06.478816362Z
 imports:
 - name: github.com/abiosoft/errs
   version: bb1d81cbcfef620e37729aff2822abeca5a25235
 - name: github.com/aws/aws-sdk-go
-  version: b709581f82a77c0ff00790d1446c05719fed714d
+  version: 6d7fc1a00fcae6bbb53550f4a0b98324fd7aa250
   subpackages:
   - aws
   - aws/awserr
@@ -43,35 +43,33 @@ imports:
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
 - name: github.com/garyburd/redigo
-  version: 9f3a0116c9f72c5a56f958206a43dc881b502c37
+  version: 57f1cd7de6175c96b423e7ac2534ff2b39e2ef79
   subpackages:
   - internal
   - redis
 - name: github.com/gin-contrib/cors
   version: cf4846e6a636a76237a28d9286f163c132e841bc
-- name: github.com/gin-contrib/sse
-  version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/contrib
   version: d4fc5a96cc0d29cb0e862bb1312dd6f4fedfcaee
   subpackages:
   - sessions
 - name: github.com/gin-gonic/gin
-  version: 65a6dd46a50bd435597b5bcababd1b2a811c9073
+  version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
   subpackages:
   - binding
   - render
 - name: github.com/go-ini/ini
-  version: 3d73f4b845efdf9989fffd4b4e562727744a34ba
+  version: e7fea39b01aea8d5671f6858f0532f56e8bff3a5
 - name: github.com/golang/mock
   version: 93f6609a15b7de76bd49259f1f9a6b58df358936
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 0a4f71a498b7c4812f64969510bcb4eca251e33a
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: 00874eae3fbfc6750bfff364b1897101684d2f30
+  version: b5b6d4c9c91636b0513e1c29fcfd243162331d36
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -85,22 +83,22 @@ imports:
 - name: github.com/gorilla/sessions
   version: 8b6b4cd75f07f7ee036eb37b8127bd40ab1efc49
 - name: github.com/jinzhu/gorm
-  version: 2a1463811ee1dc85d168fd639a2d4251d030e6e5
+  version: 45ccb134373e7d9fa76d5987a6fed6cd5a5adfd4
   subpackages:
   - dialects/postgres
 - name: github.com/jinzhu/inflection
   version: 1c35d901db3da928c72a72d8458480cc9ade058f
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
-- name: github.com/json-iterator/go
-  version: 4b33139ad07fda872cb378bb4218b2fab74ce62b
 - name: github.com/lib/pq
-  version: dd1fe2071026ce53f36a39112e645b4d4f5793a4
+  version: 2704adc878c21e1329f46f6e56a1c387d788ff94
   subpackages:
   - hstore
   - oid
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
-  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/stripe/stripe-go
@@ -108,26 +106,22 @@ imports:
   subpackages:
   - customer
   - orderitem
-- name: github.com/ugorji/go
-  version: 5efa3251c7f7d05e5d9704a69a984ec9f1386a40
-  subpackages:
-  - codec
+  - sub
 - name: golang.org/x/net
-  version: f01ecb60fe3835d80d9a0b7b2bf24b228c89260e
+  version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
-  - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: cce311a261e6fcf29de72ca96827bdb0b7d9c9e6
+  version: 5432cc9688e6250a0dd8f5a5f4c781d92b398be6
   subpackages:
   - github
   - internal
 - name: golang.org/x/sys
-  version: abf9c25f54453410d0c6668e519582a9e1115027
+  version: f3918c30c5c2cb527c0b071a27c35120a6c0719a
   subpackages:
   - unix
 - name: google.golang.org/appengine
-  version: ad2570cd3913654e00c5f0183b39d2f998e54046
+  version: a2f4131514e563cedfdb6e7d267df9ad48591e93
   subpackages:
   - internal
   - internal/app_identity
@@ -139,9 +133,9 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: gopkg.in/go-playground/validator.v8
-  version: 5f57d2222ad794d0dffb07e664ea05e2ee07d60c
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/validator.v2
-  version: 07ffaad256c8e957050ad83d6472eb97d785013d
+  version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: gopkg.in/yaml.v2
-  version: 1be3d31502d6eabc0dd7ce5b0daab022e14a5538
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []
