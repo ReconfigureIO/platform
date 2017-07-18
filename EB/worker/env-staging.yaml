@@ -6,6 +6,7 @@ Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux/2.5.2
 OptionSettings:
   aws:elasticbeanstalk:application:environment:
+    AWS_REGION: us-east-1
     PORT: 80
     RECO_FEATURE_BILLING: '1'
     STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe

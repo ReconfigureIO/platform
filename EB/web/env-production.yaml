@@ -108,6 +108,7 @@ OptionSettings:
     ConnectionDrainingTimeout: '20'
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
+    AWS_REGION: us-east-1
     GIN_MODE: release
     RECO_ENV: production
     RECO_FEATURE_BILLING: 1

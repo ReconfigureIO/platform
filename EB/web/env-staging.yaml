@@ -108,6 +108,7 @@ OptionSettings:
     ConnectionDrainingTimeout: '20'
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
+    AWS_REGION: us-east-1
     PORT: '8080'
     RECO_FEATURE_BILLING: 1
     GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/staging/github_client

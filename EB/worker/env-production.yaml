@@ -6,6 +6,7 @@ Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux/2.5.2
 OptionSettings:
   aws:elasticbeanstalk:application:environment:
+    AWS_REGION: us-east-1
     GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client
     GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
     DATABASE_URL: ssm:///reconfigureio/platform/production/db
