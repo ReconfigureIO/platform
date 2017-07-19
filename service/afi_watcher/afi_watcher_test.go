@@ -1,10 +1,10 @@
 package afi_watcher
 
 import (
-	"context"
 	"testing"
 	"time"
 
+	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/golang/mock/gomock"
@@ -37,14 +37,32 @@ func TestFindAFI(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	afistatus := make(map[string]string)
-	afistatus["afi-foobar"] = "available"
-	build, _ := d.GetBuildsWithStatus([]string{"bar"}, 1)
+	afistatus := map[string]string{"afi-foobar": "available"}
 
 	mockService := aws.NewMockService(mockCtrl)
-	mockService.EXPECT().DescribeAFIStatus(context.Background(), build).Return(afistatus, nil)
+	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
 
 	err := FindAFI(d, mockService, b)
+	if err != nil {
+		t.Fatalf("Error in FindAFI function: %s", err)
+	}
+}
+
+func TestFindAFISkipsInvalidStatus(t *testing.T) {
+	d := fake_PostgresRepo{}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	afistatus := map[string]string{"afi-foobar": "invalid-status"}
+
+	mockService := aws.NewMockService(mockCtrl)
+	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
+
+	// Don't setup any expected calls, since we don't expect this to be called
+	mockBatch := api.NewMockBatchInterface(mockCtrl)
+
+	err := FindAFI(d, mockService, mockBatch)
 	if err != nil {
 		t.Fatalf("Error in FindAFI function: %s", err)
 	}
