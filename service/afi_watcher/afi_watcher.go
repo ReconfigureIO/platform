@@ -29,7 +29,7 @@ func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterfac
 	afigenerated := 0
 	//for each build check associated AFI, if done, post event
 	for _, build := range buildswaitingonafis {
-		status, found := statuses[build.FPGAImage.AFIID]
+		status, found := statuses[build.FPGAImage]
 		if found {
 			switch status {
 			case "available":

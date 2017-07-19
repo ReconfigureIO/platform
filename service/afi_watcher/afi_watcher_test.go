@@ -17,9 +17,7 @@ type fake_BatchService struct{}
 //create a build that's waiting on an image
 func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]models.Build, error) {
 	build := models.Build{
-		FPGAImage: models.FPGAImage{
-			AFIID: "afi-foobar",
-		},
+		FPGAImage: "afi-foobar",
 		BatchJob: models.BatchJob{
 			Events: []models.BatchJobEvent{
 				models.BatchJobEvent{

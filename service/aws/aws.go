@@ -312,7 +312,7 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 
 	var afiids []*string
 	for _, build := range builds {
-		afiids = append(afiids, &build.FPGAImage.AFIID)
+		afiids = append(afiids, &build.FPGAImage)
 	}
 	ec2Session := ec2.New(s.session)
 
