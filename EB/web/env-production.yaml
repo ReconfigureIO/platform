@@ -108,14 +108,15 @@ OptionSettings:
     ConnectionDrainingTimeout: '20'
     ConnectionSettingIdleTimeout: '60'
   aws:elasticbeanstalk:application:environment:
-    DATABASE_URL: host=production-api-db.ct01qahxv3zv.us-east-1.rds.amazonaws.com user=postgres
-      dbname=postgres sslmode=disable password=8c4509bc-1952-11e7-ac62-843a4b0da254
+    AWS_REGION: us-east-1
     GIN_MODE: release
-    PORT: '8080'
-    GITHUB_CLIENT_ID: 50089c1be8bb0e0106de
-    GITHUB_CLIENT_SECRET: 8055ae03ef97d09eb075d73c1f9f81174994ae01
     RECO_ENV: production
     RECO_FEATURE_BILLING: 1
+    PORT: '8080'
+    GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client
+    GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
+    DATABASE_URL: ssm:///reconfigureio/platform/production/db
+    STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0
