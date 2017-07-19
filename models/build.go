@@ -37,7 +37,7 @@ func (repo *PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]B
 	rows.Close()
 
 	var builds []Build
-	err = db.Preload("BatchJob").Where("id in (?)", ids).Find(&builds).Error
+	err = db.Preload("BatchJob").Preload("BatchJob.Events").Where("id in (?)", ids).Find(&builds).Error
 	if err != nil {
 		return nil, err
 	}
