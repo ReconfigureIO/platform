@@ -11,7 +11,7 @@ import (
 
 func TestGetBuildsWithStatus(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
-		d := PostgresRepo{db}
+		d := BuildDataSource(db)
 		//create a build in the DB
 		build := Build{
 			BatchJob: BatchJob{
