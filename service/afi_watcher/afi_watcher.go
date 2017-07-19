@@ -12,6 +12,9 @@ import (
 func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterface) error {
 	//get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
+	if err != nil {
+		return err
+	}
 	log.Printf("Looking up %d builds", len(buildswaitingonafis))
 
 	if len(buildswaitingonafis) == 0 {
