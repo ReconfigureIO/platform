@@ -1,5 +1,7 @@
 package api
 
+//go:generate mockgen -source=batch.go -package=api -destination=batch_mock.go
+
 import (
 	"time"
 
