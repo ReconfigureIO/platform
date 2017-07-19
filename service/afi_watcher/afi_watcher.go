@@ -31,26 +31,30 @@ func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterfac
 	for _, build := range buildswaitingonafis {
 		status, found := statuses[build.FPGAImage]
 		if found {
-			var event models.PostBatchEvent
+			var event *models.PostBatchEvent
 			switch status {
 			case "available":
-				event = models.PostBatchEvent{
+				event = &models.PostBatchEvent{
 					Status:  models.StatusCompleted,
 					Message: models.StatusCompleted,
 					Code:    0,
 				}
 			case "failed":
-				event = models.PostBatchEvent{
+				event = &models.PostBatchEvent{
 					Status:  models.StatusErrored,
 					Message: models.StatusErrored,
 					Code:    0,
 				}
 			default:
 			}
-			_, err := batch.AddEvent(&build.BatchJob, event)
-			if err != nil {
-				return err
+
+			if event != nil {
+				_, err := batch.AddEvent(&build.BatchJob, *event)
+				if err != nil {
+					return err
+				}
 			}
+
 			afigenerated += 1
 		}
 	}
