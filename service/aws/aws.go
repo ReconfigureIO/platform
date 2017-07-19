@@ -11,11 +11,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
@@ -30,6 +32,7 @@ type Service interface {
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
+	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
@@ -302,4 +305,29 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 		}
 	})
 	return err
+}
+
+func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	var afiids []*string
+	for _, build := range builds {
+		afiids = append(afiids, &build.FPGAImage)
+	}
+	ec2Session := ec2.New(s.session)
+
+	cfg := ec2.DescribeFpgaImagesInput{
+		FpgaImageIds: afiids,
+	}
+
+	results, err := ec2Session.DescribeFpgaImagesWithContext(ctx, &cfg)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, image := range results.FpgaImages {
+		ret[*image.FpgaImageId] = *image.State.Code
+	}
+
+	return ret, nil
 }

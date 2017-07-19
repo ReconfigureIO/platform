@@ -7,6 +7,8 @@ import (
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/afi_watcher"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
@@ -19,6 +21,12 @@ var (
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
 		AMI:      "ami-850c7293",
+	})
+	awsService = aws.New(aws.ServiceConfig{
+		LogGroup:      "/aws/batch/job",
+		Bucket:        "reconfigureio-builds",
+		Queue:         "build-jobs",
+		JobDefinition: "sdaccel-builder-build",
 	})
 )
 
@@ -64,7 +72,7 @@ func main() {
 			c.Status(200)
 			return
 		}
-
+		//get the status of the associated EC2 instances
 		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
 			c.JSON(500, err)
@@ -72,7 +80,7 @@ func main() {
 		}
 		log.Printf("statuses of %v", statuses)
 		terminating := 0
-
+		//for each deployment, if instance is terminated, send event
 		for _, deployment := range terminatingdeployments {
 			status, found := statuses[deployment.InstanceID]
 			if found && status == ec2.InstanceStateNameTerminated {
@@ -92,6 +100,15 @@ func main() {
 
 		log.Printf("terminated %d deployments", terminating)
 		c.Status(200)
+	})
+
+	r.POST("/generated-afis", func(c *gin.Context) {
+		err := afi_watcher.FindAFI(models.BuildDataSource(db), awsService, api.BatchService{})
+		if err != nil {
+			c.JSON(500, err)
+		} else {
+			c.Status(200)
+		}
 	})
 
 	r.POST("/check-hours", func(c *gin.Context) {

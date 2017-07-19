@@ -200,6 +200,10 @@ func (b Build) CreateEvent(c *gin.Context) {
 
 	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
 
+	if event.Status == "CREATING_IMAGE" {
+		err = db.Model(&build).Update("FPGAImage", event.Message).Error
+	}
+
 	if err != nil {
 		c.Error(err)
 		sugar.ErrResponse(c, 500, nil)

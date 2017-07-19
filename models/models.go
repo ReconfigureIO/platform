@@ -14,6 +14,8 @@ const (
 	StatusSubmitted = "SUBMITTED"
 	// StatusQueued is queued job state.
 	StatusQueued = "QUEUED"
+	// StatusCreatingImage is creating image job state.
+	StatusCreatingImage = "CREATING_IMAGE"
 	// StatusStarted is started job state.
 	StatusStarted = "STARTED"
 	// StatusTerminating is terminating job state.
@@ -85,6 +87,7 @@ type Build struct {
 	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobID  int64        `json:"-"`
+	FPGAImage   string       `json:"-"`
 	Token       string       `json:"-"`
 	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
@@ -201,7 +204,7 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage},
 	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
@@ -280,6 +283,8 @@ func CanTransition(current string, next string) bool {
 	case StatusQueued:
 		return inSlice([]string{StatusStarted, StatusTerminated, StatusTerminating}, next)
 	case StatusStarted:
+		return inSlice([]string{StatusTerminated, StatusCreatingImage, StatusCompleted, StatusErrored, StatusTerminating}, next)
+	case StatusCreatingImage:
 		return inSlice([]string{StatusTerminated, StatusCompleted, StatusErrored, StatusTerminating}, next)
 	default:
 		return false

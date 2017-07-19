@@ -1,5 +1,7 @@
 package api
 
+//go:generate mockgen -source=batch.go -package=api -destination=batch_mock.go
+
 import (
 	"time"
 
@@ -8,6 +10,10 @@ import (
 
 // BatchService is aws batch job service.
 type BatchService struct{}
+
+type BatchInterface interface {
+	AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error)
+}
 
 // New creates a new batch job with its queued event.
 func (b BatchService) New(batchID string) models.BatchJob {
