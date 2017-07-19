@@ -46,7 +46,7 @@ func TestFindAFI(t *testing.T) {
 
 	err := FindAFI(d, mockService, b)
 	if err != nil {
-		t.Fatalf("Error in FindAFI function: ", err)
+		t.Fatalf("Error in FindAFI function: %s", err)
 	}
 }
 
