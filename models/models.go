@@ -43,10 +43,6 @@ func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("id", uuid.NewV4().String())
 }
 
-type PostgresRepo struct {
-	DB *gorm.DB
-}
-
 // User model.
 type User struct {
 	uuidHook

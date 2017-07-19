@@ -1,9 +1,20 @@
 package models
 
+import (
+	"github.com/jinzhu/gorm"
+)
+
 type BuildRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
+}
+
+type buildRepo struct{ db *gorm.DB }
+
+// DeploymentDataSource returns the data source for deployments.
+func BuildDataSource(db *gorm.DB) BuildRepo {
+	return &buildRepo{db: db}
 }
 
 const (
@@ -21,8 +32,8 @@ LIMIT ?
 `
 )
 
-func (repo *PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Build, error) {
-	db := repo.DB
+func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Build, error) {
+	db := repo.db
 	rows, err := db.Raw(SQL_BUILD_STATUS, statuses, limit).Rows()
 	if err != nil {
 		return nil, err
