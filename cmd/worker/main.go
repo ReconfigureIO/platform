@@ -103,7 +103,7 @@ func main() {
 	})
 
 	r.POST("/generated-afis", func(c *gin.Context) {
-		err := afi_watcher.FindAfi(models.PostgresRepo{db}, awsService, api.BatchService{})
+		err := afi_watcher.FindAFI(models.PostgresRepo{db}, awsService, api.BatchService{})
 		if err != nil {
 			c.JSON(500, err)
 		} else {

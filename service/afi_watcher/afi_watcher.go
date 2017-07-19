@@ -9,7 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 )
 
-func FindAfi(d models.BuildRepo, awsService aws.Service, batch api.BatchInterface) error {
+func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterface) error {
 	//get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
 	log.Printf("Looking up %d builds", len(buildswaitingonafis))

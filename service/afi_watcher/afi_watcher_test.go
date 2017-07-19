@@ -32,7 +32,7 @@ func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) 
 	return []models.Build{build}, nil
 }
 
-func TestFindAfi(t *testing.T) {
+func TestFindAFI(t *testing.T) {
 	d := fake_PostgresRepo{}
 	b := fake_BatchService{}
 
@@ -46,9 +46,9 @@ func TestFindAfi(t *testing.T) {
 	mockService := aws.NewMockService(mockCtrl)
 	mockService.EXPECT().DescribeAFIStatus(context.Background(), build).Return(afistatus, nil)
 
-	err := FindAfi(d, mockService, b)
+	err := FindAFI(d, mockService, b)
 	if err != nil {
-		t.Fatalf("Error in FindAfi function: ", err)
+		t.Fatalf("Error in FindAFI function: ", err)
 	}
 }
 
