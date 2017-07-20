@@ -15,6 +15,12 @@ import (
 // Billing handles requests for billing.
 type Billing struct{}
 
+type BillingInterface interface {
+	Get(c *gin.Context)
+	Replace(c *gin.Context)
+	FetchBillingHours(userID string) BillingHours
+}
+
 // TokenUpdate is token update payload.
 type TokenUpdate struct {
 	Token string `json:"token"`
@@ -85,7 +91,7 @@ type BillingHours interface {
 }
 
 // FetchBillingHours fetches and return billing hours for a user.
-func FetchBillingHours(userID string) BillingHours {
+func (b Billing) FetchBillingHours(userID string) BillingHours {
 	var user models.User
 	err := db.Model(&models.User{}).Where("id = ?", userID).First(&user).Error
 	if err != nil {

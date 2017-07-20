@@ -68,7 +68,8 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure there is enough instance hours
 	user := middleware.GetUser(c)
-	billingHours := FetchBillingHours(user.ID)
+	billingService := Billing{}
+	billingHours := billingService.FetchBillingHours(user.ID)
 	// considering the complexity in calculating instance hours,
 	// a cache would be ideal here.
 	// this is not optimal yet :(
