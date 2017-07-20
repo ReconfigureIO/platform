@@ -26,6 +26,7 @@ var (
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
 		AMI:      "ami-850c7293",
+		Bucket:   "reconfigureio-builds",
 	})
 )
 

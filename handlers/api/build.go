@@ -124,15 +124,13 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	key := fmt.Sprintf("builds/%s/simulation.tar.gz", build.ID)
-
-	s3Url, err := awsSession.Upload(key, c.Request.Body, c.Request.ContentLength)
+	_, err = awsSession.Upload(build.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := awsSession.RunBuild(s3Url, callbackURL)
+	buildID, err := awsSession.RunBuild(build, callbackURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
