@@ -132,10 +132,13 @@ func (b billingHours) Used() (int, error) {
 }
 
 func (b billingHours) Net() (int, error) {
+	//If billingHours is invalid, stop
 	if b.err != nil {
 		return 0, b.err
 	}
+	//get subscription information for current user
 	sub, err := b.subRepo.Current(b.user)
+	//get number of hours used for deployments by user so far
 	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
 	if err != nil {
 		return 0, err

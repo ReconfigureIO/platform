@@ -1,80 +1,56 @@
 package billing_hours
 
-// import (
-// 	"testing"
-// 	"time"
+import (
+	"testing"
 
-// 	"github.com/ReconfigureIO/platform/handlers/api"
-// 	"github.com/ReconfigureIO/platform/models"
-// 	"github.com/ReconfigureIO/platform/service/aws"
-// 	"github.com/golang/mock/gomock"
-// )
+	"github.com/ReconfigureIO/platform/handlers/api"
+	"github.com/ReconfigureIO/platform/models"
+)
 
-// type fake_PostgresRepo struct{}
+type fake_SubscriptionRepo struct{}
 
-// type fake_BatchService struct{}
+type fake_Billing struct{}
 
-// //create a build that's waiting on an image
-// func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]models.Build, error) {
-// 	build := models.Build{
-// 		FPGAImage: "afi-foobar",
-// 		BatchJob: models.BatchJob{
-// 			Events: []models.BatchJobEvent{
-// 				models.BatchJobEvent{
-// 					Status:  "CREATING_IMAGE",
-// 					Message: "afi-foobar",
-// 				},
-// 			},
-// 		},
-// 	}
-// 	return []models.Build{build}, nil
-// }
+// provide a bunch of users who are active
+func (repo fake_SubscriptionRepo) ActiveUsers() ([]models.User, error) {
+	user := models.User{}
+	return []models.User{user}, nil
+}
 
-// func TestFindAFI(t *testing.T) {
-// 	d := fake_PostgresRepo{}
-// 	b := fake_BatchService{}
+func (billing fake_Billing) FetchBillingHours(userID string) api.BillingHours {
+	return billingHours{}
+}
 
-// 	mockCtrl := gomock.NewController(t)
-// 	defer mockCtrl.Finish()
+type inputToNet struct{}
 
-// 	afistatus := map[string]string{"afi-foobar": "available"}
+func (b billingHours) Net() (int, error) {
+	return 30, nil
+}
 
-// 	mockService := aws.NewMockService(mockCtrl)
-// 	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
+func TestCheckUserHours(t *testing.T) {
+	d := fake_SubscriptionRepo{}
+	b := fake_Billing{}
 
-// 	err := FindAFI(d, mockService, b)
-// 	if err != nil {
-// 		t.Fatalf("Error in FindAFI function: %s", err)
-// 	}
-// }
+	err := CheckUserHours(*d, b)
+	if err != nil {
+		t.Fatalf("Error in TestCheckUserHours function: %s", err)
+	}
 
-// func TestFindAFISkipsInvalidStatus(t *testing.T) {
-// 	d := fake_PostgresRepo{}
+}
 
-// 	mockCtrl := gomock.NewController(t)
-// 	defer mockCtrl.Finish()
+type billingHours struct {
+}
 
-// 	afistatus := map[string]string{"afi-foobar": "invalid-status"}
+func (b billingHours) Available() (int, error) {
+	return 40, nil
+}
 
-// 	mockService := aws.NewMockService(mockCtrl)
-// 	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
+func (b billingHours) Used() (int, error) {
+	return 40, nil
+}
 
-// 	// Don't setup any expected calls, since we don't expect this to be called
-// 	mockBatch := api.NewMockBatchInterface(mockCtrl)
+func (s fake_SubscriptionRepo) Current(user models.User) (sub models.SubscriptionInfo, err error) {
 
-// 	err := FindAFI(d, mockService, mockBatch)
-// 	if err != nil {
-// 		t.Fatalf("Error in FindAFI function: %s", err)
-// 	}
-// }
-
-// func (b fake_BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error) {
-// 	newEvent := models.BatchJobEvent{
-// 		Timestamp: time.Now(),
-// 		Status:    event.Status,
-// 		Message:   event.Message,
-// 		Code:      event.Code,
-// 	}
-
-// 	return newEvent, nil
-// }
+	sub = models.SubscriptionInfo{}
+	return sub, nil
+}

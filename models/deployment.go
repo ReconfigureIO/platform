@@ -63,6 +63,7 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	return deps, nil
 }
 
+//Finds used deployment hours between two times for one user.
 func (repo *deploymentRepo) DeploymentHoursBtw(userID string, startTime, endTime time.Time) (t time.Duration, err error) {
 	db := repo.db
 	var deployments []Deployment
