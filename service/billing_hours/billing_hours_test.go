@@ -5,6 +5,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/gin-gonic/gin"
 )
 
 type fake_SubscriptionRepo struct{}
@@ -20,8 +21,6 @@ func (repo fake_SubscriptionRepo) ActiveUsers() ([]models.User, error) {
 func (billing fake_Billing) FetchBillingHours(userID string) api.BillingHours {
 	return billingHours{}
 }
-
-type inputToNet struct{}
 
 func (b billingHours) Net() (int, error) {
 	return 30, nil
@@ -54,3 +53,12 @@ func (s fake_SubscriptionRepo) Current(user models.User) (sub models.Subscriptio
 	sub = models.SubscriptionInfo{}
 	return sub, nil
 }
+
+func (s fake_SubscriptionRepo) UpdatePlan(user models.User, plan string) (sub models.SubscriptionInfo, err error) {
+	sub = models.SubscriptionInfo{}
+	return sub, nil
+}
+
+func (b fake_Billing) Get(c *gin.Context) {}
+
+func (b fake_Billing) Replace(c *gin.Context) {}
