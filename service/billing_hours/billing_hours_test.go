@@ -31,7 +31,7 @@ func TestCheckUserHours(t *testing.T) {
 	d := fake_SubscriptionRepo{}
 	b := fake_Billing{}
 
-	err := CheckUserHours(*d, b)
+	err := CheckUserHours(d, b)
 	if err != nil {
 		t.Fatalf("Error in TestCheckUserHours function: %s", err)
 	}
