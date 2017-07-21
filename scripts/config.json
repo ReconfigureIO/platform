@@ -1,9 +1,14 @@
 {
-    "container": {
-        "image": "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-        "command": "fpga-load-local-image -S 0 -I agfi-0f0e045f919413242 && fpga-describe-local-image -S 0"
-    },
-    "logs": {
-        "group": "josh-test-sdaccel"
-    }
+  "container": {
+    "image": "reconfigureio/docker-aws-fpga-runtime:latest",
+    "command": "test-histogram"
+  },
+  "logs": {
+    "group": "josh-test-sdaccel",
+    "prefix": "deployment-1"
+  },
+  "callback_url": "",
+  "build": {
+    "artifact_url": "s3://reconfigureio-builds/tmp/10705640-683d-11e7-be12-127f5e3af928.dist.zip"
+  }
 }
