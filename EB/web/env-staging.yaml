@@ -111,6 +111,7 @@ OptionSettings:
     AWS_REGION: us-east-1
     PORT: '8080'
     RECO_FEATURE_BILLING: 1
+    RECO_FEATURE_DEPLOY: 1
     GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/staging/github_client
     GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/staging/github_secret
     STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
