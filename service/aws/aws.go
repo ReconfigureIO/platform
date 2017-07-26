@@ -27,7 +27,7 @@ var ErrNotFound = errors.New("Not Found")
 // Service is an AWS service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
-	RunBuild(inputArtifactURL string, callbackURL string) (string, error)
+	RunBuild(build models.Build, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
@@ -114,11 +114,18 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	return "s3://" + s.conf.Bucket + "/" + key, nil
+	return s.s3Url(key), nil
 }
 
-func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string, error) {
+func (s *service) s3Url(key string) string {
+	return "s3://" + s.conf.Bucket + "/" + key
+}
+
+func (s *service) RunBuild(build models.Build, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
+	inputArtifactURL := s.s3Url(build.InputUrl())
+	outputArtifactURL := s.s3Url(build.ArtifactUrl())
+
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
@@ -148,6 +155,18 @@ func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string,
 				{
 					Name:  aws.String("DEVICE_FULL"),
 					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
+				},
+				{
+					Name:  aws.String("OUTPUT_URL"),
+					Value: aws.String(outputArtifactURL),
+				},
+				{
+					Name:  aws.String("DCP_KEY"),
+					Value: aws.String("/dcp/" + build.ID),
+				},
+				{
+					Name:  aws.String("LOG_KEY"),
+					Value: aws.String("/dcp-logs/" + build.ID),
 				},
 			},
 		},

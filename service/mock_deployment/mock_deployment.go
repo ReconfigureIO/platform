@@ -25,10 +25,15 @@ type LogsConfig struct {
 	Prefix string `json:"prefix"`
 }
 
+type BuildConfig struct {
+	ArtifactUrl string `json:"artifact_url"`
+}
+
 type Deployment struct {
 	Container   ContainerConfig `json:"container"`
 	Logs        LogsConfig      `json:"logs"`
 	CallbackUrl string          `json:"callback_url"`
+	Build       BuildConfig     `json:"build"`
 }
 
 type Service struct {
@@ -40,6 +45,7 @@ type ServiceConfig struct {
 	LogGroup string
 	Image    string
 	AMI      string
+	Bucket   string
 }
 
 func New(conf ServiceConfig) *Service {
@@ -58,6 +64,9 @@ func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUr
 		Logs: LogsConfig{
 			Group:  s.LogGroup,
 			Prefix: fmt.Sprintf("deployment-%d", deployment.ID),
+		},
+		Build: BuildConfig{
+			ArtifactUrl: fmt.Sprintf("s3://%s/%s", s.Bucket, deployment.Build.ArtifactUrl()),
 		},
 	}
 }
