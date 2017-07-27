@@ -14,7 +14,9 @@ type DeploymentRepo interface {
 	GetWithStatus([]string, int) ([]Deployment, error)
 	// DeploymentHoursBtw returns the total time used for deployments between
 	// startTime and endTime.
-	DeploymentHoursBtw(userID string, startTime, endTime time.Time) (time.Duration, error)
+	DeploymentHoursBetween(userID string, startTime, endTime time.Time) (time.Duration, error)
+	// HoursUsedSince returns the total time used for deployments between startTime and now
+	HoursUsedSince(userID string, startTime time.Time) (int, error)
 }
 
 type deploymentRepo struct{ db *gorm.DB }
@@ -63,8 +65,15 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	return deps, nil
 }
 
+//Wrapper function for DeploymentHoursBetween that uses time.Now as the end time
+func (repo *deploymentRepo) HoursUsedSince(userID string, startTime time.Time) (duration int, err error) {
+	t, err := repo.DeploymentHoursBetween(userID, startTime, time.Now())
+	duration = int(t / time.Hour)
+	return
+}
+
 //Finds used deployment hours between two times for one user.
-func (repo *deploymentRepo) DeploymentHoursBtw(userID string, startTime, endTime time.Time) (t time.Duration, err error) {
+func (repo *deploymentRepo) DeploymentHoursBetween(userID string, startTime, endTime time.Time) (t time.Duration, err error) {
 	db := repo.db
 	var deployments []Deployment
 	err = db.Model(&Deployment{}).

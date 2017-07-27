@@ -115,7 +115,7 @@ func (b billingHours) Available() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	return sub.Hours, err
 }
 
@@ -123,11 +123,11 @@ func (b billingHours) Used() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	if err != nil {
 		return 0, err
 	}
-	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
+	used, err := b.depRepo.DeploymentHoursBetween(b.user.ID, sub.StartTime, sub.EndTime)
 	return int(used.Hours()), err
 }
 
@@ -137,9 +137,9 @@ func (b billingHours) Net() (int, error) {
 		return 0, b.err
 	}
 	//get subscription information for current user
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	//get number of hours used for deployments by user so far
-	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
+	used, err := b.depRepo.DeploymentHoursBetween(b.user.ID, sub.StartTime, sub.EndTime)
 	if err != nil {
 		return 0, err
 	}
