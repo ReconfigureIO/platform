@@ -1,14 +1,15 @@
 package billing_hours
 
 import (
-	"fmt"
+	"context"
 	"log"
 
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/mock_deployment"
 )
 
 // Cancel deployments whenever the user has too many billable hours
-func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo) error {
+func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo, mockDeploy mock_deployment.Service) error {
 	// Get all the active users
 	users, err := ds.ActiveUsers()
 	if err != nil {
@@ -20,20 +21,38 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 		// Get the user's subscription info for this billing period.
 		subscriptionInfo, err := ds.CurrentSubscription(user)
 		if err != nil {
-			log.Printf("Error while retrieving subscription info for user: %s", user)
+			log.Printf("Error while retrieving subscription info for user: %s", user.ID)
 			log.Printf("Error: %s", err)
 		}
 
 		// Get the user's used hours for this billing period
 		usedHours, err := deployments.HoursUsedSince(user.ID, subscriptionInfo.StartTime)
 		if err != nil {
-			log.Printf("Error while retrieving deployment hours used by user: %s", user)
+			log.Printf("Error while retrieving deployment hours used by user: %s", user.ID)
 			log.Printf("Error: %s", err)
 		}
 
 		if usedHours >= subscriptionInfo.Hours {
-			// err = deployments.TerminateUserDeployments(user)
-			// Check err
+			err = terminateUserDeployments(user, deployments, mockDeploy)
+			if err != nil {
+				log.Printf("Error while terminating deployments of user: %s", user)
+				log.Printf("Error: %s", err)
+			}
 		}
 	}
+	return nil
+}
+
+func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, mockDeploy mock_deployment.Service) error {
+	deployments, err := deploymentsDB.ListUserDeployments(user.ID, 80)
+	if err != nil {
+		return err
+	}
+	for _, deployment := range deployments {
+		err = mockDeploy.StopDeployment(context.Background(), deployment)
+		if err != nil {
+			log.Printf("Error while terminating deployment: %s", deployment)
+		}
+	}
+	return nil
 }
