@@ -25,7 +25,7 @@ var (
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
 		LogGroup: "/reconfigureio/deployments",
 		Image:    "reconfigureio/docker-aws-fpga-runtime:latest",
-		AMI:      "ami-f3b7a4e5",
+		AMI:      "ami-8e6a4df5",
 		Bucket:   "reconfigureio-builds",
 	})
 )
