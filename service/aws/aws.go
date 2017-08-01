@@ -49,6 +49,7 @@ type ServiceConfig struct {
 	Bucket        string
 	Queue         string
 	JobDefinition string
+	GenerateAfi   bool
 }
 
 // New creates a new service with conf.
@@ -126,6 +127,11 @@ func (s *service) RunBuild(build models.Build, callbackURL string) (string, erro
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
 
+	genAfi := "no"
+	if s.conf.GenerateAfi {
+		genAfi = "yes"
+	}
+
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
@@ -167,6 +173,10 @@ func (s *service) RunBuild(build models.Build, callbackURL string) (string, erro
 				{
 					Name:  aws.String("LOG_KEY"),
 					Value: aws.String("/dcp-logs/" + build.ID),
+				},
+				{
+					Name:  aws.String("GENERATE_AFI"),
+					Value: aws.String(genAfi),
 				},
 			},
 		},

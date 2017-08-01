@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"os"
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
@@ -20,6 +21,7 @@ var (
 		Bucket:        "reconfigureio-builds",
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
+		GenerateAfi:   os.Getenv("RECO_FEATURE_DEPLOY") == "1",
 	})
 
 	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
