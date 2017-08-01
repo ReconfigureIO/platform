@@ -27,6 +27,7 @@ type LogsConfig struct {
 
 type BuildConfig struct {
 	ArtifactUrl string `json:"artifact_url"`
+	Agfi        string `json:"agfi"`
 }
 
 type Deployment struct {
@@ -67,6 +68,7 @@ func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUr
 		},
 		Build: BuildConfig{
 			ArtifactUrl: fmt.Sprintf("s3://%s/%s", s.Bucket, deployment.Build.ArtifactUrl()),
+			Agfi:        deployment.Build.FPGAImage,
 		},
 	}
 }
