@@ -12,12 +12,14 @@ type fake_SubscriptionRepo struct{}
 
 type fake_Billing struct{}
 
+type fake_mock_deployment struct{}
+
 // provide a bunch of users who are active
 func (repo fake_SubscriptionRepo) ActiveUsers() ([]models.User, error) {
 	user := models.User{}
 	return []models.User{user}, nil
 }
-
+=
 func (billing fake_Billing) FetchBillingHours(userID string) api.BillingHours {
 	return billingHours{}
 }
@@ -29,6 +31,7 @@ func (b billingHours) Net() (int, error) {
 func TestCheckUserHours(t *testing.T) {
 	d := fake_SubscriptionRepo{}
 	b := fake_Billing{}
+	md := fake_mock_deployment{}
 
 	err := CheckUserHours(d, b)
 	if err != nil {
