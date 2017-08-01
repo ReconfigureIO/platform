@@ -45,11 +45,11 @@ type service struct {
 
 // ServiceConfig holds configuration for service.
 type ServiceConfig struct {
-	LogGroup      string
-	Bucket        string
-	Queue         string
-	JobDefinition string
-	GenerateAfi   bool
+	LogGroup      string `env:"RECO_AWS_LOG_GROUP" envDefault:"/aws/batch/job"`
+	Bucket        string `env:"RECO_AWS_BUCKET" envDefault:"reconfigureio-builds"`
+	Queue         string `env:"RECO_AWS_QUEUE" envDefault:"build-jobs"`
+	JobDefinition string `env:"RECO_AWS_JOB" envDefault:"sdaccel-builder-build"`
+	GenerateAfi   bool   `env:"RECO_FEATURE_DEPLOY"`
 }
 
 // New creates a new service with conf.
