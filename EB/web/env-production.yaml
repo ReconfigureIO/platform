@@ -117,6 +117,7 @@ OptionSettings:
     GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
     DATABASE_URL: ssm:///reconfigureio/platform/production/db
     STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
+    RECO_DEPLOY_AMI: ami-8e6a4df5
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0

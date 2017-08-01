@@ -27,6 +27,7 @@ type LogsConfig struct {
 
 type BuildConfig struct {
 	ArtifactUrl string `json:"artifact_url"`
+	Agfi        string `json:"agfi"`
 }
 
 type Deployment struct {
@@ -42,10 +43,10 @@ type Service struct {
 }
 
 type ServiceConfig struct {
-	LogGroup string
-	Image    string
-	AMI      string
-	Bucket   string
+	LogGroup string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
+	Image    string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
+	AMI      string `env:"RECO_DEPLOY_AMI"`
+	Bucket   string `env:"RECO_DEPLOY_BUCET" envDefault:"reconfigureio-builds"`
 }
 
 func New(conf ServiceConfig) *Service {
@@ -67,6 +68,7 @@ func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUr
 		},
 		Build: BuildConfig{
 			ArtifactUrl: fmt.Sprintf("s3://%s/%s", s.Bucket, deployment.Build.ArtifactUrl()),
+			Agfi:        deployment.Build.FPGAImage,
 		},
 	}
 }
