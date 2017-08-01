@@ -43,17 +43,26 @@ func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("id", uuid.NewV4().String())
 }
 
+// uuidHook hooks new uuid as primary key for models before creation.
+type createdAtHook struct{}
+
+func (c createdAtHook) BeforeCreate(scope *gorm.Scope) error {
+	return scope.SetColumn("created_at", time.Now())
+}
+
 // User model.
 type User struct {
 	uuidHook
-	ID                string `gorm:"primary_key" json:"id"`
-	GithubID          int    `gorm:"unique_index" json:"-"`
-	GithubName        string `json:"github_name"`
-	Name              string `json:"name"`
-	Email             string `gorm:"type:varchar(100);unique_index" json:"email"`
-	GithubAccessToken string `json:"-"`
-	Token             string `json:"-"`
-	StripeToken       string `json:"-"`
+	createdAtHook
+	ID                string    `gorm:"primary_key" json:"id"`
+	GithubID          int       `gorm:"unique_index" json:"-"`
+	GithubName        string    `json:"github_name"`
+	Name              string    `json:"name"`
+	Email             string    `gorm:"type:varchar(100);unique_index" json:"email"`
+	CreatedAt         time.Time `json:"created_at"`
+	GithubAccessToken string    `json:"-"`
+	Token             string    `json:"-"`
+	StripeToken       string    `json:"-"`
 	// We'll ignore this in the db for now, to provide mock data
 	BillingPlan string `gorm:"-" json:"billing_plan"`
 }
