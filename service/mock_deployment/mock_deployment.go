@@ -64,7 +64,7 @@ func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUr
 		},
 		Logs: LogsConfig{
 			Group:  s.LogGroup,
-			Prefix: fmt.Sprintf("deployment-%d", deployment.ID),
+			Prefix: fmt.Sprintf("deployment-%s", deployment.ID),
 		},
 		Build: BuildConfig{
 			ArtifactUrl: fmt.Sprintf("s3://%s/%s", s.Bucket, deployment.Build.ArtifactUrl()),
