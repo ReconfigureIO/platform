@@ -1,8 +1,8 @@
 version: 1
 cron:
- - name: "hello"
-   url: "/hello"
-   schedule: "*/5 * * * *"
+  - name: "generated-afis"
+    url: "/generated-afis"
+    schedule: "*/5 * * * *"
 # - name: "terminate deployments"
 #   url: "/terminate-deployments"
 #   schedule: "* * * * *"
