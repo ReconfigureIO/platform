@@ -348,7 +348,7 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	cfg := ec2.DescribeFpgaImagesInput{
 		Filters: []*ec2.Filter{
 			{
-				Name:   "fpga-image-global-id",
+				Name:   aws.String("fpga-image-global-id"),
 				Values: afiids,
 			},
 		},
