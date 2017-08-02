@@ -138,7 +138,7 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 		LogGroupName:        aws.String(s.Conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
-		LogStreamNamePrefix: aws.String(fmt.Sprintf("deployment-%d", deployment.ID)),
+		LogStreamNamePrefix: aws.String(fmt.Sprintf("deployment-%s", deployment.ID)),
 	}
 	resp, err := cwLogs.DescribeLogStreams(searchParams)
 	if err != nil {
