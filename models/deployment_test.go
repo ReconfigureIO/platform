@@ -43,6 +43,39 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 	})
 }
 
+func TestDeploymentHoursBtw(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Build: Build{
+				ID: "foo",
+				Project: Project{
+					ID: "foo",
+					User: User{
+						ID: "user-id",
+					},
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status: "COMPLETED",
+				},
+			},
+		}
+		db.Create(&dep)
+
+		zeroTime := time.Unix(0, 0)
+		now := time.Now()
+		_, err := d.DeploymentHoursBtw("foo", zeroTime, now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
 func TestTimeToSQLStr(t *testing.T) {
 	utcTime := time.Date(2010, 2, 11, 3, 20, 30, 0, time.UTC)
 	expected := "2010-02-01 00:00:00"

@@ -79,7 +79,7 @@ func (repo *deploymentRepo) DeploymentHoursBtw(userID string, startTime, endTime
 		// there should be a better way of lazy loading
 		// and filtering outside of database.
 		err := db.Model(&DeploymentEvent{}).
-			Where("dep_id=?", deployment.ID).
+			Where("deployment_id=?", deployment.ID).
 			Where("timestamp>=?", timeToSQLStr(startTime)).
 			Where("timestamp<=?", timeToSQLStr(endTime)).
 			Order("timestamp").
