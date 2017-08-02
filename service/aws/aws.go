@@ -346,7 +346,12 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeFpgaImagesInput{
-		FpgaImageIds: afiids,
+		Filters: []*ec2.Filter{
+			{
+				Name:   "fpga-image-global-id",
+				Values: afiids,
+			},
+		},
 	}
 
 	results, err := ec2Session.DescribeFpgaImagesWithContext(ctx, &cfg)
