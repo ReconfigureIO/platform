@@ -17,7 +17,7 @@ type fake_BatchService struct{}
 //create a build that's waiting on an image
 func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]models.Build, error) {
 	build := models.Build{
-		FPGAImage: "afi-foobar",
+		FPGAImage: "agfi-foobar",
 		BatchJob: models.BatchJob{
 			Events: []models.BatchJobEvent{
 				models.BatchJobEvent{
@@ -37,7 +37,7 @@ func TestFindAFI(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	afistatus := map[string]string{"afi-foobar": "available"}
+	afistatus := map[string]string{"agfi-foobar": "available"}
 
 	mockService := aws.NewMockService(mockCtrl)
 	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
@@ -54,7 +54,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	afistatus := map[string]string{"afi-foobar": "invalid-status"}
+	afistatus := map[string]string{"agfi-foobar": "invalid-status"}
 
 	mockService := aws.NewMockService(mockCtrl)
 	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)

@@ -105,7 +105,7 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&models.Deployment{}).Association("Events").Append(newEvent).Error
+	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
 
 	if err != nil {
 		sugar.InternalError(c, err)

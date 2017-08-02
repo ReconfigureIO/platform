@@ -360,7 +360,7 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	}
 
 	for _, image := range results.FpgaImages {
-		ret[*image.FpgaImageId] = *image.State.Code
+		ret[*image.FpgaImageGlobalId] = *image.State.Code
 	}
 
 	return ret, nil
