@@ -10,7 +10,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
+	mockDeploy = deployment.New(deployment.ServiceConfig{
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
 		AMI:      "ami-850c7293",

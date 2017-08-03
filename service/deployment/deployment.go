@@ -1,6 +1,6 @@
-package mock_deployment
+package deployment
 
-//go:generate mockgen -source=mock_deployment.go -package=mock_deployment -destination=mock_deployment_mock.go
+//go:generate mockgen -source=deployment.go -package=deployment -destination=deployment_mock.go
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package mock_deployment
+package deployment
 
 import (
 	"encoding/base64"
