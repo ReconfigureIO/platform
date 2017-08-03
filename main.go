@@ -9,9 +9,11 @@ import (
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/sirupsen/logrus"
 	stripe "github.com/stripe/stripe-go"
 )
 
@@ -46,6 +48,7 @@ func main() {
 	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
+	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
 
 	// setup components
 	db := setupDB(*conf)

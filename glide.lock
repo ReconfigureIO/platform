@@ -1,10 +1,10 @@
-hash: 1d7786fd28916c40364c42bb2073592e1c3dff6e37dbf8a01a5f66c070832d75
-updated: 2017-08-01T20:06:46.809509166Z
+hash: ddf6fa89c247e15f428219bb77de9530ef569df7628fae07fe01555c46f3f74d
+updated: 2017-08-03T14:27:07.550092302Z
 imports:
 - name: github.com/abiosoft/errs
   version: bb1d81cbcfef620e37729aff2822abeca5a25235
 - name: github.com/aws/aws-sdk-go
-  version: 75d583c2afd3807d4d3f24b31b06feebb8849242
+  version: b33b08175d12b795daa7726c5577b39d06a2551c
   subpackages:
   - aws
   - aws/awserr
@@ -54,6 +54,7 @@ imports:
 - name: github.com/gin-gonic/contrib
   version: d4fc5a96cc0d29cb0e862bb1312dd6f4fedfcaee
   subpackages:
+  - ginrus
   - sessions
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
@@ -103,12 +104,18 @@ imports:
   version: 57fdcb988a5c543893cc61bce354a6e24ab70022
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/sirupsen/logrus
+  version: a3f95b5c423586578a4e099b11a46c2479628cac
 - name: github.com/stripe/stripe-go
   version: 339ff3ba4d4b26f9179e31f958d8f68c5fd07b43
   subpackages:
   - customer
   - orderitem
   - sub
+- name: golang.org/x/crypto
+  version: 358f15eacb587b056fc93273b930314a5cda12fe
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
