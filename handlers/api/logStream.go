@@ -12,12 +12,13 @@ import (
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/ReconfigureIO/platform/sugar"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
 )
 
 // StreamBatchLogs streams batch logs from AWS.
 func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob) {
-	ctx, cancel := context.WithCancel(c)
+	ctx, cancel := WithClose(c)
 	defer cancel()
 
 	w := c.Writer
@@ -25,12 +26,6 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	// set necessary headers to inform client of streaming connection
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
-
-	// cancel whenever we get a close
-	go func() {
-		<-w.CloseNotify()
-		cancel()
-	}()
 
 	refresh := func() error {
 		return db.Model(&b).Association("Events").Find(&b.Events).Error
@@ -90,7 +85,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 }
 
 func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
-	ctx, cancel := context.WithCancel(c)
+	ctx, cancel := WithClose(c)
 	defer cancel()
 
 	w := c.Writer
@@ -134,9 +129,33 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		return true
 	})
 
-	logStream, err := service.GetDeploymentStream(ctx, *deployment)
+	var logStream *cloudwatchlogs.LogStream
+	var err error
+
+	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
+		logStream, err = service.GetDeploymentStream(ctx, *deployment)
+		// No error and we're good
+		if err == nil {
+			return true
+		}
+
+		// If it's something that's not NotFound, we'll exit
+		if err != aws.ErrNotFound {
+			return false
+		}
+
+		select {
+		case <-ctx.Done():
+			return false
+		case <-ticker.C:
+			bytes.NewBuffer([]byte{0}).WriteTo(w)
+		case <-refreshTicker.C:
+		}
+		return true
+	})
+
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
