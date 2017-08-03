@@ -114,7 +114,7 @@ func main() {
 	})
 
 	r.POST("/check-hours", func(c *gin.Context) {
-		if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), api.Billing{}); err == nil {
+		if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), mockDeploy); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())
