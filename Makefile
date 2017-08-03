@@ -27,7 +27,15 @@ vet:
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
-generate:
+dependencies:
+	glide install
+
+$(GOPATH)/bin/mockgen: dependencies $(shell find vendor/github.com/golang/mock -name \*.go)
+	cd vendor/github.com/golang/mock/mockgen && \
+	go get `glide list 2> /dev/null | grep -A100 MISSING | grep -v MISSING | awk '{$$1=$$1};1'` && \
+	go build -o $(GOPATH)/bin/mockgen
+
+generate: $(GOPATH)/bin/mockgen
 	go generate -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 test:
@@ -37,7 +45,7 @@ integration-tests:
 	go test -tags=integration -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 install: generate
-	glide install && go test -i $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
+	go test -i $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
 
 dist-image/dist:
 	@mkdir -p $@

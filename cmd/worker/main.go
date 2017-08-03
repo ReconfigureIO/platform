@@ -106,6 +106,7 @@ func main() {
 	r.POST("/generated-afis", func(c *gin.Context) {
 		err := afi_watcher.FindAFI(models.BuildDataSource(db), awsService, api.BatchService{})
 		if err != nil {
+			log.Println(err.Error())
 			c.JSON(500, err)
 		} else {
 			c.Status(200)

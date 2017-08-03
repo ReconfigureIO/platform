@@ -12,8 +12,8 @@ func Test_ServiceInterface(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	s := aws.NewMockService(mockCtrl)
-	s.EXPECT().RunBuild("foo", "bar").Return("foobar", nil)
-	ss, err := s.RunBuild("foo", "bar")
+	s.EXPECT().RunSimulation("foo", "bar", "test").Return("foobar", nil)
+	ss, err := s.RunSimulation("foo", "bar", "test")
 	if err != nil || ss != "foobar" {
 		t.Error("unexpected result")
 	}

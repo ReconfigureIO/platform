@@ -1,10 +1,10 @@
-hash: 33ee85823565750e4c676f7418104f0e290bfe4ca27ca1f8dd483e87d5cfe2f7
-updated: 2017-07-18T17:56:06.478816362Z
+hash: 1d7786fd28916c40364c42bb2073592e1c3dff6e37dbf8a01a5f66c070832d75
+updated: 2017-08-01T20:06:46.809509166Z
 imports:
 - name: github.com/abiosoft/errs
   version: bb1d81cbcfef620e37729aff2822abeca5a25235
 - name: github.com/aws/aws-sdk-go
-  version: 6d7fc1a00fcae6bbb53550f4a0b98324fd7aa250
+  version: 75d583c2afd3807d4d3f24b31b06feebb8849242
   subpackages:
   - aws
   - aws/awserr
@@ -40,6 +40,8 @@ imports:
   - service/sts
 - name: github.com/boj/redistore
   version: 4562487a4bee9a7c272b72bfaeda4917d0a47ab9
+- name: github.com/caarlos0/env
+  version: 0cf029d5748c52beb2c9d20c81880cb4bdf8f788
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
 - name: github.com/garyburd/redigo

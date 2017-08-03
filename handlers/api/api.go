@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -15,23 +16,21 @@ var (
 
 	db *gorm.DB
 
-	awsSession = aws.New(aws.ServiceConfig{
-		LogGroup:      "/aws/batch/job",
-		Bucket:        "reconfigureio-builds",
-		Queue:         "build-jobs",
-		JobDefinition: "sdaccel-builder-build",
-	})
+	awsSession aws.Service
 
-	mockDeploy = mock_deployment.New(mock_deployment.ServiceConfig{
-		LogGroup: "josh-test-sdaccel",
-		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-		AMI:      "ami-850c7293",
-	})
+	mockDeploy *mock_deployment.Service
 )
 
 // DB sets the database to use for the API.
 func DB(d *gorm.DB) {
 	db = d
+}
+
+func Configure(conf config.Config) {
+	awsSession = aws.New(conf.Reco.AWS)
+
+	mockDeploy = mock_deployment.New(conf.Reco.Deploy)
+
 }
 
 // Transaction runs a transaction, rolling back if error != nil.

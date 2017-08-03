@@ -79,19 +79,6 @@ type Project struct {
 	Simulations []Build `json:"simulations,omitempty" gorm:"ForeignKey:ProjectID"`
 }
 
-// Build model.
-type Build struct {
-	uuidHook
-	ID          string       `gorm:"primary_key" json:"id"`
-	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
-	ProjectID   string       `json:"-"`
-	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
-	BatchJobID  int64        `json:"-"`
-	FPGAImage   string       `json:"-"`
-	Token       string       `json:"-"`
-	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
-}
-
 // PostBatchEvent is post request body for batch events.
 type PostBatchEvent struct {
 	Status  string `json:"status" validate:"nonzero"`
@@ -104,31 +91,6 @@ type PostDepEvent struct {
 	Status  string `json:"status" validate:"nonzero"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
-}
-
-// Status returns buikld status.
-func (b *Build) Status() string {
-	events := b.BatchJob.Events
-	length := len(events)
-	if len(events) > 0 {
-		return events[length-1].Status
-	}
-	return StatusSubmitted
-}
-
-// HasStarted returns if the build has started.
-func (b *Build) HasStarted() bool {
-	return hasStarted(b.Status())
-}
-
-// HasFinished returns if build is finished.
-func (b *Build) HasFinished() bool {
-	return hasFinished(b.Status())
-}
-
-// PostBuild is post request body for a new build.
-type PostBuild struct {
-	ProjectID string `json:"project_id" validate:"nonzero"`
 }
 
 // Simulation model.

@@ -27,10 +27,16 @@ type LogsConfig struct {
 	Prefix string `json:"prefix"`
 }
 
+type BuildConfig struct {
+	ArtifactUrl string `json:"artifact_url"`
+	Agfi        string `json:"agfi"`
+}
+
 type Deployment struct {
 	Container   ContainerConfig `json:"container"`
 	Logs        LogsConfig      `json:"logs"`
 	CallbackUrl string          `json:"callback_url"`
+	Build       BuildConfig     `json:"build"`
 }
 
 type service struct {
@@ -39,9 +45,10 @@ type service struct {
 }
 
 type ServiceConfig struct {
-	LogGroup string
-	Image    string
-	AMI      string
+	LogGroup string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
+	Image    string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
+	AMI      string `env:"RECO_DEPLOY_AMI"`
+	Bucket   string `env:"RECO_DEPLOY_BUCET" envDefault:"reconfigureio-builds"`
 }
 
 func New(conf ServiceConfig) Service {
@@ -76,7 +83,11 @@ func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUr
 		},
 		Logs: LogsConfig{
 			Group:  s.LogGroup,
-			Prefix: fmt.Sprintf("deployment-%d", deployment.ID),
+			Prefix: fmt.Sprintf("deployment-%s", deployment.ID),
+		},
+		Build: BuildConfig{
+			ArtifactUrl: fmt.Sprintf("s3://%s/%s", s.Bucket, deployment.Build.ArtifactUrl()),
+			Agfi:        deployment.Build.FPGAImage,
 		},
 	}
 }
@@ -150,7 +161,7 @@ func (s *service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 		LogGroupName:        aws.String(s.Conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
-		LogStreamNamePrefix: aws.String(fmt.Sprintf("deployment-%d", deployment.ID)),
+		LogStreamNamePrefix: aws.String(fmt.Sprintf("deployment-%s", deployment.ID)),
 	}
 	resp, err := cwLogs.DescribeLogStreams(searchParams)
 	if err != nil {

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -54,4 +56,54 @@ func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Buil
 	}
 
 	return builds, nil
+}
+
+// Build model.
+type Build struct {
+	uuidHook
+	ID          string       `gorm:"primary_key" json:"id"`
+	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
+	ProjectID   string       `json:"-"`
+	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
+	BatchJobID  int64        `json:"-"`
+	FPGAImage   string       `json:"-"`
+	Token       string       `json:"-"`
+	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
+}
+
+// The place to upload build input to
+// should be a tar.gz
+func (build Build) InputUrl() string {
+	return fmt.Sprintf("builds/%s/build.tar.gz", build.ID)
+}
+
+// The place to build artifacts will be uploaded to
+// Should be a zip file
+func (build Build) ArtifactUrl() string {
+	return fmt.Sprintf("builds/%s/artifacts.zip", build.ID)
+}
+
+// Status returns buikld status.
+func (b *Build) Status() string {
+	events := b.BatchJob.Events
+	length := len(events)
+	if len(events) > 0 {
+		return events[length-1].Status
+	}
+	return StatusSubmitted
+}
+
+// HasStarted returns if the build has started.
+func (b *Build) HasStarted() bool {
+	return hasStarted(b.Status())
+}
+
+// HasFinished returns if build is finished.
+func (b *Build) HasFinished() bool {
+	return hasFinished(b.Status())
+}
+
+// PostBuild is post request body for a new build.
+type PostBuild struct {
+	ProjectID string `json:"project_id" validate:"nonzero"`
 }

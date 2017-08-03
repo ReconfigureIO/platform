@@ -27,7 +27,7 @@ var ErrNotFound = errors.New("Not Found")
 // Service is an AWS service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
-	RunBuild(inputArtifactURL string, callbackURL string) (string, error)
+	RunBuild(build models.Build, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
@@ -45,10 +45,11 @@ type service struct {
 
 // ServiceConfig holds configuration for service.
 type ServiceConfig struct {
-	LogGroup      string
-	Bucket        string
-	Queue         string
-	JobDefinition string
+	LogGroup      string `env:"RECO_AWS_LOG_GROUP" envDefault:"/aws/batch/job"`
+	Bucket        string `env:"RECO_AWS_BUCKET" envDefault:"reconfigureio-builds"`
+	Queue         string `env:"RECO_AWS_QUEUE" envDefault:"build-jobs"`
+	JobDefinition string `env:"RECO_AWS_JOB" envDefault:"sdaccel-builder-build"`
+	GenerateAfi   bool   `env:"RECO_FEATURE_DEPLOY"`
 }
 
 // New creates a new service with conf.
@@ -114,11 +115,23 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	return "s3://" + s.conf.Bucket + "/" + key, nil
+	return s.s3Url(key), nil
 }
 
-func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string, error) {
+func (s *service) s3Url(key string) string {
+	return "s3://" + s.conf.Bucket + "/" + key
+}
+
+func (s *service) RunBuild(build models.Build, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
+	inputArtifactURL := s.s3Url(build.InputUrl())
+	outputArtifactURL := s.s3Url(build.ArtifactUrl())
+
+	genAfi := "no"
+	if s.conf.GenerateAfi {
+		genAfi = "yes"
+	}
+
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
@@ -148,6 +161,22 @@ func (s *service) RunBuild(inputArtifactURL string, callbackURL string) (string,
 				{
 					Name:  aws.String("DEVICE_FULL"),
 					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
+				},
+				{
+					Name:  aws.String("OUTPUT_URL"),
+					Value: aws.String(outputArtifactURL),
+				},
+				{
+					Name:  aws.String("DCP_KEY"),
+					Value: aws.String("/dcp/" + build.ID),
+				},
+				{
+					Name:  aws.String("LOG_KEY"),
+					Value: aws.String("/dcp-logs/" + build.ID),
+				},
+				{
+					Name:  aws.String("GENERATE_AFI"),
+					Value: aws.String(genAfi),
 				},
 			},
 		},
@@ -317,7 +346,12 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeFpgaImagesInput{
-		FpgaImageIds: afiids,
+		Filters: []*ec2.Filter{
+			{
+				Name:   aws.String("fpga-image-global-id"),
+				Values: afiids,
+			},
+		},
 	}
 
 	results, err := ec2Session.DescribeFpgaImagesWithContext(ctx, &cfg)
@@ -326,7 +360,7 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	}
 
 	for _, image := range results.FpgaImages {
-		ret[*image.FpgaImageId] = *image.State.Code
+		ret[*image.FpgaImageGlobalId] = *image.State.Code
 	}
 
 	return ret, nil

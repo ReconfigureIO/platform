@@ -28,6 +28,7 @@ func init() {
 }
 
 type ProfileData struct {
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Email       string `json:"email"`
 	BillingPlan string `json:"billing_plan" validate:"is_billing_plan"`
@@ -35,6 +36,7 @@ type ProfileData struct {
 }
 
 func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
+	p.ID = user.ID
 	p.Name = user.Name
 	p.Email = user.Email
 	p.Token = user.LoginToken()
@@ -45,5 +47,5 @@ func (p *ProfileData) Apply(user *models.User) {
 	user.Name = p.Name
 	user.Email = p.Email
 
-	// skip token, because it's read only
+	// skip id & token, because they are read only
 }
