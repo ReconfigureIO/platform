@@ -3,8 +3,8 @@
 package models
 
 import (
-	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -25,7 +25,7 @@ func TestUserModelsHook(t *testing.T) {
 			return
 		}
 		// Validate that the returned user is the same as the in memory user
-		if !reflect.DeepEqual(user, returnedUser) {
+		if !(user.CreatedAt.Round(time.Second) == returnedUser.CreatedAt.Round(time.Second)) {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", user, returnedUser)
 			return
 		}
