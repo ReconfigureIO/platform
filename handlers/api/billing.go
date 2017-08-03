@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -121,8 +120,8 @@ func (b billingHours) Used() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
-	return int(used.Hours()), err
+	used, err := models.DeploymentHoursBtw(b.depRepo, b.user.ID, sub.StartTime, sub.EndTime)
+	return used, err
 }
 
 func (b billingHours) Net() (int, error) {
@@ -130,14 +129,11 @@ func (b billingHours) Net() (int, error) {
 		return 0, b.err
 	}
 	sub, err := b.subRepo.Current(b.user)
-	used, err := b.depRepo.DeploymentHoursBtw(b.user.ID, sub.StartTime, sub.EndTime)
+	used, err := models.DeploymentHoursBtw(b.depRepo, b.user.ID, sub.StartTime, sub.EndTime)
+
 	if err != nil {
 		return 0, err
 	}
-	net := time.Duration(sub.Hours)*time.Hour - used
-	// round up the hour
-	if net%time.Hour > 0 {
-		return int(net.Hours()) + 1, nil
-	}
-	return int(net.Hours()), nil
+	net := sub.Hours - used
+	return net, nil
 }
