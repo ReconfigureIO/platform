@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	mockDeploy = deployment.New(deployment.ServiceConfig{
+	deploy = deployment.New(deployment.ServiceConfig{
 		LogGroup: "josh-test-sdaccel",
 		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
 		AMI:      "ami-850c7293",
@@ -74,7 +74,7 @@ func main() {
 			return
 		}
 		//get the status of the associated EC2 instances
-		statuses, err := mockDeploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
+		statuses, err := deploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
 			c.JSON(500, err)
 			return
@@ -114,7 +114,7 @@ func main() {
 	})
 
 	r.POST("/check-hours", func(c *gin.Context) {
-		if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), mockDeploy); err == nil {
+		if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())

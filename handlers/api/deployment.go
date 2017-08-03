@@ -93,7 +93,7 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackURL)
+	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -157,7 +157,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(mockDeploy, c, &targetDep)
+	streamDeploymentLogs(deploy, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
@@ -225,7 +225,7 @@ func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models
 	}
 
 	if event.Status == "TERMINATING" {
-		err = mockDeploy.StopDeployment(c, dep)
+		err = deploy.StopDeployment(c, dep)
 	}
 
 	return newEvent, err

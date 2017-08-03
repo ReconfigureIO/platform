@@ -18,7 +18,7 @@ var (
 
 	awsSession aws.Service
 
-	mockDeploy deployment.Service
+	deploy deployment.Service
 )
 
 // DB sets the database to use for the API.
@@ -29,7 +29,7 @@ func DB(d *gorm.DB) {
 func Configure(conf config.Config) {
 	awsSession = aws.New(conf.Reco.AWS)
 
-	mockDeploy = deployment.New(conf.Reco.Deploy)
+	deploy = deployment.New(conf.Reco.Deploy)
 
 }
 
