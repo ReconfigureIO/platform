@@ -43,17 +43,9 @@ func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("id", uuid.NewV4().String())
 }
 
-// uuidHook hooks new uuid as primary key for models before creation.
-type createdAtHook struct{}
-
-func (c createdAtHook) BeforeCreate(scope *gorm.Scope) error {
-	return scope.SetColumn("created_at", time.Now())
-}
-
 // User model.
 type User struct {
 	uuidHook
-	createdAtHook
 	ID                string    `gorm:"primary_key" json:"id"`
 	GithubID          int       `gorm:"unique_index" json:"-"`
 	GithubName        string    `json:"github_name"`
