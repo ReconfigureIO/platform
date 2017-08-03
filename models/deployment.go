@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -14,7 +15,13 @@ type DeploymentRepo interface {
 	GetWithStatus([]string, int) ([]Deployment, error)
 	// DeploymentHoursBtw returns the total time used for deployments between
 	// startTime and endTime.
-	DeploymentHoursBtw(userID string, startTime, endTime time.Time) (time.Duration, error)
+	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
+}
+
+type DeploymentHours struct {
+	Id         string
+	Started    time.Time
+	Terminated time.Time
 }
 
 type deploymentRepo struct{ db *gorm.DB }
@@ -36,6 +43,28 @@ ON j.id = e.deployment_id
 	)
 WHERE (e.status in (?))
 LIMIT ?
+`
+
+	sqlDeploymentHours = `
+select j.id as id, started.timestamp as started, coalesce(terminated.timestamp, now()) as terminated
+from deployments j
+join builds on builds.id = j.build_id
+join projects on builds.project_id = projects.id
+left join deployment_events started
+on j.id = started.deployment_id
+    and started.id = (
+        select e1.id
+        from deployment_events e1
+        where j.id = e1.deployment_id and e1.status = 'STARTED'
+    )
+left outer join deployment_events terminated
+on j.id = terminated.deployment_id
+    and terminated.id = (
+        select e2.id
+        from deployment_events e2
+        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+    )
+where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
 `
 )
 
@@ -63,43 +92,55 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	return deps, nil
 }
 
-func (repo *deploymentRepo) DeploymentHoursBtw(userID string, startTime, endTime time.Time) (t time.Duration, err error) {
-	db := repo.db
-	var deployments []Deployment
-	err = db.Model(&Deployment{}).
-		Joins("left join builds on builds.id = deployments.build_id").
-		Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", userID).
-		Find(&deployments).Error
+func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {
+	t := 0
+
+	for _, dep := range deps {
+		s := dep.Started
+		// Bound calculated start time to this start time
+		if s.Before(startTime) {
+			s = startTime
+		}
+
+		// Bound calculated end time to this end time
+		e := dep.Terminated
+		if e.After(endTime) {
+			e = endTime
+		}
+		// Round up and convert to an int
+		t += int(math.Ceil(e.Sub(s).Hours()))
+	}
+
+	return t
+}
+
+func DeploymentHoursBtw(repo DeploymentRepo, userID string, startTime, endTime time.Time) (int, error) {
+	deps, err := repo.DeploymentHours(userID, startTime, endTime)
 	if err != nil {
-		return
+		return 0, err
 	}
-	for _, deployment := range deployments {
-		// TODO this queries the db for each deployment.
-		// there should be a better way of lazy loading
-		// and filtering outside of database.
-		err := db.Model(&DeploymentEvent{}).
-			Where("deployment_id=?", deployment.ID).
-			Where("timestamp>=?", timeToSQLStr(startTime)).
-			Where("timestamp<=?", timeToSQLStr(endTime)).
-			Order("timestamp").
-			Find(&deployment.Events).Error
+	return AggregateHoursBetween(deps, startTime, endTime), nil
+}
+
+func (repo *deploymentRepo) DeploymentHours(userID string, startTime, endTime time.Time) (deps []DeploymentHours, err error) {
+	db := repo.db
+
+	rows, err := db.Raw(sqlDeploymentHours, userID, startTime, endTime).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	deps = []DeploymentHours{}
+	for rows.Next() {
+		var dep DeploymentHours
+		err = db.ScanRows(rows, &dep)
 		if err != nil {
-			// TODO decide if this should stop this calculation
-			// or it should be ignored and calculation should continue
-			// as it currently is.
-			fmt.Println(err)
-			continue
+			return
 		}
-		if deployment.HasFinished() {
-			stopTime := deployment.Events[len(deployment.Events)-1].Timestamp
-			duration := stopTime.Sub(deployment.StartTime())
-			t += duration
-		} else if deployment.HasStarted() {
-			duration := time.Now().Sub(deployment.StartTime())
-			t += duration
-		}
+		deps = append(deps, dep)
 	}
+	rows.Close()
+
 	return
 }
 

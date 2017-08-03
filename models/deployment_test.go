@@ -43,35 +43,40 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 	})
 }
 
-func TestDeploymentHoursBtw(t *testing.T) {
+func TestDeploymentHoursHours(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
 
+		zeroTime := time.Unix(0, 0)
+
 		dep := Deployment{
 			Build: Build{
-				ID: "foo",
 				Project: Project{
-					ID: "foo",
-					User: User{
-						ID: "user-id",
-					},
+					UserID: "Foo",
 				},
 			},
 			Command: "test",
 			Events: []DeploymentEvent{
 				DeploymentEvent{
-					Status: "COMPLETED",
+					Status:    "STARTED",
+					Timestamp: zeroTime.Add(time.Hour),
+				},
+				DeploymentEvent{
+					Status:    "TERMINATED",
+					Timestamp: zeroTime.Add(2*time.Hour + (5 * time.Minute)),
 				},
 			},
 		}
 		db.Create(&dep)
 
-		zeroTime := time.Unix(0, 0)
 		now := time.Now()
-		_, err := d.DeploymentHoursBtw("foo", zeroTime, now)
+		hours, err := DeploymentHoursBtw(&d, dep.Build.Project.UserID, zeroTime, now)
 		if err != nil {
 			t.Error(err)
 			return
+		}
+		if hours != 2 {
+			t.Errorf("Expected %v found %v", 2, hours)
 		}
 	})
 }
