@@ -8,7 +8,7 @@ import (
 
 // SetupAdmin sets up admin routes.
 func SetupAdmin(r gin.IRouter, db *gorm.DB) {
-	admin := admin.InviteAdmin{db}
+	admin := admin.InviteAdmin{DB: db}
 	invites := r.Group("/invites")
 	{
 		invites.POST("", admin.Create)

@@ -22,7 +22,7 @@ func (s SubscriptionValidationError) Error() string {
 // SubscriptionRepo handles user subscription details.
 type SubscriptionRepo interface {
 	// Current retrieves the current subscription of the user.
-	Current(User) (SubscriptionInfo, error)
+	CurrentSubscription(User) (SubscriptionInfo, error)
 	// ActiveUsers returns a list of active users.
 	ActiveUsers() ([]User, error)
 	// UpdatePlan sets the user's plan
@@ -108,7 +108,7 @@ func fromSub(user User, val stripe.Sub) (SubscriptionInfo, error) {
 	return sub, nil
 }
 
-func (s *subscriptionRepo) Current(user User) (sub SubscriptionInfo, err error) {
+func (s *subscriptionRepo) CurrentSubscription(user User) (sub SubscriptionInfo, err error) {
 	// cache
 	// this is not a worry because the cache is scoped
 	// to single instance of subscriptionRepo.
@@ -164,7 +164,7 @@ func (s *subscriptionRepo) UpdatePlan(user User, plan string) (sub SubscriptionI
 		return subInfo, e
 	}
 
-	subInfo, err = s.Current(user)
+	subInfo, err = s.CurrentSubscription(user)
 	if err != nil {
 		return subInfo, err
 	}

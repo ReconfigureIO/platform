@@ -84,7 +84,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	stream.Start(ctx, lstream, c, awsSession.Conf().LogGroup)
 }
 
-func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
+func streamDeploymentLogs(service mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
 	ctx, cancel := WithClose(c)
 	defer cancel()
 
@@ -174,7 +174,7 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		}
 		lstream.Ended = true
 	}()
-
-	stream.Start(ctx, lstream, c, service.Conf.LogGroup)
+	conf := service.GetServiceConfig()
+	stream.Start(ctx, lstream, c, conf.LogGroup)
 
 }

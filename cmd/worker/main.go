@@ -9,6 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
@@ -113,7 +114,7 @@ func main() {
 	})
 
 	r.POST("/check-hours", func(c *gin.Context) {
-		if err := CheckUserHours(db); err == nil {
+		if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), mockDeploy); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())
@@ -122,24 +123,4 @@ func main() {
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
-}
-
-// CheckUserHours check running deployments and deduct a minute (cron interval) from
-// instance hours of the user.
-func CheckUserHours(db *gorm.DB) error {
-	api.DB(db)
-
-	ds := models.SubscriptionDataSource(db)
-	users, err := ds.ActiveUsers()
-	if err != nil {
-		return err
-	}
-
-	for _, user := range users {
-		h, err := api.FetchBillingHours(user.ID).Net()
-		if err == nil && h <= 0 {
-			// TODO terminate all deployments for user
-		}
-	}
-	return nil
 }

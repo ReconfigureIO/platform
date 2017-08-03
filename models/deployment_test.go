@@ -10,6 +10,44 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+func TestDeploymentGetWithStatusForUser(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: "Foo",
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status: "COMPLETED",
+				},
+			},
+		}
+		db.Create(&dep)
+
+		deps, err := d.GetWithStatusForUser("Foo", []string{"COMPLETED"})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, deps)
+			return
+		}
+	})
+}
+
 func TestDeploymentGetWithStatus(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}

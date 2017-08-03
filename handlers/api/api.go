@@ -18,7 +18,7 @@ var (
 
 	awsSession aws.Service
 
-	mockDeploy *mock_deployment.Service
+	mockDeploy mock_deployment.Service
 )
 
 // DB sets the database to use for the API.
