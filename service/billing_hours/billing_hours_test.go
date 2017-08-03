@@ -31,7 +31,11 @@ func TestCheckUserHours(t *testing.T) {
 	now := time.Now()
 	timeInFuture := now.AddDate(0, 0, 7)
 
-	deploymentHours := []models.DeploymentHours{models.DeploymentHours{"1", now, timeInFuture}}
+	deploymentHours := []models.DeploymentHours{models.DeploymentHours{
+		Id:         "1",
+		Started:    now,
+		Terminated: timeInFuture,
+	}}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

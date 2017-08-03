@@ -39,7 +39,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		fmt.Println("enabling billing api endpoints")
 
 		billing := api.Billing{}
-		profile := profile.Profile{db}
+		profile := profile.Profile{DB: db}
 		billingRoutes := apiRoutes.Group("/user")
 		{
 			billingRoutes.GET("", profile.Get)

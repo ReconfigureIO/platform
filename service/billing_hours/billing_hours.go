@@ -36,7 +36,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 		if usedHours >= subscriptionInfo.Hours {
 			err = terminateUserDeployments(user, deployments, mockDeploy)
 			if err != nil {
-				log.Printf("Error while terminating deployments of user: %s", user)
+				log.Printf("Error while terminating deployments of user: %s", user.ID)
 				log.Printf("Error: %s", err)
 			}
 		}
@@ -52,7 +52,7 @@ func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentR
 	for _, deployment := range deployments {
 		err = mockDeploy.StopDeployment(context.Background(), deployment)
 		if err != nil {
-			log.Printf("Error while terminating deployment: %s", deployment)
+			log.Printf("Error while terminating deployment: %+v", deployment)
 		}
 	}
 	return nil
