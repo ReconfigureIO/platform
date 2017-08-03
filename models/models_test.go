@@ -24,9 +24,13 @@ func TestUserModelsHook(t *testing.T) {
 			t.Error(err)
 			return
 		}
+
+		expectedCreated := user.CreatedAt.Round(time.Second)
+		actualCreated := returnedUser.CreatedAt.Round(time.Second)
+
 		// Validate that the returned user is the same as the in memory user
-		if !(user.CreatedAt.Round(time.Second) == returnedUser.CreatedAt.Round(time.Second)) {
-			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", user, returnedUser)
+		if !expectedCreated.Equal(actualCreated) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expectedCreated, actualCreated)
 			return
 		}
 	})
