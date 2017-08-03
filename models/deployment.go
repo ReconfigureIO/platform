@@ -1,5 +1,7 @@
 package models
 
+//go:generate mockgen -source=deployment.go -package=models -destination=deployment_mock.go
+
 import (
 	"fmt"
 	"time"

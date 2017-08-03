@@ -3,37 +3,41 @@ package billing_hours
 import (
 	"testing"
 
-	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/gin-gonic/gin"
+	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/golang/mock/gomock"
 )
 
 type fake_SubscriptionRepo struct{}
 
-type fake_Billing struct{}
-
-type fake_mock_deployment struct{}
+type fake_Deployment struct{}
 
 // provide a bunch of users who are active
 func (repo fake_SubscriptionRepo) ActiveUsers() ([]models.User, error) {
 	user := models.User{}
 	return []models.User{user}, nil
 }
-=
-func (billing fake_Billing) FetchBillingHours(userID string) api.BillingHours {
-	return billingHours{}
-}
 
 func (b billingHours) Net() (int, error) {
-	return 30, nil
+	return 0, nil
 }
 
 func TestCheckUserHours(t *testing.T) {
 	d := fake_SubscriptionRepo{}
-	b := fake_Billing{}
-	md := fake_mock_deployment{}
 
-	err := CheckUserHours(d, b)
+	deployments := []models.Deployment{}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDeploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
+	mockDeploymentRepo.EXPECT().HoursUsedSince(gomock.Any(), gomock.Any()).Return(5, nil)
+	mockDeploymentRepo.EXPECT().ListUserDeployments(gomock.Any(), gomock.Any()).Return(deployments, nil)
+
+	mockDeployments := mock_deployment.NewMockService(mockCtrl)
+	mockDeployments.EXPECT().StopDeployment(gomock.Any(), gomock.Any()).Return(nil)
+
+	err := CheckUserHours(d, mockDeploymentRepo, mockDeployments)
 	if err != nil {
 		t.Fatalf("Error in TestCheckUserHours function: %s", err)
 	}
@@ -44,14 +48,20 @@ type billingHours struct {
 }
 
 func (b billingHours) Available() (int, error) {
-	return 40, nil
+	return 80, nil
 }
 
 func (b billingHours) Used() (int, error) {
-	return 40, nil
+	return 100, nil
 }
 
 func (s fake_SubscriptionRepo) Current(user models.User) (sub models.SubscriptionInfo, err error) {
+
+	sub = models.SubscriptionInfo{}
+	return sub, nil
+}
+
+func (s fake_SubscriptionRepo) CurrentSubscription(user models.User) (sub models.SubscriptionInfo, err error) {
 
 	sub = models.SubscriptionInfo{}
 	return sub, nil
@@ -61,7 +71,3 @@ func (s fake_SubscriptionRepo) UpdatePlan(user models.User, plan string) (sub mo
 	sub = models.SubscriptionInfo{}
 	return sub, nil
 }
-
-func (b fake_Billing) Get(c *gin.Context) {}
-
-func (b fake_Billing) Replace(c *gin.Context) {}

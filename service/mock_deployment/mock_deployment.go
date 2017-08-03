@@ -1,5 +1,7 @@
 package mock_deployment
 
+//go:generate mockgen -source=mock_deployment.go -package=mock_deployment -destination=mock_deployment_mock.go
+
 import (
 	"bytes"
 	"context"
