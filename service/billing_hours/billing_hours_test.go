@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/golang/mock/gomock"
 )
 
@@ -40,14 +40,14 @@ func TestCheckUserHours(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockDeploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
-	mockDeploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{"started"}).Return(deployments, nil)
-	mockDeploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
+	deploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
+	deploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{"started"}).Return(deployments, nil)
+	deploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
 
-	mockDeployments := mock_deployment.NewMockService(mockCtrl)
-	mockDeployments.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)
+	deploymentService := deployment.NewMockService(mockCtrl)
+	deploymentService.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)
 
-	err := CheckUserHours(d, mockDeploymentRepo, mockDeployments)
+	err := CheckUserHours(d, deploymentRepo, deploymentService)
 	if err != nil {
 		t.Fatalf("Error in TestCheckUserHours function: %s", err)
 	}

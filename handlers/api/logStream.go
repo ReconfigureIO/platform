@@ -9,7 +9,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -84,7 +84,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	stream.Start(ctx, lstream, c, awsSession.Conf().LogGroup)
 }
 
-func streamDeploymentLogs(service mock_deployment.Service, c *gin.Context, deployment *models.Deployment) {
+func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment *models.Deployment) {
 	ctx, cancel := WithClose(c)
 	defer cancel()
 

@@ -4,7 +4,7 @@ import (
 	"github.com/caarlos0/env"
 
 	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 )
 
 type Config struct {
@@ -20,7 +20,7 @@ type RecoConfig struct {
 	PlatformMigrate bool   `env:"RECO_PLATFORM_MIGRATE"`
 	FeatureDeploy   bool   `env:"RECO_FEATURE_DEPLOY"`
 	AWS             aws.ServiceConfig
-	Deploy          mock_deployment.ServiceConfig
+	Deploy          deployment.ServiceConfig
 }
 
 func ParseEnvConfig() (*Config, error) {

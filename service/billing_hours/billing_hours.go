@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 )
 
 // Cancel deployments whenever the user has too many billable hours
-func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo, mockDeploy mock_deployment.Service) error {
+func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo, deploy deployment.Service) error {
 	// Get all the active users
 	users, err := ds.ActiveUsers()
 	if err != nil {
@@ -34,7 +34,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 		}
 
 		if usedHours >= subscriptionInfo.Hours {
-			err = terminateUserDeployments(user, deployments, mockDeploy)
+			err = terminateUserDeployments(user, deployments, deploy)
 			if err != nil {
 				log.Printf("Error while terminating deployments of user: %s", user.ID)
 				log.Printf("Error: %s", err)
@@ -44,13 +44,13 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 	return nil
 }
 
-func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, mockDeploy mock_deployment.Service) error {
+func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, deploy deployment.Service) error {
 	deployments, err := deploymentsDB.GetWithStatusForUser(user.ID, []string{"started"})
 	if err != nil {
 		return err
 	}
 	for _, deployment := range deployments {
-		err = mockDeploy.StopDeployment(context.Background(), deployment)
+		err = deploy.StopDeployment(context.Background(), deployment)
 		if err != nil {
 			log.Printf("Error while terminating deployment: %+v", deployment)
 		}
