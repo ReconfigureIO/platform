@@ -15,7 +15,7 @@ type fake_Deployment struct{}
 
 // provide a bunch of users who are active
 func (repo fake_SubscriptionRepo) ActiveUsers() ([]models.User, error) {
-	user := models.User{}
+	user := models.User{ID: "fake-user"}
 	return []models.User{user}, nil
 }
 
@@ -28,15 +28,17 @@ func TestCheckUserHours(t *testing.T) {
 
 	deployments := []models.Deployment{models.Deployment{}}
 	// Add 7 days to date, over 100 hours. Replace if better solution found.
-	timeInFuture := time.Now().AddDate(0, 0, 7)
-	deploymentHours := []models.DeploymentHours{models.DeploymentHours{"1", time.Now(), timeInFuture}}
+	now := time.Now()
+	timeInFuture := now.AddDate(0, 0, 7)
+
+	deploymentHours := []models.DeploymentHours{models.DeploymentHours{"1", now, timeInFuture}}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockDeploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
-	mockDeploymentRepo.EXPECT().GetWithStatus([]string{"started"}, gomock.Any()).Return(deployments, nil)
-	mockDeploymentRepo.EXPECT().DeploymentHours(gomock.Any(), gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
+	mockDeploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{"started"}).Return(deployments, nil)
+	mockDeploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
 
 	mockDeployments := mock_deployment.NewMockService(mockCtrl)
 	mockDeployments.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)
@@ -66,7 +68,6 @@ func (s fake_SubscriptionRepo) Current(user models.User) (sub models.Subscriptio
 }
 
 func (s fake_SubscriptionRepo) CurrentSubscription(user models.User) (sub models.SubscriptionInfo, err error) {
-
 	sub = models.SubscriptionInfo{}
 	return sub, nil
 }

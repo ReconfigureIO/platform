@@ -15,6 +15,10 @@ type DeploymentRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
+
+	// Return a list of all deployment for a user, with the statuses specified
+	GetWithStatusForUser(string, []string) ([]Deployment, error)
+
 	// DeploymentHoursBtw returns the total time used for deployments between
 	// startTime and endTime.
 	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
@@ -47,6 +51,20 @@ WHERE (e.status in (?))
 LIMIT ?
 `
 
+	sqlDeploymentStatusForUser = `SELECT j.id
+FROM deployments j
+JOIN builds on builds.id = j.build_id
+JOIN projects on builds.project_id = projects.id
+LEFT join deployment_events e
+ON j.id = e.deployment_id
+	AND e.timestamp = (
+		SELECT max(timestamp)
+		FROM deployment_events e1
+		WHERE j.id = e1.deployment_id
+	)
+WHERE (projects.user_id = ? and e.status in (?))
+`
+
 	sqlDeploymentHours = `
 select j.id as id, started.timestamp as started, coalesce(terminated.timestamp, now()) as terminated
 from deployments j
@@ -73,6 +91,30 @@ where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and co
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
 	db := repo.db
 	rows, err := db.Raw(sqlDeploymentStatus, statuses, limit).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	rows.Close()
+
+	var deps []Deployment
+	err = db.Preload("Events").Where("id in (?)", ids).Find(&deps).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return deps, nil
+}
+
+func (repo *deploymentRepo) GetWithStatusForUser(userID string, statuses []string) ([]Deployment, error) {
+	db := repo.db
+	rows, err := db.Raw(sqlDeploymentStatusForUser, userID, statuses).Rows()
 	if err != nil {
 		return nil, err
 	}
