@@ -25,7 +25,7 @@ func (b billingHours) Net() (int, error) {
 func TestCheckUserHours(t *testing.T) {
 	d := fake_SubscriptionRepo{}
 
-	deployments := []models.Deployment{}
+	deployments := []models.Deployment{models.Deployment{}}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -35,7 +35,7 @@ func TestCheckUserHours(t *testing.T) {
 	mockDeploymentRepo.EXPECT().ListUserDeployments(gomock.Any(), gomock.Any()).Return(deployments, nil)
 
 	mockDeployments := mock_deployment.NewMockService(mockCtrl)
-	mockDeployments.EXPECT().StopDeployment(gomock.Any(), gomock.Any()).Return(nil)
+	mockDeployments.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)
 
 	err := CheckUserHours(d, mockDeploymentRepo, mockDeployments)
 	if err != nil {
