@@ -9,6 +9,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
+var (
+	incompleteStatuses = []string{
+		models.StatusTerminating,
+		models.StatusCompleted,
+		models.StatusErrored,
+	}
+)
+
 type Instances interface {
 	UpdateInstanceStatus(context.Context) error
 	AddDeploymentEvent(context.Context, models.Deployment, models.DeploymentEvent) error
@@ -44,13 +52,7 @@ func (instances *instances) AddDeploymentEvent(ctx context.Context, dep models.D
 
 // Find all deployments that are not terminated, and update them
 func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
-	uncompleted := []string{
-		models.StatusTerminating,
-		models.StatusCompleted,
-		models.StatusErrored,
-	}
-
-	terminatingdeployments, err := instances.Deployments.GetWithStatus(uncompleted, 100)
+	terminatingdeployments, err := instances.Deployments.GetWithStatus(incompleteStatuses, 100)
 	log.Printf("Looking up %d deployments", len(terminatingdeployments))
 
 	if len(terminatingdeployments) == 0 {
@@ -71,7 +73,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		status, found := statuses[deployment.InstanceID]
 
 		// if it's not found, it was terminated a long time ago, otherwise
-		if found || status == ec2.InstanceStateNameTerminated {
+		if !found || status == ec2.InstanceStateNameTerminated {
 			event := models.DeploymentEvent{
 				Timestamp: time.Now(),
 				Status:    models.StatusTerminated,
