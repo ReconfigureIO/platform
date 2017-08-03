@@ -136,7 +136,7 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 		logStream, err = service.GetDeploymentStream(ctx, *deployment)
 		// No error, or a bad error and we need to exit early
 		if err == nil || err != aws.ErrNotFound {
-			return flase
+			return false
 		}
 
 		// Otherwise, wait
