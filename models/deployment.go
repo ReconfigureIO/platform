@@ -22,6 +22,8 @@ type DeploymentRepo interface {
 	// DeploymentHoursBtw returns the total time used for deployments between
 	// startTime and endTime.
 	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
+
+	AddEvent(Deployment, DeploymentEvent) error
 }
 
 type DeploymentHours struct {
@@ -87,6 +89,12 @@ on j.id = terminated.deployment_id
 where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
 `
 )
+
+func (repo *deploymentRepo) AddEvent(dep Deployment, event DeploymentEvent) error {
+	event.DeploymentID = dep.ID
+	err := repo.db.Create(&event).Error
+	return err
+}
 
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
 	db := repo.db

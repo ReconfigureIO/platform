@@ -11,7 +11,6 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/deployment"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -63,44 +62,18 @@ func main() {
 	})
 
 	r.POST("/terminate-deployments", func(c *gin.Context) {
-		apideployment := api.Deployment{}
 		d := models.DeploymentDataSource(db)
+		ctx := context.Background()
 
-		terminatingdeployments, err := d.GetWithStatus([]string{models.StatusTerminating, models.StatusCompleted, models.StatusErrored}, 100)
-		log.Printf("Looking up %d deployments", len(terminatingdeployments))
+		err := deployment.NewInstances(d, deploy).UpdateInstanceStatus(ctx)
 
-		if len(terminatingdeployments) == 0 {
-			c.Status(200)
-			return
-		}
-		//get the status of the associated EC2 instances
-		statuses, err := deploy.DescribeInstanceStatus(context.Background(), terminatingdeployments)
 		if err != nil {
+			log.Println(err.Error())
 			c.JSON(500, err)
-			return
-		}
-		log.Printf("statuses of %v", statuses)
-		terminating := 0
-		//for each deployment, if instance is terminated, send event
-		for _, deployment := range terminatingdeployments {
-			status, found := statuses[deployment.InstanceID]
-			if found && status == ec2.InstanceStateNameTerminated {
-				event := models.PostDepEvent{
-					Status:  models.StatusTerminated,
-					Message: models.StatusTerminated,
-					Code:    0,
-				}
-				_, err := apideployment.AddEvent(c, deployment, event)
-				if err != nil {
-					c.JSON(500, err)
-					return
-				}
-				terminating++
-			}
+		} else {
+			c.Status(200)
 		}
 
-		log.Printf("terminated %d deployments", terminating)
-		c.Status(200)
 	})
 
 	r.POST("/generated-afis", func(c *gin.Context) {
