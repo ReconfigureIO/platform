@@ -134,15 +134,12 @@ func streamDeploymentLogs(service *mock_deployment.Service, c *gin.Context, depl
 
 	stream.StartWithContext(ctx, c, func(ctx context.Context, w io.Writer) bool {
 		logStream, err = service.GetDeploymentStream(ctx, *deployment)
-		// No error and we're good
-		if err == nil {
-			return true
+		// No error, or a bad error and we need to exit early
+		if err == nil || err != aws.ErrNotFound {
+			return flase
 		}
 
-		// If it's something that's not NotFound, we'll exit
-		if err != aws.ErrNotFound {
-			return false
-		}
+		// Otherwise, wait
 
 		select {
 		case <-ctx.Done():
