@@ -72,7 +72,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	for _, deployment := range terminatingdeployments {
 		status, found := statuses[deployment.InstanceID]
 
-		// if it's not found, it was terminated a long time ago, otherwise
+		// if it's not found, it was terminated a long time ago, otherwise update
 		if !found || status == ec2.InstanceStateNameTerminated {
 			event := models.DeploymentEvent{
 				Timestamp: time.Now(),
@@ -86,7 +86,9 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 				return err
 			}
 			terminating++
-		} else {
+		} else if status != ec2.InstanceStateNameShuttingDown {
+			// otherwise, if an instance isn't shutting down, something went wrong.
+			// let's ask it to shut down in order to reconcile
 			err = instances.Deploy.StopDeployment(ctx, deployment)
 			if err != nil {
 				return err
