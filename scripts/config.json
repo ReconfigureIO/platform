@@ -1,7 +1,7 @@
 {
   "container": {
     "image": "reconfigureio/docker-aws-fpga-runtime:latest",
-    "command": "test-histogram"
+    "command": "bench-histogram"
   },
   "logs": {
     "group": "josh-test-sdaccel",
@@ -9,6 +9,7 @@
   },
   "callback_url": "",
   "build": {
-    "artifact_url": "s3://reconfigureio-builds/tmp/10705640-683d-11e7-be12-127f5e3af928.dist.zip"
+      "artifact_url": "s3://reconfigureio-builds/tmp/e91d7b78-730d-11e7-b27f-127f5e3af928.dist.zip",
+      "agfi": "agfi-0e3d5b71759a2da10"
   }
 }
