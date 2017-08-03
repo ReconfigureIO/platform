@@ -135,7 +135,7 @@ func (b billingHours) Net() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	used, err := models.DeploymentHoursBtw(b.depRepo, b.user.ID, sub.StartTime, sub.EndTime)
 
 	if err != nil {

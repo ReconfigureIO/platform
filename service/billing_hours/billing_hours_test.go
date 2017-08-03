@@ -2,6 +2,7 @@ package billing_hours
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
@@ -26,13 +27,16 @@ func TestCheckUserHours(t *testing.T) {
 	d := fake_SubscriptionRepo{}
 
 	deployments := []models.Deployment{models.Deployment{}}
+	// Add 7 days to date, over 100 hours. Replace if better solution found.
+	timeInFuture := time.Now().AddDate(0, 0, 7)
+	deploymentHours := []models.DeploymentHours{models.DeploymentHours{"1", time.Now(), timeInFuture}}
 
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockDeploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
-	mockDeploymentRepo.EXPECT().HoursUsedSince(gomock.Any(), gomock.Any()).Return(5, nil)
-	mockDeploymentRepo.EXPECT().ListUserDeployments(gomock.Any(), gomock.Any()).Return(deployments, nil)
+	mockDeploymentRepo.EXPECT().GetWithStatus([]string{"started"}, gomock.Any()).Return(deployments, nil)
+	mockDeploymentRepo.EXPECT().DeploymentHours(gomock.Any(), gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
 
 	mockDeployments := mock_deployment.NewMockService(mockCtrl)
 	mockDeployments.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)

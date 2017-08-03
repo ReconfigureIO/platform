@@ -3,6 +3,7 @@ package billing_hours
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/mock_deployment"
@@ -26,7 +27,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 		}
 
 		// Get the user's used hours for this billing period
-		usedHours, err := deployments.HoursUsedSince(user.ID, subscriptionInfo.StartTime)
+		usedHours, err := models.DeploymentHoursBtw(deployments, user.ID, subscriptionInfo.StartTime, time.Now())
 		if err != nil {
 			log.Printf("Error while retrieving deployment hours used by user: %s", user.ID)
 			log.Printf("Error: %s", err)
@@ -44,7 +45,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 }
 
 func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, mockDeploy mock_deployment.Service) error {
-	deployments, err := deploymentsDB.ListUserDeployments(user.ID, 80)
+	deployments, err := deploymentsDB.GetWithStatus([]string{"started"}, 80)
 	if err != nil {
 		return err
 	}
