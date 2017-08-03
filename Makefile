@@ -22,10 +22,10 @@ TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
 
+all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
+
 vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
-
-all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
 dependencies:
 	glide install
