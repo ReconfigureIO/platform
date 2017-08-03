@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	validator "gopkg.in/validator.v2"
@@ -28,11 +29,12 @@ func init() {
 }
 
 type ProfileData struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	BillingPlan string `json:"billing_plan" validate:"is_billing_plan"`
-	Token       string `json:"token"` // read only
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Email       string    `json:"email"`
+	BillingPlan string    `json:"billing_plan" validate:"is_billing_plan"`
+	Token       string    `json:"token"` // read only
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
@@ -41,6 +43,7 @@ func (p *ProfileData) FromUser(user models.User, sub models.SubscriptionInfo) {
 	p.Email = user.Email
 	p.Token = user.LoginToken()
 	p.BillingPlan = sub.Identifier
+	p.CreatedAt = user.CreatedAt
 }
 
 func (p *ProfileData) Apply(user *models.User) {
