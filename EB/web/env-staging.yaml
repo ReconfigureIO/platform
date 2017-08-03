@@ -116,6 +116,9 @@ OptionSettings:
     GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/staging/github_secret
     STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
     DATABASE_URL: ssm:///reconfigureio/platform/staging/db
+    RECO_DEPLOY_AMI: ami-8e6a4df5
+    RECO_AWS_QUEUE: staging-build-jobs
+    RECO_AWS_JOB: sdaccel-builder-build-staging
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0

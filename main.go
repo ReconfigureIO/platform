@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
@@ -14,11 +15,10 @@ import (
 	stripe "github.com/stripe/stripe-go"
 )
 
-func setupDB() *gorm.DB {
-	gormConnDets := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open("postgres", gormConnDets)
+func setupDB(conf config.Config) *gorm.DB {
+	db, err := gorm.Open("postgres", conf.DbUrl)
 
-	if os.Getenv("GIN_MODE") != "release" {
+	if conf.Reco.Env != "release" {
 		db.LogMode(true)
 	}
 
@@ -26,10 +26,11 @@ func setupDB() *gorm.DB {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
+
 	api.DB(db)
 
 	// check migration
-	if os.Getenv("RECO_PLATFORM_MIGRATE") == "1" {
+	if conf.Reco.PlatformMigrate {
 		fmt.Println("performing migration...")
 		migration.MigrateSchema()
 	}
@@ -37,18 +38,19 @@ func setupDB() *gorm.DB {
 }
 
 func main() {
-	port, found := os.LookupEnv("PORT")
-	if !found {
-		port = "8080"
+	conf, err := config.ParseEnvConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
 
-	secretKey := os.Getenv("SECRET_KEY_BASE")
-	stripe.Key = os.Getenv("STRIPE_KEY")
-
 	// setup components
-	db := setupDB()
+	db := setupDB(*conf)
+
+	api.Configure(*conf)
 
 	// ping test
 	r.GET("/ping", func(c *gin.Context) {
@@ -60,7 +62,7 @@ func main() {
 	// allow cookies from other domains
 	corsConfig.AllowCredentials = true
 
-	switch os.Getenv("RECO_ENV") {
+	switch conf.Reco.Env {
 	case "production":
 		corsConfig.AllowOrigins = []string{
 			"http://app.reconfigure.io",
@@ -81,8 +83,8 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(secretKey, r, db)
+	routes.SetupRoutes(conf.SecretKey, r, db)
 
 	// Listen and Server in 0.0.0.0:$PORT
-	r.Run(":" + port)
+	r.Run(":" + conf.Port)
 }

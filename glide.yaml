@@ -24,3 +24,5 @@ import:
 - package: github.com/abiosoft/errs
 - package: github.com/gin-contrib/cors
   version: ~1.2.0
+- package: github.com/caarlos0/env
+  version: ^3.0.0
