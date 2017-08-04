@@ -24,7 +24,7 @@ func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatch
 	}
 
 	repo := models.BatchDataSource(db)
-	err := repo.AddEvent(batchJob, newEvent)
+	err := repo.AddEvent(*batchJob, newEvent)
 
 	if err != nil {
 		return models.BatchJobEvent{}, nil

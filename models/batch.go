@@ -9,7 +9,7 @@ import (
 )
 
 type BatchRepo interface {
-	AddEvent(batchJob *BatchJob, event BatchJobEvent) error
+	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
 }
 
@@ -28,8 +28,8 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 }
 
 // AddEvent adds an event to the batch service.
-func (repo *batchRepo) AddEvent(batchJob *BatchJob, event BatchJobEvent) error {
+func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 	db := repo.db
-	err := db.Model(batchJob).Association("Events").Append(event).Error
+	err := db.Model(&batchJob).Association("Events").Append(event).Error
 	return err
 }
