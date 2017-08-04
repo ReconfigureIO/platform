@@ -1,6 +1,7 @@
 package afi_watcher
 
 import (
+	"context"
 	"testing"
 	//	"time"
 
@@ -17,6 +18,8 @@ func TestFindAFI(t *testing.T) {
 	b := models.NewMockBatchRepo(mockCtrl)
 	mockService := aws.NewMockService(mockCtrl)
 
+	watcher := NewAFIWatcher(d, mockService, b)
+
 	afistatus := map[string]string{"agfi-foobar": "available"}
 
 	build := models.Build{
@@ -31,12 +34,14 @@ func TestFindAFI(t *testing.T) {
 		},
 	}
 	builds := []models.Build{build}
+	ctx := context.Background()
+	limit := 100
 
-	d.EXPECT().GetBuildsWithStatus(creating_statuses, 100).Return(builds, nil)
-	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), builds).Return(afistatus, nil)
+	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 	b.EXPECT().AddEvent(build.BatchJob, gomock.Any()).Return(nil)
 
-	err := FindAFI(d, mockService, b)
+	err := watcher.FindAFI(ctx, limit)
 
 	if err != nil {
 		t.Error(err)
@@ -50,6 +55,8 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	d := models.NewMockBuildRepo(mockCtrl)
 	b := models.NewMockBatchRepo(mockCtrl)
 	mockService := aws.NewMockService(mockCtrl)
+
+	watcher := NewAFIWatcher(d, mockService, b)
 
 	afistatus := map[string]string{"agfi-foobar": "invalid-status"}
 
@@ -65,11 +72,13 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 		},
 	}
 	builds := []models.Build{build}
+	ctx := context.Background()
+	limit := 100
 
-	d.EXPECT().GetBuildsWithStatus(creating_statuses, 100).Return(builds, nil)
-	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), builds).Return(afistatus, nil)
+	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 
-	err := FindAFI(d, mockService, b)
+	err := watcher.FindAFI(ctx, limit)
 
 	if err != nil {
 		t.Error(err)
