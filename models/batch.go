@@ -4,39 +4,32 @@ package models
 
 import (
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 type BatchRepo interface {
-	AddEvent(batchJob *BatchJob, event PostBatchEvent) (BatchJobEvent, error)
+	AddEvent(batchJob *BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
 }
 
 type batchRepo struct{ db *gorm.DB }
 
 func BatchDataSource(db *gorm.DB) BatchRepo {
-	return &batchRepo{db: db}
+	b := batchRepo{db: db}
+	return &b
 }
 
 // New creates a new batch job with its queued event.
-func (b BatchRepo) New(batchID string) BatchJob {
+func (repo *batchRepo) New(batchID string) BatchJob {
 	event := BatchJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
 	batchJob := BatchJob{BatchID: batchID, Events: []BatchJobEvent{event}}
 	return batchJob
 }
 
 // AddEvent adds an event to the batch service.
-func (b BatchRepo) AddEvent(batchJob *BatchJob, event BatchJobEvent) error {
+func (repo *batchRepo) AddEvent(batchJob *BatchJob, event BatchJobEvent) error {
 	db := repo.db
-	err = db.Model(batchJob).Association("Events").Append(event).Error
-	if err != nil {
-		return err
-	}
-
-	if event.Status == StatusTerminated {
-		err = awsSession.HaltJob(batchJob.BatchID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	err := db.Model(batchJob).Association("Events").Append(event).Error
+	return err
 }
