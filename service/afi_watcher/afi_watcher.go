@@ -3,15 +3,34 @@ package afi_watcher
 import (
 	"context"
 	"log"
+	"time"
 
-	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 )
 
-func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterface) error {
+var (
+	creating_statuses = []string{models.StatusCreatingImage}
+)
+
+type AFIWatcher struct {
+	d          models.BuildRepo
+	awsService aws.Service
+	batch      models.BatchRepo
+}
+
+func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
+	w := AFIWatcher{
+		d:          d,
+		awsService: awsService,
+		batch:      batch,
+	}
+	return &w
+}
+
+func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	//get list of builds waiting for AFI generation to finish
-	buildswaitingonafis, err := d.GetBuildsWithStatus([]string{models.StatusCreatingImage}, 100)
+	buildswaitingonafis, err := watcher.d.GetBuildsWithStatus(creating_statuses, limit)
 	if err != nil {
 		return err
 	}
@@ -20,36 +39,41 @@ func FindAFI(d models.BuildRepo, awsService aws.Service, batch api.BatchInterfac
 	if len(buildswaitingonafis) == 0 {
 		return nil
 	}
+
 	//get the status of the associated AFIs
-	statuses, err := awsService.DescribeAFIStatus(context.Background(), buildswaitingonafis)
+	statuses, err := watcher.awsService.DescribeAFIStatus(ctx, buildswaitingonafis)
 	if err != nil {
 		return err
 	}
+
 	log.Printf("statuses of %v", statuses)
 	afigenerated := 0
+
 	//for each build check associated AFI, if done, post event
 	for _, build := range buildswaitingonafis {
 		status, found := statuses[build.FPGAImage]
 		if found {
-			var event *models.PostBatchEvent
+			var event *models.BatchJobEvent
 			switch status {
 			case "available":
-				event = &models.PostBatchEvent{
-					Status:  models.StatusCompleted,
-					Message: models.StatusCompleted,
-					Code:    0,
+				event = &models.BatchJobEvent{
+					Timestamp: time.Now(),
+					Status:    models.StatusCompleted,
+					Message:   models.StatusCompleted,
+					Code:      0,
 				}
 			case "failed":
-				event = &models.PostBatchEvent{
-					Status:  models.StatusErrored,
-					Message: models.StatusErrored,
-					Code:    0,
+				event = &models.BatchJobEvent{
+					Timestamp: time.Now(),
+					Status:    models.StatusErrored,
+					Message:   models.StatusErrored,
+					Code:      0,
 				}
 			default:
 			}
 
 			if event != nil {
-				_, err := batch.AddEvent(&build.BatchJob, *event)
+				err := watcher.batch.AddEvent(build.BatchJob, *event)
 				if err != nil {
 					return err
 				}

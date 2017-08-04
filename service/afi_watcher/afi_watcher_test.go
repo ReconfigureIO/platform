@@ -1,21 +1,27 @@
 package afi_watcher
 
 import (
+	"context"
 	"testing"
-	"time"
+	//	"time"
 
-	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/golang/mock/gomock"
 )
 
-type fake_PostgresRepo struct{}
+func TestFindAFI(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 
-type fake_BatchService struct{}
+	d := models.NewMockBuildRepo(mockCtrl)
+	b := models.NewMockBatchRepo(mockCtrl)
+	mockService := aws.NewMockService(mockCtrl)
 
-//create a build that's waiting on an image
-func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) ([]models.Build, error) {
+	watcher := NewAFIWatcher(d, mockService, b)
+
+	afistatus := map[string]string{"agfi-foobar": "available"}
+
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
 		BatchJob: models.BatchJob{
@@ -27,54 +33,54 @@ func (repo fake_PostgresRepo) GetBuildsWithStatus(statuses []string, limit int) 
 			},
 		},
 	}
-	return []models.Build{build}, nil
-}
+	builds := []models.Build{build}
+	ctx := context.Background()
+	limit := 100
 
-func TestFindAFI(t *testing.T) {
-	d := fake_PostgresRepo{}
-	b := fake_BatchService{}
+	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	b.EXPECT().AddEvent(build.BatchJob, gomock.Any()).Return(nil)
 
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
+	err := watcher.FindAFI(ctx, limit)
 
-	afistatus := map[string]string{"agfi-foobar": "available"}
-
-	mockService := aws.NewMockService(mockCtrl)
-	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
-
-	err := FindAFI(d, mockService, b)
 	if err != nil {
-		t.Fatalf("Error in FindAFI function: %s", err)
+		t.Error(err)
 	}
 }
 
 func TestFindAFISkipsInvalidStatus(t *testing.T) {
-	d := fake_PostgresRepo{}
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	d := models.NewMockBuildRepo(mockCtrl)
+	b := models.NewMockBatchRepo(mockCtrl)
+	mockService := aws.NewMockService(mockCtrl)
+
+	watcher := NewAFIWatcher(d, mockService, b)
+
 	afistatus := map[string]string{"agfi-foobar": "invalid-status"}
 
-	mockService := aws.NewMockService(mockCtrl)
-	mockService.EXPECT().DescribeAFIStatus(gomock.Any(), gomock.Any()).Return(afistatus, nil)
+	build := models.Build{
+		FPGAImage: "agfi-foobar",
+		BatchJob: models.BatchJob{
+			Events: []models.BatchJobEvent{
+				models.BatchJobEvent{
+					Status:  "CREATING_IMAGE",
+					Message: "afi-foobar",
+				},
+			},
+		},
+	}
+	builds := []models.Build{build}
+	ctx := context.Background()
+	limit := 100
 
-	// Don't setup any expected calls, since we don't expect this to be called
-	mockBatch := api.NewMockBatchInterface(mockCtrl)
+	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 
-	err := FindAFI(d, mockService, mockBatch)
+	err := watcher.FindAFI(ctx, limit)
+
 	if err != nil {
-		t.Fatalf("Error in FindAFI function: %s", err)
+		t.Error(err)
 	}
-}
-
-func (b fake_BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error) {
-	newEvent := models.BatchJobEvent{
-		Timestamp: time.Now(),
-		Status:    event.Status,
-		Message:   event.Message,
-		Code:      event.Code,
-	}
-
-	return newEvent, nil
 }

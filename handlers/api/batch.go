@@ -1,7 +1,5 @@
 package api
 
-//go:generate mockgen -source=batch.go -package=api -destination=batch_mock.go
-
 import (
 	"time"
 
@@ -11,33 +9,23 @@ import (
 // BatchService is aws batch job service.
 type BatchService struct{}
 
-type BatchInterface interface {
-	AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error)
-}
-
 // New creates a new batch job with its queued event.
 func (b BatchService) New(batchID string) models.BatchJob {
-	event := models.BatchJobEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	batchJob := models.BatchJob{BatchID: batchID, Events: []models.BatchJobEvent{event}}
-	return batchJob
+	return models.BatchDataSource(db).New(batchID)
 }
 
 // AddEvent adds an event to the batch service.
 func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error) {
-	timestamp := time.Time{}
-	if event.Timestamp.IsZero() == false {
-		timestamp = event.Timestamp
-	} else {
-		timestamp = time.Now()
-	}
-
 	newEvent := models.BatchJobEvent{
-		Timestamp: timestamp,
+		Timestamp: time.Now(),
 		Status:    event.Status,
 		Message:   event.Message,
 		Code:      event.Code,
 	}
-	err := db.Model(batchJob).Association("Events").Append(newEvent).Error
+
+	repo := models.BatchDataSource(db)
+	err := repo.AddEvent(*batchJob, newEvent)
+
 	if err != nil {
 		return models.BatchJobEvent{}, nil
 	}
