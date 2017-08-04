@@ -25,7 +25,7 @@ func (b BatchService) New(batchID string) models.BatchJob {
 // AddEvent adds an event to the batch service.
 func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatchEvent) (models.BatchJobEvent, error) {
 	timestamp := time.Time{}
-	if event.Timestamp != nil {
+	if event.Timestamp.IsZero() == false {
 		timestamp = event.Timestamp
 	} else {
 		timestamp = time.Now()
