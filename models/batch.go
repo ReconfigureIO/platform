@@ -8,6 +8,7 @@ import (
 
 type BatchRepo interface {
 	AddEvent(batchJob *BatchJob, event PostBatchEvent) (BatchJobEvent, error)
+	New(batchID string) BatchJob
 }
 
 type batchRepo struct{ db *gorm.DB }
