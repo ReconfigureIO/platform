@@ -54,17 +54,17 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 		status, found := statuses[build.FPGAImage]
 		if found {
 			var event *models.BatchJobEvent
-			switch status {
+			switch status.Status {
 			case "available":
 				event = &models.BatchJobEvent{
-					Timestamp: time.Now(),
+					Timestamp: status.UpdatedAt,
 					Status:    models.StatusCompleted,
 					Message:   models.StatusCompleted,
 					Code:      0,
 				}
 			case "failed":
 				event = &models.BatchJobEvent{
-					Timestamp: time.Now(),
+					Timestamp: status.UpdatedAt,
 					Status:    models.StatusErrored,
 					Message:   models.StatusErrored,
 					Code:      0,

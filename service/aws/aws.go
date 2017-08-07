@@ -32,7 +32,7 @@ type Service interface {
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
-	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error)
+	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
 	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
@@ -336,8 +336,13 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	return err
 }
 
-func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]string, error) {
-	ret := make(map[string]string)
+type Status struct {
+	Status    string
+	UpdatedAt time.Time
+}
+
+func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error) {
+	ret := make(map[string]Status)
 
 	var afiids []*string
 	for _, build := range builds {
@@ -360,7 +365,7 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	}
 
 	for _, image := range results.FpgaImages {
-		ret[*image.FpgaImageGlobalId] = *image.State.Code
+		ret[*image.FpgaImageGlobalId] = Status{*image.State.Code, *image.UpdateTime}
 	}
 
 	return ret, nil
