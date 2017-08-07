@@ -3,7 +3,7 @@ package afi_watcher
 import (
 	"context"
 	"testing"
-	//	"time"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
@@ -20,15 +20,19 @@ func TestFindAFI(t *testing.T) {
 
 	watcher := NewAFIWatcher(d, mockService, b)
 
-	afistatus := map[string]string{"agfi-foobar": "available"}
+	// the time.Now we return as part of afistatus comes back as
+	// part of the call to AddEvent
+	timeNow := time.Now()
+	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"available", timeNow}}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
 		BatchJob: models.BatchJob{
 			Events: []models.BatchJobEvent{
 				models.BatchJobEvent{
-					Status:  "CREATING_IMAGE",
-					Message: "afi-foobar",
+					Timestamp: timeNow,
+					Status:    models.StatusCreatingImage,
+					Message:   "afi-foobar",
 				},
 			},
 		},
@@ -37,9 +41,16 @@ func TestFindAFI(t *testing.T) {
 	ctx := context.Background()
 	limit := 100
 
+	event := &models.BatchJobEvent{
+		Timestamp: timeNow,
+		Status:    models.StatusCompleted,
+		Message:   models.StatusCompleted,
+		Code:      0,
+	}
+
 	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
 	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
-	b.EXPECT().AddEvent(build.BatchJob, gomock.Any()).Return(nil)
+	b.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
 
 	err := watcher.FindAFI(ctx, limit)
 
@@ -58,7 +69,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 
 	watcher := NewAFIWatcher(d, mockService, b)
 
-	afistatus := map[string]string{"agfi-foobar": "invalid-status"}
+	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"invalid-status", time.Now()}}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
