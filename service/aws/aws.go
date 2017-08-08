@@ -27,7 +27,7 @@ var ErrNotFound = errors.New("Not Found")
 // Service is an AWS service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
-	RunBuild(build models.Build, callbackURL string) (string, error)
+	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
@@ -122,7 +122,7 @@ func (s *service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
 }
 
-func (s *service) RunBuild(build models.Build, callbackURL string) (string, error) {
+func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
@@ -165,6 +165,10 @@ func (s *service) RunBuild(build models.Build, callbackURL string) (string, erro
 				{
 					Name:  aws.String("OUTPUT_URL"),
 					Value: aws.String(outputArtifactURL),
+				},
+				{
+					Name:  aws.String("REPORT_URL"),
+					Value: aws.String(reportsURL),
 				},
 				{
 					Name:  aws.String("DCP_KEY"),

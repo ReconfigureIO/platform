@@ -83,6 +83,10 @@ func (build Build) ArtifactUrl() string {
 	return fmt.Sprintf("builds/%s/artifacts.zip", build.ID)
 }
 
+// The place build reports will be uploaded to
+func (build Build) ReportUrl() string {
+	return fmt.Sprintf("builds/%s/reports", build.ID)
+
 // Status returns buikld status.
 func (b *Build) Status() string {
 	events := b.BatchJob.Events
