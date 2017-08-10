@@ -65,6 +65,7 @@ type Build struct {
 	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
 	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
+	BuildReport BuildReport  `json:"-" gorm:"ForeignKey:BuildReportId"`
 	BatchJobID  int64        `json:"-"`
 	FPGAImage   string       `json:"-"`
 	Token       string       `json:"-"`
@@ -86,6 +87,7 @@ func (build Build) ArtifactUrl() string {
 // The place build reports will be uploaded to
 func (build Build) ReportUrl() string {
 	return fmt.Sprintf("builds/%s/reports", build.ID)
+}
 
 // Status returns buikld status.
 func (b *Build) Status() string {

@@ -262,3 +262,10 @@ func inSlice(slice []string, val string) bool {
 	}
 	return false
 }
+
+// BuildReport model.
+type BuildReport struct {
+	ID      int64  `gorm:"primary_key" json:"-"`
+	Version string `json:"-"`
+	Report  string `json:"report"`
+}

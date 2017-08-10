@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -130,7 +133,8 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := awsSession.RunBuild(build, callbackURL)
+	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	buildID, err := awsSession.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
@@ -209,5 +213,51 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, newEvent)
+
+}
+
+// CreateReport creates build report.
+func (b Build) CreateReport(c *gin.Context) {
+	build, err := b.unauthOne(c)
+	if err != nil {
+		return
+	}
+
+	reportFile, _, err := c.Request.FormFile("file")
+	defer reportFile.Close()
+	if err != nil {
+		return
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buf, reportFile); err != nil {
+		return
+	}
+
+	var reportBytes json.RawMessage
+	err = json.Unmarshal([]byte(buf.Bytes()), &reportBytes)
+	if err != nil {
+		return
+	}
+
+	reportContents := string(reportBytes[:])
+
+	buildReport := models.BuildReport{
+		Version: "1",
+		Report:  reportContents,
+	}
+
+	err = db.Model(&build).Association("BuildReport").Append(buildReport).Error
+	if err != nil {
+		return
+	}
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, buildReport)
 
 }

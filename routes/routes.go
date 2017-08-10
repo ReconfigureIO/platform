@@ -102,5 +102,10 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 			eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 		}
 	}
+
+	reportRoutes := r.Group("", middleware.TokenAuth(db))
+	{
+		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
+	}
 	return r
 }
