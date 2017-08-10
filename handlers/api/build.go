@@ -223,11 +223,7 @@ func (b Build) CreateReport(c *gin.Context) {
 		return
 	}
 
-	reportFile, _, err := c.Request.FormFile("file")
-	defer reportFile.Close()
-	if err != nil {
-		return
-	}
+	reportFile := c.Request.Body
 
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, reportFile); err != nil {
@@ -248,9 +244,6 @@ func (b Build) CreateReport(c *gin.Context) {
 	}
 
 	err = db.Model(&build).Association("BuildReport").Append(buildReport).Error
-	if err != nil {
-		return
-	}
 
 	if err != nil {
 		c.Error(err)
