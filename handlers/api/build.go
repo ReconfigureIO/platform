@@ -1,10 +1,8 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -223,18 +221,8 @@ func (b Build) CreateReport(c *gin.Context) {
 		return
 	}
 
-	reportFile := c.Request.Body
-
-	buf := bytes.NewBuffer(nil)
-	if _, err := io.Copy(buf, reportFile); err != nil {
-		return
-	}
-
 	var reportBytes json.RawMessage
-	err = json.Unmarshal([]byte(buf.Bytes()), &reportBytes)
-	if err != nil {
-		return
-	}
+	err = json.NewDecoder(c.Request.Body).Decode(&reportBytes)
 
 	reportContents := string(reportBytes[:])
 
