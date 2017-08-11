@@ -66,7 +66,7 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
-		sugar.NotFoundOrError(c, err)
+		sugar.TokenNotFoundOrError(c, err)
 		return
 	}
 	session := sessions.Default(c)
