@@ -66,7 +66,6 @@ type Build struct {
 	Project     Project      `json:"project" gorm:"ForeignKey:ProjectID"`
 	ProjectID   string       `json:"-"`
 	BatchJob    BatchJob     `json:"job" gorm:"ForeignKey:BatchJobId"`
-	BuildReport BuildReport  `json:"-" gorm:"ForeignKey:BuildReportId"`
 	BatchJobID  int64        `json:"-"`
 	FPGAImage   string       `json:"-"`
 	Token       string       `json:"-"`
@@ -116,11 +115,12 @@ func (repo *buildRepo) CreateBuildReport(build Build, version string, document s
 	buildReport := BuildReport{
 		Version: version,
 		Report:  document,
+		BuildID: build.ID,
 	}
 
 	db := repo.db
-	err := db.Model(&build).Association("BuildReport").Append(buildReport).Error
-	if err != nil {
+
+	if err := db.Create(&buildReport).Error; err != nil {
 		return BuildReport{}, err
 	}
 	return buildReport, nil
