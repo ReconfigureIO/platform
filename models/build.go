@@ -10,6 +10,7 @@ type BuildRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
+	CreateBuildReport(Build, string, string) (BuildReport, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -107,6 +108,22 @@ func (b *Build) HasStarted() bool {
 // HasFinished returns if build is finished.
 func (b *Build) HasFinished() bool {
 	return hasFinished(b.Status())
+}
+
+// CreateBuildReport takes a version and document,
+// creates a build report and attaches to build
+func (repo *buildRepo) CreateBuildReport(build Build, version string, document string) (BuildReport, error) {
+	buildReport := BuildReport{
+		Version: version,
+		Report:  document,
+	}
+
+	db := repo.db
+	err := db.Model(&build).Association("BuildReport").Append(buildReport).Error
+	if err != nil {
+		return BuildReport{}, err
+	}
+	return buildReport, nil
 }
 
 // PostBuild is post request body for a new build.

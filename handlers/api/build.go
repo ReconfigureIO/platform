@@ -216,6 +216,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 
 // CreateReport creates build report.
 func (b Build) CreateReport(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
 	build, err := b.unauthOne(c)
 	if err != nil {
 		return
@@ -226,12 +227,8 @@ func (b Build) CreateReport(c *gin.Context) {
 
 	reportContents := string(reportBytes[:])
 
-	buildReport := models.BuildReport{
-		Version: "1",
-		Report:  reportContents,
-	}
-
-	err = db.Model(&build).Association("BuildReport").Append(buildReport).Error
+	// version number is 1 for now
+	report, err := buildRepo.CreateBuildReport(build, "1", reportContents)
 
 	if err != nil {
 		c.Error(err)
@@ -239,6 +236,6 @@ func (b Build) CreateReport(c *gin.Context) {
 		return
 	}
 
-	sugar.SuccessResponse(c, 200, buildReport)
+	sugar.SuccessResponse(c, 200, report)
 
 }
