@@ -82,9 +82,10 @@ type Project struct {
 
 // PostBatchEvent is post request body for batch events.
 type PostBatchEvent struct {
-	Status  string `json:"status" validate:"nonzero"`
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Timestamp time.Time `json:"timestamp"`
+	Status    string    `json:"status" validate:"nonzero"`
+	Message   string    `json:"message"`
+	Code      int       `json:"code"`
 }
 
 // PostDepEvent is post request body for deployment events.

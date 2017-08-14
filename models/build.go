@@ -1,5 +1,7 @@
 package models
 
+//go:generate mockgen -source=build.go -package=models -destination=build_mock.go
+
 import (
 	"fmt"
 
