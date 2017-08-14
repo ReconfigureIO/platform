@@ -221,11 +221,12 @@ func (b Build) CreateReport(c *gin.Context) {
 	if err != nil {
 		return
 	}
-
-	var reportBytes json.RawMessage
-	err = json.NewDecoder(c.Request.Body).Decode(&reportBytes)
-
-	reportContents := string(reportBytes[:])
+	reportContents, err := ValidateJson(c)
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
 
 	// version number is 1 for now
 	report, err := buildRepo.CreateBuildReport(build, "1", reportContents)
@@ -238,4 +239,12 @@ func (b Build) CreateReport(c *gin.Context) {
 
 	sugar.SuccessResponse(c, 200, report)
 
+}
+
+func ValidateJson(c *gin.Context) (string, error) {
+	var bodyBytes json.RawMessage
+	err := json.NewDecoder(c.Request.Body).Decode(&bodyBytes)
+
+	bodyString := string(bodyBytes[:])
+	return bodyString, err
 }
