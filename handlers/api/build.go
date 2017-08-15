@@ -221,6 +221,13 @@ func (b Build) CreateReport(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	version := "unknown"
+	switch c.ContentType() {
+	case "application/vnd.reconfigure.io/reports-v1+json":
+		version = "1"
+	default:
+	}
+
 	reportContents, err := ValidateJson(c)
 	if err != nil {
 		c.Error(err)
@@ -228,8 +235,7 @@ func (b Build) CreateReport(c *gin.Context) {
 		return
 	}
 
-	// version number is 1 for now
-	report, err := buildRepo.CreateBuildReport(build, "1", reportContents)
+	report, err := buildRepo.CreateBuildReport(build, version, reportContents)
 
 	if err != nil {
 		c.Error(err)
