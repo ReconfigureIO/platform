@@ -271,5 +271,5 @@ type BuildReport struct {
 	Build   Build  `json:"-" gorm:"ForeignKey:BuildID"`
 	BuildID string `json:"-"`
 	Version string `json:"-"`
-	Report  string `json:"report"`
+	Report  string `json:"report" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB"`
 }
