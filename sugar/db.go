@@ -51,6 +51,16 @@ func NotFoundOrError(c *gin.Context, err error) {
 	}
 }
 
+// TokenNotFoundOrError checks if the error is a record not found error.
+// If so, return token invalid, else 500
+func TokenNotFoundOrError(c *gin.Context, err error) {
+	if err == gorm.ErrRecordNotFound {
+		ErrResponse(c, 400, "Signup Token Invalid")
+	} else {
+		InternalError(c, err)
+	}
+}
+
 // ValidateRequest validates the request using validator.
 func ValidateRequest(c *gin.Context, object interface{}) bool {
 	err := validator.Validate(object)

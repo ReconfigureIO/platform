@@ -63,13 +63,10 @@ func (s *SignupUser) Logout(c *gin.Context) {
 
 func (s *SignupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
-	if token == "" {
-		sugar.ErrResponse(c, 400, "invite token required")
-		return
-	}
+
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
-		sugar.NotFoundOrError(c, err)
+		sugar.TokenNotFoundOrError(c, err)
 		return
 	}
 	session := sessions.Default(c)
@@ -79,6 +76,12 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 
 	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
 	c.Redirect(http.StatusFound, url)
+}
+
+// user tried to sign up without an invite token
+func (s *SignupUser) NoToken(c *gin.Context) {
+	sugar.ErrResponse(c, 400, "invite token required to sign up to Reconfigure.io")
+	return
 }
 
 func (s *SignupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
