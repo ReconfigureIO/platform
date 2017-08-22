@@ -52,6 +52,8 @@ type User struct {
 	Name              string    `json:"name"`
 	Email             string    `gorm:"type:varchar(100);unique_index" json:"email"`
 	CreatedAt         time.Time `json:"created_at"`
+	PhoneNumber       string    `json:"phone_number"`
+	Company           string    `json:"company"`
 	GithubAccessToken string    `json:"-"`
 	Token             string    `json:"-"`
 	StripeToken       string    `json:"-"`
