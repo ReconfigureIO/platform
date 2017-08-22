@@ -13,6 +13,7 @@ type BuildRepo interface {
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	CreateBuildReport(Build, string, string) (BuildReport, error)
+	GetBuildReport(build Build) (BuildReport, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -126,6 +127,15 @@ func (repo *buildRepo) CreateBuildReport(build Build, version string, document s
 		return BuildReport{}, err
 	}
 	return buildReport, nil
+}
+
+// GetBuildReport gets a build report given a build
+func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
+	buildReport := BuildReport{}
+	db := repo.db
+
+	err := db.Model(&build).Related(&buildReport).Error
+	return buildReport, err
 }
 
 // PostBuild is post request body for a new build.

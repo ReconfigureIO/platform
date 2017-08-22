@@ -79,6 +79,25 @@ func (b Build) List(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, builds)
 }
 
+// Report fetches a build's report.
+func (b Build) Report(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
+	build, err := b.ByID(c)
+	if err != nil {
+		return
+	}
+
+	report, err := buildRepo.GetBuildReport(build)
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, report)
+}
+
 // Get fetches a build.
 func (b Build) Get(c *gin.Context) {
 	build, err := b.ByID(c)

@@ -57,6 +57,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		buildRoute.GET("/:id", build.Get)
 		buildRoute.PUT("/:id/input", build.Input)
 		buildRoute.GET("/:id/logs", build.Logs)
+		buildRoute.GET("/:id/reports", build.Report)
 	}
 
 	project := api.Project{}
