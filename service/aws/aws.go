@@ -267,16 +267,12 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 
 func (s *service) GetJobStream(job *batch.JobDetail) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
-	attempts := job.Attempts
-	if len(attempts) == 0 {
-		return nil, ErrNotFound
-	}
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
 		LogGroupName:        aws.String(s.conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
-		LogStreamNamePrefix: attempts[0].Container.LogStreamName,
+		LogStreamNamePrefix: job.Container.LogStreamName,
 	}
 	resp, err := cwLogs.DescribeLogStreams(searchParams)
 	if err != nil {
