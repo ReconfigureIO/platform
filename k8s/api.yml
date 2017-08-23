@@ -8,38 +8,27 @@ spec:
     metadata:
       labels:
         app: reconfigureio-api
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
     spec:
       containers:
       - name: api
-        image: reconfigureio/api:latest
+        image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest
         ports:
         - containerPort: 80
         env:
         - name: AWS_REGION
           value: "us-east-1"
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        - name:
-          value:
-        
+        - name: GITHUB_CLIENT_ID
+          value: ssm:///reconfigureio/platform/production/github_client
+        - name: GITHUB_CLIENT_SECRET
+          value: ssm:///reconfigureio/platform/production/github_secret  
         - name: DATABASE_URL
-          value: foo
+          value: ssm:///reconfigureio/platform/production/db
         - name: SECRET_KEY_BASE
-          value: bar
+          value: foobar
         - name: STRIPE_KEY
-          value: baz
+          value: ssm:///reconfigureio/platform/production/stripe
         - name: PORT
           value: "80"
         - name: RECO_ENV #reco short for reconfigure.io
@@ -63,19 +52,7 @@ spec:
         - name: RECO_DEPLOY_IMAGE
           value: "reconfigureio/docker-aws-fpga-runtime:latest"
         - name: RECO_DEPLOY_AMI
-          value: foo
+          value: ami-8e6a4df5
         - name: RECO_DEPLOY_BUCET
           value: "reconfigureio-builds"
-
-
-    AWS_REGION: us-east-1
-    PORT: '8080'
-    RECO_FEATURE_BILLING: 1
-    RECO_FEATURE_DEPLOY: 1
-    GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/staging/github_client
-    GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/staging/github_secret
-    STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
-    DATABASE_URL: ssm:///reconfigureio/platform/staging/db
-    RECO_DEPLOY_AMI: ami-8e6a4df5
-    RECO_AWS_QUEUE: staging-build-jobs
-    RECO_AWS_JOB: sdaccel-builder-build-staging
+ 
