@@ -1,0 +1,16 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: reconfigureio-api-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reconfigureio-api
+    spec:
+      containers:
+      - name: api
+        image: reconfigureio/api:latest
+        ports:
+        - containerPort: 80
