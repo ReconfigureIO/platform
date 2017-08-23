@@ -14,3 +14,36 @@ spec:
         image: reconfigureio/api:latest
         ports:
         - containerPort: 80
+        env:
+        - name: DATABASE_URL
+          value: foo
+        - name: SECRET_KEY_BASE
+          value: bar
+        - name: STRIPE_KEY
+          value: baz
+        - name: PORT
+          value: "80"
+        - name: RECO_ENV #reco short for reconfigure.io
+          value: production
+        - name: RECO_PLATFORM_MIGRATE
+          value: "true"
+        - name: RECO_FEATURE_DEPLOY
+          value: "true"
+        - name: RECO_AWS_LOG_GROUP
+          value: "/aws/batch/job"
+        - name: RECO_AWS_BUCKET
+          value: reconfigureio-builds
+        - name: RECO_AWS_QUEUE
+          value: build-jobs
+        - name: RECO_AWS_JOB
+          value: sdaccel-builder-build
+        - name: RECO_FEATURE_DEPLOY
+          value: "true"
+        - name: RECO_DEPLOY_LOG_GROUP
+          value: "/reconfigureio/deployments"
+        - name: RECO_DEPLOY_IMAGE
+          value: "reconfigureio/docker-aws-fpga-runtime:latest"
+        - name: RECO_DEPLOY_AMI
+          value: foo
+        - name: RECO_DEPLOY_BUCET
+          value: "reconfigureio-builds"
