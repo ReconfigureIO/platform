@@ -55,4 +55,6 @@ spec:
           value: ami-8e6a4df5
         - name: RECO_DEPLOY_BUCET
           value: "reconfigureio-builds"
+        command: ["/bin/sh"]
+        args: ["-c", "AWS_REGION=us-east-1 ssm-env env; /main"]
  
