@@ -76,6 +76,36 @@ func main() {
 
 	})
 
+	r.POST("/terminate-builds", func(c *gin.Context) {
+		b := models.BuildDataSource(db)
+		ctx := context.Background()
+
+		err := aws.NewBatchJobs(b, awsService).UpdateBatchJobStatus(ctx)
+
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(500, err)
+		} else {
+			c.Status(200)
+		}
+
+	})
+
+	r.POST("/terminate-simulations", func(c *gin.Context) {
+		s := models.SimulationDataSource(db)
+		ctx := context.Background()
+
+		err := awsService.NewBatchJobs(s, awsService).UpdateBatchJobStatus(ctx)
+
+		if err != nil {
+			log.Println(err.Error())
+			c.JSON(500, err)
+		} else {
+			c.Status(200)
+		}
+
+	})
+
 	r.POST("/generated-afis", func(c *gin.Context) {
 		watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
 
