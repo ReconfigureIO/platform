@@ -1,7 +1,7 @@
 package api
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -240,21 +240,15 @@ func (b Build) CreateReport(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	version := "unknown"
+
 	switch c.ContentType() {
 	case "application/vnd.reconfigure.io/reports-v1+json":
-		version = "1"
+		report := models.ReportV1{}
+		c.BindJSON(&report)
+		err = buildRepo.StoreBuildReport(build, report)
 	default:
+		err = errors.New("Not a valid report version")
 	}
-
-	reportContents, err := ValidateJson(c)
-	if err != nil {
-		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
-		return
-	}
-
-	report, err := buildRepo.CreateBuildReport(build, version, reportContents)
 
 	if err != nil {
 		c.Error(err)
@@ -262,14 +256,6 @@ func (b Build) CreateReport(c *gin.Context) {
 		return
 	}
 
-	sugar.SuccessResponse(c, 200, report)
+	sugar.SuccessResponse(c, 200, nil)
 
-}
-
-func ValidateJson(c *gin.Context) (string, error) {
-	var bodyBytes json.RawMessage
-	err := json.NewDecoder(c.Request.Body).Decode(&bodyBytes)
-
-	bodyString := string(bodyBytes[:])
-	return bodyString, err
 }

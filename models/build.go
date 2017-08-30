@@ -12,8 +12,8 @@ type BuildRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
-	CreateBuildReport(Build, string, string) (BuildReport, error)
-	GetBuildReport(build Build) (BuildReport, error)
+	StoreBuildReport(Build, ReportV1) error
+	GetBuildReport(build Build) (ReportV1, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -112,33 +112,55 @@ func (b *Build) HasFinished() bool {
 	return hasFinished(b.Status())
 }
 
-// CreateBuildReport takes a version and document,
-// creates a build report and attaches to build
-func (repo *buildRepo) CreateBuildReport(build Build, version string, document string) (BuildReport, error) {
-	buildReport := BuildReport{
-		Version: version,
-		Report:  document,
-		BuildID: build.ID,
-	}
-
+// StoreBuildReport takes a build and reportV1,
+// and attaches the report to the build
+func (repo *buildRepo) StoreBuildReport(build Build, report ReportV1) error {
 	db := repo.db
-
-	if err := db.Create(&buildReport).Error; err != nil {
-		return BuildReport{}, err
-	}
-	return buildReport, nil
+	report.BuildID = build.ID
+	err := db.Create(&report).Error
+	return err
 }
 
 // GetBuildReport gets a build report given a build
-func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
-	buildReport := BuildReport{}
+func (repo *buildRepo) GetBuildReport(build Build) (ReportV1, error) {
+	report := ReportV1{}
 	db := repo.db
 
-	err := db.Model(&build).Related(&buildReport).Error
-	return buildReport, err
+	err := db.Model(&build).Related(&report).Error
+	return report, err
 }
 
 // PostBuild is post request body for a new build.
 type PostBuild struct {
 	ProjectID string `json:"project_id" validate:"nonzero"`
+}
+
+type ReportV1 struct {
+	Build           Build        `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID         string       `json:"-"`
+	ModuleName      string       `json:"moduleName"`
+	PartName        string       `json:"partName"`
+	LutSummary      GroupSummary `json:"lutSummary"`
+	RegSummary      GroupSummary `json:"regSummary"`
+	BlockRamSummary GroupSummary `json:"blockRamSummary"`
+	UltraRamSummary PartDetail   `json:"ultraRamSummary"`
+	DspBlockSummary PartDetail   `json:"dspBlockSummary"`
+	WeightedAverage PartDetail   `json:"weightedAverage"`
+}
+
+type GroupSummary struct {
+	Description string      `json:"description"`
+	Used        int         `json:"used"`
+	Available   int         `json:"available"`
+	Utilisation int         `json:"utilisation"`
+	Detail      PartDetails `json:"detail"`
+}
+
+type PartDetails map[string]PartDetail
+
+type PartDetail struct {
+	Description string  `json:"description"`
+	Used        int     `json:"used"`
+	Available   int     `json:"available"`
+	Utilisation float32 `json:"utilisation"`
 }
