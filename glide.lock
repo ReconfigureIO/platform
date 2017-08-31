@@ -4,7 +4,7 @@ imports:
 - name: github.com/abiosoft/errs
   version: bb1d81cbcfef620e37729aff2822abeca5a25235
 - name: github.com/aws/aws-sdk-go
-  version: 75d583c2afd3807d4d3f24b31b06feebb8849242
+  version: 5f216d3a320b04771edb3f39e9e063603551423a
   subpackages:
   - aws
   - aws/awserr

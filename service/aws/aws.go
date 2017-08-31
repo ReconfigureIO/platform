@@ -33,7 +33,7 @@ type Service interface {
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
-	GetJobStream(id string) (*cloudwatchlogs.LogStream, error)
+	GetJobStream(*batch.JobDetail) (*cloudwatchlogs.LogStream, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
 }
@@ -269,14 +269,14 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	return resp.Jobs[0], nil
 }
 
-func (s *service) GetJobStream(id string) (*cloudwatchlogs.LogStream, error) {
+func (s *service) GetJobStream(job *batch.JobDetail) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
 		LogGroupName:        aws.String(s.conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
-		LogStreamNamePrefix: aws.String("example/" + id),
+		LogStreamNamePrefix: job.Container.LogStreamName,
 	}
 	resp, err := cwLogs.DescribeLogStreams(searchParams)
 	if err != nil {
