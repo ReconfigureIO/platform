@@ -152,7 +152,7 @@ type GroupSummary struct {
 	Description string      `json:"description"`
 	Used        int         `json:"used"`
 	Available   int         `json:"available"`
-	Utilisation int         `json:"utilisation"`
+	Utilisation float32     `json:"utilisation"`
 	Detail      PartDetails `json:"detail"`
 }
 
