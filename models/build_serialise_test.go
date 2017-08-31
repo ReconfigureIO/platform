@@ -18,15 +18,21 @@ func TestSerialiseDeserialise(t *testing.T) {
 		return
 	}
 
+	var input interface{}
+	err = json.Unmarshal(reportBytes, &input)
+
 	newBytes, err := json.Marshal(report)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	var output interface{}
+	err = json.Unmarshal(newBytes, &output)
+
 	//return from get with status should match the build we made at the start
-	if !reflect.DeepEqual(reportContents, string(newBytes)) {
-		t.Fatalf("\nExpected: %+v\nGot: %+v\n", reportContents, string(newBytes))
+	if !reflect.DeepEqual(input, output) {
+		t.Fatalf("\nExpected: %+v\nGot: %+v\n", input, output)
 		return
 	}
 
