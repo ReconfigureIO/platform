@@ -17,16 +17,93 @@ func TestSerialiseDeserialise(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	returnedReportBytes, err := json.Marshal(report)
-	if err != nil {
-		t.Error(err)
-		return
+
+	expectedReport := &ReportV1{
+		ModuleName: "fooModule",
+		PartName:   "barPart",
+		LutSummary: GroupSummary{
+			Description: "CLB LUTs",
+			Used:        70,
+			Available:   600577,
+			Utilisation: 0.01,
+			Detail: PartDetails{
+				"lutLogic": PartDetail{
+					Description: "LUT as Logic",
+					Used:        3,
+					Available:   600577,
+					Utilisation: 0.01,
+				},
+				"lutMemory": PartDetail{
+					Description: "LUT as Memory",
+					Used:        67,
+					Available:   394560,
+					Utilisation: 0.02,
+				},
+			},
+		},
+		RegSummary: GroupSummary{
+			Description: "CLB Registers",
+			Used:        38,
+			Available:   1201154,
+			Utilisation: 0.01,
+			Detail: PartDetails{
+				"regFlipFlop": PartDetail{
+					Description: "Register as Flip Flop",
+					Used:        38,
+					Available:   1201154,
+					Utilisation: 0.01,
+				},
+				"regLatch": PartDetail{
+					Description: "Register as Latch",
+					Used:        0,
+					Available:   1201154,
+					Utilisation: 0,
+				},
+			},
+		},
+		BlockRamSummary: GroupSummary{
+			Description: "Block RAM Tile",
+			Used:        0,
+			Available:   1024,
+			Utilisation: 0,
+			Detail: PartDetails{
+				"blockRamB36": PartDetail{
+					Description: "RAMB36/FIFO",
+					Used:        0,
+					Available:   1024,
+					Utilisation: 0,
+				},
+				"blockRamB18": PartDetail{
+					Description: "RAMB18",
+					Used:        0,
+					Available:   2048,
+					Utilisation: 0,
+				},
+			},
+		},
+		UltraRamSummary: PartDetail{
+			Description: "URAM",
+			Used:        0,
+			Available:   470,
+			Utilisation: 0,
+		},
+		DspBlockSummary: PartDetail{
+			Description: "DSPs",
+			Used:        0,
+			Available:   3474,
+			Utilisation: 0,
+		},
+		WeightedAverage: PartDetail{
+			Description: "Weighted Average",
+			Used:        318,
+			Available:   4569222,
+			Utilisation: 0.01,
+		},
 	}
-	returnedReport := string(returnedReportBytes[:])
 
 	//return from get with status should match the build we made at the start
-	if !reflect.DeepEqual(reportcontents, returnedReport) {
-		t.Fatalf("\nExpected: %+v\nGot:      %+v\n", reportcontents, returnedReport)
+	if !reflect.DeepEqual(expectedReport, report) {
+		t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expectedReport, report)
 		return
 	}
 }
