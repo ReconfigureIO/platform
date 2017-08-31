@@ -265,13 +265,3 @@ func inSlice(slice []string, val string) bool {
 	}
 	return false
 }
-
-// BuildReport model.
-type BuildReport struct {
-	uuidHook
-	ID      string `gorm:"primary_key" json:"-"`
-	Build   Build  `json:"-" gorm:"ForeignKey:BuildID"`
-	BuildID string `json:"-"`
-	Version string `json:"-"`
-	Report  string `json:"report" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB"`
-}

@@ -3,6 +3,7 @@ package models
 //go:generate mockgen -source=build.go -package=models -destination=build_mock.go
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/jinzhu/gorm"
@@ -13,7 +14,7 @@ type BuildRepo interface {
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, ReportV1) error
-	GetBuildReport(build Build) (ReportV1, error)
+	GetBuildReport(build Build) (BuildReport, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -112,18 +113,35 @@ func (b *Build) HasFinished() bool {
 	return hasFinished(b.Status())
 }
 
+type BuildReport struct {
+	uuidHook
+	ID      string `gorm:"primary_key" json:"-"`
+	Build   Build  `json:"-" gorm:"ForeignKey:BuildID"`
+	BuildID string `json:"-"`
+	Version string `json:"-"`
+	Report  string `json:"report" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB"`
+}
+
 // StoreBuildReport takes a build and reportV1,
 // and attaches the report to the build
 func (repo *buildRepo) StoreBuildReport(build Build, report ReportV1) error {
 	db := repo.db
-	report.BuildID = build.ID
-	err := db.Create(&report).Error
+	newBytes, err := json.Marshal(&report)
+	if err != nil {
+		return err
+	}
+	buildReport := BuildReport{
+		BuildID: build.ID,
+		Version: "v1",
+		Report:  string(newBytes),
+	}
+	err = db.Create(&buildReport).Error
 	return err
 }
 
 // GetBuildReport gets a build report given a build
-func (repo *buildRepo) GetBuildReport(build Build) (ReportV1, error) {
-	report := ReportV1{}
+func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
+	report := BuildReport{}
 	db := repo.db
 
 	err := db.Model(&build).Related(&report).Error
@@ -136,8 +154,6 @@ type PostBuild struct {
 }
 
 type ReportV1 struct {
-	Build           Build        `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID         string       `json:"-"`
 	ModuleName      string       `json:"moduleName"`
 	PartName        string       `json:"partName"`
 	LutSummary      GroupSummary `json:"lutSummary"`
