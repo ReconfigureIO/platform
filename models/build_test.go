@@ -42,3 +42,20 @@ func TestGetBuildsWithStatus(t *testing.T) {
 		}
 	})
 }
+
+func TestCreateBuildReport(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BuildDataSource(db)
+		//create a build in the DB
+		build := Build{}
+		db.Create(&build)
+		report := ReportV1{}
+		//run the get with status function
+		err := d.StoreBuildReport(build, report)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		return
+	})
+}
