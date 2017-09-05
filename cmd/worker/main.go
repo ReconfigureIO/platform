@@ -95,7 +95,7 @@ func main() {
 		s := models.SimulationDataSource(db)
 		ctx := context.Background()
 
-		err := awsService.NewBatchJobs(s, awsService).UpdateBatchJobStatus(ctx)
+		err := aws.NewBatchJobs(s, awsService).UpdateBatchJobStatus(ctx)
 
 		if err != nil {
 			log.Println(err.Error())
