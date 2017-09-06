@@ -241,6 +241,39 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 	return *resp.JobId, nil
 }
 
+func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
+	batchSession := batch.New(s.session)
+	inputArtifactURL := s.s3Url(graph.InputUrl())
+	outputArtifactURL := s.s3Url(graph.ArtifactUrl())
+
+	params := &batch.SubmitJobInput{
+		JobDefinition: aws.String(s.conf.JobDefinition), // Required
+		JobName:       aws.String("example"),            // Required
+		JobQueue:      aws.String(s.conf.Queue),         // Required
+		ContainerOverrides: &batch.ContainerOverrides{
+			Environment: []*batch.KeyValuePair{
+				{
+					Name:  aws.String("INPUT_URL"),
+					Value: aws.String(inputArtifactURL),
+				},
+				{
+					Name:  aws.String("CALLBACK_URL"),
+					Value: aws.String(callbackURL),
+				},
+				{
+					Name:  aws.String("OUTPUT_URL"),
+					Value: aws.String(outputArtifactURL),
+				},
+			},
+		},
+	}
+	resp, err := batchSession.SubmitJob(params)
+	if err != nil {
+		return "", err
+	}
+	return *resp.JobId, nil
+}
+
 func (s *service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
