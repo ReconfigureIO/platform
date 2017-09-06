@@ -126,6 +126,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
+	graphsURL := s.s3Url(build.GraphsUrl())
 
 	genAfi := "no"
 	if s.conf.GenerateAfi {
@@ -169,6 +170,10 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 				{
 					Name:  aws.String("REPORT_URL"),
 					Value: aws.String(reportsURL),
+				},
+				{
+					Name:  aws.String("GRAPH_URL"),
+					Value: aws.String(graphsURL),
 				},
 				{
 					Name:  aws.String("DCP_KEY"),

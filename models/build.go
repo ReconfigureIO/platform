@@ -93,6 +93,12 @@ func (build Build) ReportUrl() string {
 	return fmt.Sprintf("builds/%s/reports", build.ID)
 }
 
+// The place to build graphs will be uploaded to
+// Should be a zip file
+func (build Build) GraphsUrl() string {
+	return fmt.Sprintf("builds/%s/graphs.zip", build.ID)
+}
+
 // Status returns buikld status.
 func (b *Build) Status() string {
 	events := b.BatchJob.Events
