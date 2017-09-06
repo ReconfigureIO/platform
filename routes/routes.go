@@ -79,6 +79,16 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
+	graph := api.Graph{}
+	graphRoute := apiRoutes.Group("/graphs")
+	{
+		graphRoute.GET("", graph.List)
+		graphRoute.POST("", graph.Create)
+		graphRoute.GET("/:id", graph.Get)
+		graphRoute.PUT("/:id/input", graph.Input)
+		graphRoute.GET("/:id/graph", graph.Download)
+	}
+
 	deploymentEnabled := os.Getenv("RECO_FEATURE_DEPLOY") == "1"
 
 	deployment := api.Deployment{}
