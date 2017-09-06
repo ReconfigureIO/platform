@@ -149,6 +149,11 @@ func (b Graph) Input(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, graph)
 }
 
+// Download handles graph inputs.
+func (b Graph) Download(c *gin.Context) {
+	// TODO
+}
+
 func (b Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
 	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && graph.Project.UserID == user.ID {
