@@ -108,6 +108,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
+		eventRoutes.POST("/graphs/:id/events", graph.CreateEvent)
 
 		if deploymentEnabled {
 			eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
