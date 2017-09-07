@@ -132,8 +132,8 @@ func (s *service) Download(ctx context.Context, key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(object)
-	object.Close()
+	data, err := ioutil.ReadAll(object.Body)
+	object.Body.Close()
 	return data, err
 }
 
