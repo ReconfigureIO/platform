@@ -25,7 +25,7 @@ func (graph Graph) InputUrl() string {
 // The place to graph artifacts will be uploaded to
 // Should be a zip file
 func (graph Graph) ArtifactUrl() string {
-	return fmt.Sprintf("graphs/%s/graph.gz", graph.ID)
+	return fmt.Sprintf("graphs/%s/graph.pdf.gz", graph.ID)
 }
 
 // Status returns buikld status.

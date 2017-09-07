@@ -270,6 +270,9 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
+			Command: []*string{
+				aws.String("/opt/graph.sh"),
+			},
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("INPUT_URL"),
