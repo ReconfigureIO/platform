@@ -30,7 +30,7 @@ type Graph struct {
 	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
 	BatchJobID int64    `json:"-"`
 	Token      string   `json:"-"`
-	Type       string   `json:"type"`
+	Type       string   `json:"type" gorm:"default:'dataflow'"`
 }
 
 // The place to upload graph input to
