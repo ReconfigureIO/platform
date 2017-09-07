@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"

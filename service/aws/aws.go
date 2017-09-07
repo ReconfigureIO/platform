@@ -28,6 +28,7 @@ var ErrNotFound = errors.New("Not Found")
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
 	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
+	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)

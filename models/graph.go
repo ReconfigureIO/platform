@@ -3,23 +3,8 @@ package models
 //go:generate mockgen -source=graph.go -package=models -destination=graph_mock.go
 
 import (
-	"encoding/json"
 	"fmt"
-
-	"github.com/jinzhu/gorm"
 )
-
-type GraphRepo interface {
-	StoreGraphReport(Graph, ReportV1) error
-	GetGraphReport(graph Graph) (GraphReport, error)
-}
-
-type graphRepo struct{ db *gorm.DB }
-
-// DeploymentDataSource returns the data source for deployments.
-func GraphDataSource(db *gorm.DB) GraphRepo {
-	return &graphRepo{db: db}
-}
 
 // Graph model.
 type Graph struct {
