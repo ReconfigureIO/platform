@@ -166,7 +166,8 @@ func (g Graph) Download(c *gin.Context) {
 		return
 	}
 
-	c.Data(200, "application/gzip; charset=utf-8", object)
+	c.Header("Content-Encoding", "gzip")
+	c.Data(200, "application/pdf", object)
 
 }
 
