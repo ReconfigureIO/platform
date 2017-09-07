@@ -64,6 +64,7 @@ dist-image/dist/templates/%: templates/% | dist-image/dist/templates
 
 clean:
 	rm -rf dist-image/dist
+	find . -name '*_mock.go' | xargs rm
 
 image: all
 	docker build -t "reco-api:latest" dist-image
