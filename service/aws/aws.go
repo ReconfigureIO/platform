@@ -27,6 +27,7 @@ var ErrNotFound = errors.New("Not Found")
 // Service is an AWS service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
+	Download(key string, ctx context.Context) (io.Reader, error)
 	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
 	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
@@ -117,6 +118,18 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 		return "", err
 	}
 	return s.s3Url(key), nil
+}
+
+func (s *service) Download(key string, ctx context.Context) (io.Reader, error) {
+	s3Session := s3.New(s.session)
+
+	getParams := &s3.GetObjectInput{
+		Bucket: aws.String(s.conf.Bucket), // Required
+		Key:    aws.String(key),           // Required
+	}
+
+	object, err := s3Session.GetObjectWithContext(ctx, getParams)
+	return object.body, err
 }
 
 func (s *service) s3Url(key string) string {
