@@ -27,7 +27,9 @@ var ErrNotFound = errors.New("Not Found")
 // Service is an AWS service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
+	Download(ctx context.Context, key string) ([]byte, error)
 	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
+	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
@@ -116,6 +118,23 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 		return "", err
 	}
 	return s.s3Url(key), nil
+}
+
+func (s *service) Download(ctx context.Context, key string) ([]byte, error) {
+	s3Session := s3.New(s.session)
+
+	getParams := &s3.GetObjectInput{
+		Bucket: aws.String(s.conf.Bucket), // Required
+		Key:    aws.String(key),           // Required
+	}
+
+	object, err := s3Session.GetObjectWithContext(ctx, getParams)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(object.Body)
+	object.Body.Close()
+	return data, err
 }
 
 func (s *service) s3Url(key string) string {
@@ -230,6 +249,42 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 				{
 					Name:  aws.String("DEVICE_FULL"),
 					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
+				},
+			},
+		},
+	}
+	resp, err := batchSession.SubmitJob(params)
+	if err != nil {
+		return "", err
+	}
+	return *resp.JobId, nil
+}
+
+func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
+	batchSession := batch.New(s.session)
+	inputArtifactURL := s.s3Url(graph.InputUrl())
+	outputArtifactURL := s.s3Url(graph.ArtifactUrl())
+
+	params := &batch.SubmitJobInput{
+		JobDefinition: aws.String(s.conf.JobDefinition), // Required
+		JobName:       aws.String("example"),            // Required
+		JobQueue:      aws.String(s.conf.Queue),         // Required
+		ContainerOverrides: &batch.ContainerOverrides{
+			Command: []*string{
+				aws.String("/opt/graph.sh"),
+			},
+			Environment: []*batch.KeyValuePair{
+				{
+					Name:  aws.String("INPUT_URL"),
+					Value: aws.String(inputArtifactURL),
+				},
+				{
+					Name:  aws.String("CALLBACK_URL"),
+					Value: aws.String(callbackURL),
+				},
+				{
+					Name:  aws.String("OUTPUT_URL"),
+					Value: aws.String(outputArtifactURL),
 				},
 			},
 		},
