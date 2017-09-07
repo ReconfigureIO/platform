@@ -1,7 +1,5 @@
 package models
 
-//go:generate mockgen -source=graph.go -package=models -destination=graph_mock.go
-
 import (
 	"fmt"
 )
