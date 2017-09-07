@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -168,7 +167,6 @@ func (g Graph) Download(c *gin.Context) {
 	}
 
 	c.Data(200, "application/gzip; charset=utf-8", object)
-	object.Close()
 
 }
 
