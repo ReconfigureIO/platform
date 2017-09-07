@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -15,7 +16,7 @@ import (
 type Graph struct{}
 
 // Common preload functionality.
-func (b Graph) Preload(db *gorm.DB) *gorm.DB {
+func (g Graph) Preload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Project").
 		Preload("BatchJob").
 		Preload("BatchJob.Events", func(db *gorm.DB) *gorm.DB {
@@ -24,21 +25,21 @@ func (b Graph) Preload(db *gorm.DB) *gorm.DB {
 }
 
 // Query fetches graphs for user and project.
-func (b Graph) Query(c *gin.Context) *gorm.DB {
+func (g Graph) Query(c *gin.Context) *gorm.DB {
 	user := middleware.GetUser(c)
 	joined := db.Joins("join projects on projects.id = graphs.project_id").
 		Where("projects.user_id=?", user.ID)
-	return b.Preload(joined)
+	return g.Preload(joined)
 }
 
 // ByID gets the first graph by ID, 404 if it doesn't exist.
-func (b Graph) ByID(c *gin.Context) (models.Graph, error) {
+func (g Graph) ByID(c *gin.Context) (models.Graph, error) {
 	graph := models.Graph{}
 	var id string
 	if !bindID(c, &id) {
 		return graph, errNotFound
 	}
-	err := b.Query(c).First(&graph, "graphs.id = ?", id).Error
+	err := g.Query(c).First(&graph, "graphs.id = ?", id).Error
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -47,22 +48,22 @@ func (b Graph) ByID(c *gin.Context) (models.Graph, error) {
 	return graph, nil
 }
 
-func (b Graph) unauthOne(c *gin.Context) (models.Graph, error) {
+func (g Graph) unauthOne(c *gin.Context) (models.Graph, error) {
 	graph := models.Graph{}
 	var id string
 	if !bindID(c, &id) {
 		return graph, errNotFound
 	}
-	q := b.Preload(db)
+	q := g.Preload(db)
 	err := q.First(&graph, "id = ?", id).Error
 	return graph, err
 }
 
 // List lists all graphs.
-func (b Graph) List(c *gin.Context) {
+func (g Graph) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	graphs := []models.Graph{}
-	q := b.Query(c)
+	q := g.Query(c)
 
 	if project != "" {
 		q = q.Where(&models.Graph{ProjectID: project})
@@ -79,8 +80,8 @@ func (b Graph) List(c *gin.Context) {
 }
 
 // Get fetches a graph.
-func (b Graph) Get(c *gin.Context) {
-	graph, err := b.ByID(c)
+func (g Graph) Get(c *gin.Context) {
+	graph, err := g.ByID(c)
 	if err != nil {
 		return
 	}
@@ -89,7 +90,7 @@ func (b Graph) Get(c *gin.Context) {
 }
 
 // Create creates a graph.
-func (b Graph) Create(c *gin.Context) {
+func (g Graph) Create(c *gin.Context) {
 	post := models.PostGraph{}
 	c.BindJSON(&post)
 
@@ -113,8 +114,8 @@ func (b Graph) Create(c *gin.Context) {
 }
 
 // Input handles graph inputs.
-func (b Graph) Input(c *gin.Context) {
-	graph, err := b.ByID(c)
+func (g Graph) Input(c *gin.Context) {
+	graph, err := g.ByID(c)
 	if err != nil {
 		return
 	}
@@ -148,12 +149,30 @@ func (b Graph) Input(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, graph)
 }
 
-// Download handles graph inputs.
-func (b Graph) Download(c *gin.Context) {
-	// TODO
+// Download returns the graph file.
+func (g Graph) Download(c *gin.Context) {
+	graph, err := g.ByID(c)
+	if err != nil {
+		return
+	}
+
+	if graph.Status() != "COMPLETED" {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Graph is '%s', not COMPLETED", graph.Status()))
+		return
+	}
+
+	object, err := awsSession.Download(c, graph.ArtifactUrl())
+	if err != nil {
+		sugar.ErrResponse(c, 500, err)
+		return
+	}
+
+	c.Data(200, "application/gzip; charset=utf-8", object)
+	object.Close()
+
 }
 
-func (b Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
+func (g Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
 	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && graph.Project.UserID == user.ID {
 		return true
@@ -166,13 +185,13 @@ func (b Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
 }
 
 // CreateEvent creates graph event.
-func (b Graph) CreateEvent(c *gin.Context) {
-	graph, err := b.unauthOne(c)
+func (g Graph) CreateEvent(c *gin.Context) {
+	graph, err := g.unauthOne(c)
 	if err != nil {
 		return
 	}
 
-	if !b.canPostEvent(c, graph) {
+	if !g.canPostEvent(c, graph) {
 		c.AbortWithStatus(403)
 		return
 	}
