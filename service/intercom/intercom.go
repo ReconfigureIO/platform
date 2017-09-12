@@ -1,12 +1,15 @@
 package intercom
 
 import (
+	"time"
+
+	"github.com/ReconfigureIO/platform/models"
 	intercomOfficial "gopkg.in/intercom/intercom-go.v2"
 )
 
 // Service is an intercom service.
 type Service interface {
-	Save(event Event) error
+	Save(event models.Event) error
 	Conf() *ServiceConfig
 }
 
@@ -25,9 +28,16 @@ func New(conf ServiceConfig) Service {
 	return &s
 }
 
-func (s *service) Save(event Event) error {
-	ic := intercomOfficial.NewClient("access_token", service.conf.AccessToken)
-	err := ic.Events.Save(&event)
+func (s *service) Save(event models.Event) error {
+	ic := intercomOfficial.NewClient("access_token", s.conf.AccessToken)
+	icEvent := intercomOfficial.Event{
+		UserID:    event.UserID,
+		EventName: event.EventName,
+		CreatedAt: int64(time.Time(event.CreatedAt).Unix()),
+		Metadata:  event.Metadata,
+	}
+	err := ic.Events.Save(&icEvent)
+	return err
 }
 
 func (s *service) Conf() *ServiceConfig {

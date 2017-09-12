@@ -3,9 +3,11 @@ package api
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -129,6 +131,11 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	event := events.PostEvent{
+		EventName: "Posted Build",
+		Metadata:  map[string]interface{}{"build_id": newBuild.ID},
+	}
+	events.CreateEvent(event)
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
