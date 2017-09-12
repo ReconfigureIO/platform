@@ -2,7 +2,7 @@ package events
 
 import (
 	"time"
-	
+
 	"github.com/ReconfigureIO/platform/service/intercom"
 )
 
@@ -19,8 +19,8 @@ func PostEvents() error {
 }
 
 type Event struct {
+	UserID    string
 	EventName string
 	CreatedAt time.Time
-	UserID    string
-	Metadata  []map[string]string{}
+	Metadata  []map[string]interface{}
 }
