@@ -1,24 +1,28 @@
-package intercom
+package events
 
 import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	intercomOfficial "gopkg.in/intercom/intercom-go.v2"
+	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 
-type NewIntercomEventService(config IntercomConfig, depth int) (EventService, error) {
-
+func NewIntercomEventService(config IntercomConfig, depth int) (EventService, error) {
+	return intercomEventService{
+		ICClient: intercom.NewClient("access_token", config.AccessToken),
+		Queue:    make(chan models.Event, depth),
+	}
 }
 
 type intercomEventService struct {
-	
+	ICClient intercom.Client
+	Queue    chan models.Event
 }
 
 func (s intercomEventService) DrainEvents() {
-	ic := intercomOfficial.NewClient("access_token", s.config.AccessToken)
-	for event := range s.c {
-		icEvent := intercomOfficial.Event{
+	ic := s.ICClient
+	for event := range s.Queue {
+		icEvent := intercom.Event{
 			UserID:    event.UserID,
 			EventName: event.EventName,
 			CreatedAt: int64(time.Time(event.CreatedAt).Unix()),
@@ -31,32 +35,14 @@ func (s intercomEventService) DrainEvents() {
 	}
 }
 
+func (s intercomEventService) EnqueueEvent(event models.Event) error {
+	select {
+	case s.Queue <- event:
+	default:
+		fmt.Println("Event queue full. Discarding event")
+	}
+}
 
-
-// // Service is an intercom service.
-// type Service interface {
-// 	Save(event models.Event) error
-// 	Conf() *ServiceConfig
-// }
-
-// type service struct {
-// 	conf ServiceConfig
-// }
-
-// // ServiceConfig holds configuration for service.
-// type ServiceConfig struct {
-// 	AccessToken string `env:"RECO_INTERCOM_ACCESS_TOKEN"`
-// }
-
-// // New creates a new service with conf.
-// func New(conf ServiceConfig) Service {
-// 	s := service{conf: conf}
-// 	return &s
-// }
-
-// func (s *service) Save(event models.Event) error {
-
-
-// func (s *service) Conf() *ServiceConfig {
-// 	return &s.conf
-// }
+func (s intercomEventService) Close() {
+	s.DrainEvents()
+}
