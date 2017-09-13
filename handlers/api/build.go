@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -133,11 +132,7 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	event := events.PostEvent{
-		EventName: "Posted Build",
-		Metadata:  map[string]interface{}{"build_id": newBuild.ID},
-	}
-	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": build.Project.name})
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 

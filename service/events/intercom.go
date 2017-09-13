@@ -1,13 +1,14 @@
 package events
 
 import (
+	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 
-func NewIntercomEventService(config IntercomConfig, depth int) (EventService, error) {
+func NewIntercomEventService(config IntercomConfig, depth int) EventService {
 	return intercomEventService{
 		ICClient: intercom.NewClient("access_token", config.AccessToken),
 		Queue:    make(chan models.Event, depth),
@@ -15,7 +16,7 @@ func NewIntercomEventService(config IntercomConfig, depth int) (EventService, er
 }
 
 type intercomEventService struct {
-	ICClient intercom.Client
+	ICClient *intercom.Client
 	Queue    chan models.Event
 }
 
@@ -35,11 +36,11 @@ func (s intercomEventService) DrainEvents() {
 	}
 }
 
-func (s intercomEventService) EnqueueEvent(event models.Event) error {
+func (s intercomEventService) EnqueueEvent(event models.Event) {
 	select {
 	case s.Queue <- event:
 	default:
-		fmt.Println("Event queue full. Discarding event")
+		log.Printf("Event queue full. Discarding event: %s", event)
 	}
 }
 

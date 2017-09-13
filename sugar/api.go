@@ -1,14 +1,15 @@
 package sugar
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 )
 
-func EnqueueEvent(s events.EventService, c *gin.Context, name string, meta map[string]interface{}) error {
+func EnqueueEvent(s events.EventService, c *gin.Context, name string, meta map[string]interface{}) {
 	now := time.Now()
 	userID := middleware.GetUser(c).ID
 
@@ -19,5 +20,5 @@ func EnqueueEvent(s events.EventService, c *gin.Context, name string, meta map[s
 		Metadata:  meta,
 	}
 
-	return s.EnqueueEvent(event)
+	s.EnqueueEvent(event)
 }
