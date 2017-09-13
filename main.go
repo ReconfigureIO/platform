@@ -48,8 +48,6 @@ func main() {
 
 	go events.DrainEvents()
 
-	b := api.Build{Events: events}
-
 	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
@@ -90,7 +88,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db)
+	routes.SetupRoutes(conf.SecretKey, r, db, events)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)

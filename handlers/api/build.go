@@ -15,7 +15,9 @@ import (
 )
 
 // Build handles requests for builds.
-type Build struct{}
+type Build struct {
+	Events events.EventService
+}
 
 // Common preload functionality.
 func (b Build) Preload(db *gorm.DB) *gorm.DB {
@@ -135,7 +137,7 @@ func (b Build) Create(c *gin.Context) {
 		EventName: "Posted Build",
 		Metadata:  map[string]interface{}{"build_id": newBuild.ID},
 	}
-	events.CreateEvent(event)
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": build.Project.name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
