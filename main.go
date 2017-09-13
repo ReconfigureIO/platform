@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -42,6 +43,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	events, err := NewIntercomEventService(conf.Reco.Intercom, 100)
+
+	go events.DrainEvents()
+
+	b := api.Build{Events: events}
 
 	stripe.Key = conf.StripeKey
 
