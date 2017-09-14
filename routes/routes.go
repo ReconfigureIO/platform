@@ -70,7 +70,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation()
+	simulation := api.NewSimulation(events)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -80,7 +80,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
-	graph := api.Graph{}
+	graph := api.Graph{Events: events}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
 		graphRoute.GET("", graph.List)

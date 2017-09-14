@@ -5,6 +5,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,9 @@ import (
 )
 
 // Graph handles requests for graphs.
-type Graph struct{}
+type Graph struct {
+	Events events.EventService
+}
 
 // Common preload functionality.
 func (g Graph) Preload(db *gorm.DB) *gorm.DB {
@@ -109,6 +112,7 @@ func (g Graph) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	sugar.EnqueueEvent(g.Events, c, "Posted Graph", map[string]interface{}{"graph_id": newGraph.ID, "project_name": newGraph.Project.Name})
 	sugar.SuccessResponse(c, 201, newGraph)
 }
 
