@@ -1,14 +1,19 @@
 package events
 
 import (
-	"github.com/ReconfigureIO/platform/models"
+	"time"
 )
 
-type Event struct{}
+type Event struct {
+	UserID    string
+	EventName string
+	CreatedAt time.Time
+	Metadata  map[string]interface{}
+}
 
 type EventService interface {
 	DrainEvents()
-	EnqueueEvent(models.Event)
+	EnqueueEvent(Event)
 	Close()
 }
 

@@ -265,10 +265,3 @@ func inSlice(slice []string, val string) bool {
 	}
 	return false
 }
-
-type Event struct {
-	UserID    string
-	EventName string
-	CreatedAt time.Time
-	Metadata  map[string]interface{}
-}

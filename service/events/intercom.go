@@ -4,20 +4,19 @@ import (
 	"log"
 	"time"
 
-	"github.com/ReconfigureIO/platform/models"
 	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 
 func NewIntercomEventService(config IntercomConfig, depth int) EventService {
 	return intercomEventService{
 		ICClient: intercom.NewClient("access_token", config.AccessToken),
-		Queue:    make(chan models.Event, depth),
+		Queue:    make(chan Event, depth),
 	}
 }
 
 type intercomEventService struct {
 	ICClient *intercom.Client
-	Queue    chan models.Event
+	Queue    chan Event
 }
 
 func (s intercomEventService) DrainEvents() {
@@ -36,7 +35,7 @@ func (s intercomEventService) DrainEvents() {
 	}
 }
 
-func (s intercomEventService) EnqueueEvent(event models.Event) {
+func (s intercomEventService) EnqueueEvent(event Event) {
 	select {
 	case s.Queue <- event:
 	default:
