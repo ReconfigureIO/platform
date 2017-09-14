@@ -28,7 +28,7 @@ func SetupAuth(r gin.IRouter, db *gorm.DB) {
 
 	tokenRoutes := r.Group("/token", middleware.RequiresUser())
 	{
-		tokenRoutes.POST("/refresh", func(c *gin.Context) {
+		tokenRoutes.GET("/refresh", func(c *gin.Context) {
 			user := middleware.GetUser(c)
 			err := db.Model(&user).Update("token", models.NewUser().Token).Error
 			if err != nil {
