@@ -61,7 +61,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		buildRoute.GET("/:id/reports", build.Report)
 	}
 
-	project := api.Project{Events: events}
+	project := api.Project{}
 	projectRoute := apiRoutes.Group("/projects")
 	{
 		projectRoute.GET("", project.List)

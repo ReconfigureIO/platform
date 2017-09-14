@@ -44,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	events, err := events.NewIntercomEventService(conf.Reco.Intercom, 100)
+	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 
 	go events.DrainEvents()
 
