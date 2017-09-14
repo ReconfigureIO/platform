@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -31,10 +32,16 @@ func TestIndexHandler(t *testing.T) {
 		return
 	}
 
+	icConf := events.IntercomConfig{
+		AccessToken: "foobar",
+	}
+
+	events := events.NewIntercomEventService(icConf, 100)
+
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes("secretKey", r, db)
+	r = SetupRoutes("secretKey", r, db, events)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
