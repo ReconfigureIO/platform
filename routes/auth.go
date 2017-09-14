@@ -1,11 +1,8 @@
 package routes
 
 import (
-	"net/http"
-
 	"github.com/ReconfigureIO/platform/handlers/auth"
 	"github.com/ReconfigureIO/platform/middleware"
-	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -26,16 +23,9 @@ func SetupAuth(r gin.IRouter, db *gorm.DB) {
 		authRoutes.GET("/logout", signup.Logout)
 	}
 
+	token := auth.Token{DB: db}
 	tokenRoutes := r.Group("/token", middleware.RequiresUser())
 	{
-		tokenRoutes.GET("/refresh", func(c *gin.Context) {
-			user := middleware.GetUser(c)
-			err := db.Model(&user).Update("token", models.NewUser().Token).Error
-			if err != nil {
-				c.AbortWithError(500, err)
-				return
-			}
-			c.Redirect(http.StatusFound, "/")
-		})
+		tokenRoutes.GET("/refresh", token.Refresh)
 	}
 }
