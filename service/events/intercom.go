@@ -9,7 +9,7 @@ import (
 
 func NewIntercomEventService(config IntercomConfig, depth int) EventService {
 	return intercomEventService{
-		ICClient: intercom.NewClient("access_token", config.AccessToken),
+		ICClient: intercom.NewClient(config.AccessToken, ""),
 		Queue:    make(chan Event, depth),
 	}
 }
