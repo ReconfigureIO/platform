@@ -8,6 +8,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,9 @@ import (
 )
 
 // Deployment handles request for deployments.
-type Deployment struct{}
+type Deployment struct {
+	Events events.EventService
+}
 
 // Preload is common preload functionality.
 func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
@@ -113,6 +116,7 @@ func (d Deployment) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
 	sugar.SuccessResponse(c, 201, newDep)
 }
