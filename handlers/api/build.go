@@ -90,7 +90,7 @@ func (b Build) Report(c *gin.Context) {
 	report, err := buildRepo.GetBuildReport(build)
 
 	if err != nil {
-		sugar.SuccessResponse(c, 200, err)
+		sugar.SuccessResponse(c, 204, nil)
 		return
 	}
 
