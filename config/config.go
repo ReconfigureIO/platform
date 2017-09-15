@@ -5,6 +5,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/events"
 )
 
 type Config struct {
@@ -21,6 +22,7 @@ type RecoConfig struct {
 	FeatureDeploy   bool   `env:"RECO_FEATURE_DEPLOY"`
 	AWS             aws.ServiceConfig
 	Deploy          deployment.ServiceConfig
+	Intercom        events.IntercomConfig
 }
 
 func ParseEnvConfig() (*Config, error) {
@@ -42,6 +44,11 @@ func ParseEnvConfig() (*Config, error) {
 	}
 
 	err = env.Parse(&conf.Reco.Deploy)
+	if err != nil {
+		return nil, err
+	}
+
+	err = env.Parse(&conf.Reco.Intercom)
 	if err != nil {
 		return nil, err
 	}

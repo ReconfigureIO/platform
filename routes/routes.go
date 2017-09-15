@@ -8,13 +8,14 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
+func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService) *gin.Engine {
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -49,7 +50,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		}
 	}
 
-	build := api.Build{}
+	build := api.Build{Events: events}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
@@ -69,7 +70,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation()
+	simulation := api.NewSimulation(events)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -79,7 +80,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
-	graph := api.Graph{}
+	graph := api.Graph{Events: events}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
 		graphRoute.GET("", graph.List)
@@ -91,7 +92,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 
 	deploymentEnabled := os.Getenv("RECO_FEATURE_DEPLOY") == "1"
 
-	deployment := api.Deployment{}
+	deployment := api.Deployment{Events: events}
 
 	if deploymentEnabled {
 
