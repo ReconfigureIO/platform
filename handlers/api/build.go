@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -78,6 +79,25 @@ func (b Build) List(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, builds)
 }
 
+// Report fetches a build's report.
+func (b Build) Report(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
+	build, err := b.ByID(c)
+	if err != nil {
+		return
+	}
+
+	report, err := buildRepo.GetBuildReport(build)
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, report)
+}
+
 // Get fetches a build.
 func (b Build) Get(c *gin.Context) {
 	build, err := b.ByID(c)
@@ -130,7 +150,8 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := awsSession.RunBuild(build, callbackURL)
+	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	buildID, err := awsSession.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
@@ -209,5 +230,32 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, newEvent)
+
+}
+
+// CreateReport creates build report.
+func (b Build) CreateReport(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
+	build, err := b.unauthOne(c)
+	if err != nil {
+		return
+	}
+
+	switch c.ContentType() {
+	case "application/vnd.reconfigure.io/reports-v1+json":
+		report := models.ReportV1{}
+		c.BindJSON(&report)
+		err = buildRepo.StoreBuildReport(build, report)
+	default:
+		err = errors.New("Not a valid report version")
+	}
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, nil)
 
 }
