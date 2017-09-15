@@ -46,7 +46,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB) *gin.Engine {
 			billingRoutes.PUT("", profile.Update)
 			billingRoutes.GET("/payment-info", billing.Get)
 			billingRoutes.POST("/payment-info", billing.Replace)
-			billingRoutes.GET("/hours-remaining", billing.HoursRemaining)
+			billingRoutes.GET("/hours-remaining", billing.RemainingHours)
 		}
 	}
 
