@@ -119,6 +119,7 @@ OptionSettings:
     RECO_DEPLOY_AMI: ami-8e6a4df5
     RECO_AWS_QUEUE: staging-build-jobs
     RECO_AWS_JOB: sdaccel-builder-build-staging
+    RECO_INTERCOM_ACCESS_TOKEN: foobar
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0
