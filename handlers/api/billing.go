@@ -18,6 +18,7 @@ type BillingInterface interface {
 	Get(c *gin.Context)
 	Replace(c *gin.Context)
 	FetchBillingHours(userID string) BillingHours
+	RemainingHours(c *gin.Context)
 }
 
 // TokenUpdate is token update payload.
@@ -75,6 +76,17 @@ func (b Billing) Replace(c *gin.Context) {
 
 	}
 	sugar.SuccessResponse(c, 200, models.DefaultSource(cust))
+}
+
+func (b Billing) RemainingHours(c *gin.Context) {
+	user := middleware.GetUser(c)
+	billingHours := b.FetchBillingHours(user.ID)
+	remaining, err := billingHours.Net()
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+	sugar.SuccessResponse(c, 200, remaining)
 }
 
 // BillingHours returns information about billing hours for user.

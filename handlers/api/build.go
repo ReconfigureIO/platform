@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,9 @@ import (
 )
 
 // Build handles requests for builds.
-type Build struct{}
+type Build struct {
+	Events events.EventService
+}
 
 // Common preload functionality.
 func (b Build) Preload(db *gorm.DB) *gorm.DB {
@@ -128,6 +131,7 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
