@@ -93,8 +93,7 @@ func (b Build) Report(c *gin.Context) {
 	report, err := buildRepo.GetBuildReport(build)
 
 	if err != nil {
-		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.NotFoundOrError(c, err)
 		return
 	}
 
