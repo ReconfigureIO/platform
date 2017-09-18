@@ -1,11 +1,13 @@
 package leads
 
 import (
+	"errors"
+	"log"
+
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/jinzhu/gorm"
 	intercom "gopkg.in/intercom/intercom-go.v2"
-	"log"
 )
 
 /*
@@ -27,31 +29,46 @@ type leads struct {
 }
 
 func New(config events.IntercomConfig, db *gorm.DB) Leads {
+	c := intercom.NewClient(config.AccessToken, "")
 	return &leads{
-		intercom: intercom.NewClient(config.AccessToken, ""),
+		intercom: c,
 		db:       db,
 	}
 }
 
 func (s *leads) Invite(num int) (invited int, err error) {
 	invited = 0
+
 	log.Printf("Searching tags")
 	tags, err := s.intercom.Tags.List()
 	if err != nil {
 		return
 	}
 
-	var tag *intercom.Tag
+	var readyTag intercom.Tag
+	var canInviteTag intercom.Tag
 
 	for _, t := range tags.Tags {
+
 		if t.Name == "invite_ready" {
-			tag = &t
-			break
+			readyTag = t
 		}
+
+		if t.Name == "can_invite" {
+			canInviteTag = t
+		}
+
 	}
 
-	log.Printf("Searching contacts")
-	contacts, err := s.intercom.Contacts.ListByTag("can_invite", intercom.PageParams{PerPage: int64(num), TotalPages: 1})
+	if readyTag.ID == "" {
+		return 0, errors.New("Can't find a tag 'invite_ready'")
+	}
+
+	if canInviteTag.ID == "" {
+		return 0, errors.New("Can't find a tag 'can_invite'")
+	}
+
+	contacts, err := s.intercom.Contacts.ListByTag(canInviteTag.ID, intercom.PageParams{})
 	if err != nil {
 		return
 	}
@@ -64,7 +81,7 @@ func (s *leads) Invite(num int) (invited int, err error) {
 			return
 		}
 
-		newTags := []intercom.Tag{*tag}
+		newTags := []intercom.Tag{readyTag}
 		c.Tags = &(intercom.TagList{Tags: newTags})
 		c.CustomAttributes["invite_token"] = t.Token
 		s.intercom.Contacts.Update(&c)
