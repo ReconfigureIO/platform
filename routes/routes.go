@@ -9,13 +9,14 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService) *gin.Engine {
+func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads) *gin.Engine {
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -29,10 +30,10 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
 	})
 	admin := r.Group("/admin", authMiddleware)
-	SetupAdmin(admin, db)
+	SetupAdmin(admin, db, leads)
 
 	// signup & login flow
-	SetupAuth(r, db)
+	SetupAuth(r, db, leads)
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db), middleware.RequiresUser())
 
