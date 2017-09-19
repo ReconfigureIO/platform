@@ -68,12 +68,17 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		return 0, errors.New("Can't find a tag 'can_invite'")
 	}
 
-	contacts, err := s.intercom.Contacts.ListByTag(canInviteTag.ID, intercom.PageParams{})
+	// We should be using the contact service, but that doesn't filter by tag
+	// Instead, Users will return Contacts, so we'll use that
+	contacts, err := s.intercom.Users.ListByTag(canInviteTag.ID, intercom.PageParams{PerPage: int64(num)})
 	if err != nil {
 		return
 	}
 
-	for _, c := range contacts.Contacts {
+	for _, c := range contacts.Users {
+		log.Printf("Inviting %v\n", c)
+
+		// create invite
 		t := models.NewInviteToken()
 		t.IntercomId = c.UserID
 		err = s.db.Create(&t).Error
@@ -81,13 +86,26 @@ func (s *leads) Invite(num int) (invited int, err error) {
 			return
 		}
 
+		// add invite token & tag as `invite_ready`
 		newTags := []intercom.Tag{readyTag}
 		c.Tags = &(intercom.TagList{Tags: newTags})
 		c.CustomAttributes["invite_token"] = t.Token
-		s.intercom.Contacts.Update(&c)
+		s.intercom.Users.Save(&c)
 		if err != nil {
 			return
 		}
+
+		// untag `can_invite` so we don't do it again
+		tagging := intercom.Tagging{Untag: intercom.Bool(true), ID: c.ID}
+
+		_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
+			Name:  "can_invite",
+			Users: []intercom.Tagging{tagging},
+		})
+		if err != nil {
+			return
+		}
+
 		invited += 1
 	}
 	return
