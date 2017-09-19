@@ -28,6 +28,7 @@ func (inv InviteAdmin) Create(c *gin.Context) {
 	sugar.SuccessResponse(c, 201, invite)
 }
 
+// Synchronize the local invites agains the leads inside Intercom awaiting invites
 func (inv InviteAdmin) Sync(c *gin.Context) {
 	invited, err := inv.Leads.Invite(20)
 	if err != nil {
