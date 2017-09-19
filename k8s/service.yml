@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: reconfigureio-api
+    dns: route53
+  name: api-load-balancer
+  namespace: default
+  annotations:
+    domainName: "test-api.reconfigure.io"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: |-
+      arn:aws:acm:us-east-1:398048034572:certificate/1fd33edb-f867-478d-8f4f-e33f9b16b59a
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: https
+    port: 443
+    protocol: TCP
+  selector:
+    app: reconfigureio-api
+  sessionAffinity: None
+  type: LoadBalancer
