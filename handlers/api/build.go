@@ -1,10 +1,12 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -12,7 +14,9 @@ import (
 )
 
 // Build handles requests for builds.
-type Build struct{}
+type Build struct {
+	Events events.EventService
+}
 
 // Common preload functionality.
 func (b Build) Preload(db *gorm.DB) *gorm.DB {
@@ -78,6 +82,24 @@ func (b Build) List(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, builds)
 }
 
+// Report fetches a build's report.
+func (b Build) Report(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
+	build, err := b.ByID(c)
+	if err != nil {
+		return
+	}
+
+	report, err := buildRepo.GetBuildReport(build)
+
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, report)
+}
+
 // Get fetches a build.
 func (b Build) Get(c *gin.Context) {
 	build, err := b.ByID(c)
@@ -109,6 +131,7 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
@@ -130,7 +153,8 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := awsSession.RunBuild(build, callbackURL)
+	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	buildID, err := awsSession.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
@@ -209,5 +233,32 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, newEvent)
+
+}
+
+// CreateReport creates build report.
+func (b Build) CreateReport(c *gin.Context) {
+	buildRepo := models.BuildDataSource(db)
+	build, err := b.unauthOne(c)
+	if err != nil {
+		return
+	}
+
+	switch c.ContentType() {
+	case "application/vnd.reconfigure.io/reports-v1+json":
+		report := models.ReportV1{}
+		c.BindJSON(&report)
+		err = buildRepo.StoreBuildReport(build, report)
+	default:
+		err = errors.New("Not a valid report version")
+	}
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, nil)
 
 }

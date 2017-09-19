@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -14,12 +15,16 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	Aws aws.Service
+	Aws    aws.Service
+	Events events.EventService
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation() Simulation {
-	return Simulation{Aws: awsSession}
+func NewSimulation(events events.EventService) Simulation {
+	return Simulation{
+		Aws:    awsSession,
+		Events: events,
+	}
 }
 
 // Common preload functionality.
@@ -89,7 +94,7 @@ func (s Simulation) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-
+	sugar.EnqueueEvent(s.Events, c, "Posted Simulation", map[string]interface{}{"simulation_id": newSim.ID, "project_name": newSim.Project.Name})
 	sugar.SuccessResponse(c, 201, newSim)
 }
 

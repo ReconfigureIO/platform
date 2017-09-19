@@ -1,10 +1,10 @@
-hash: 1d7786fd28916c40364c42bb2073592e1c3dff6e37dbf8a01a5f66c070832d75
-updated: 2017-08-01T20:06:46.809509166Z
+hash: 9f3c4e0c4655b1c9b871d6a753da21504fbdf1a77248217fdddeed1d71d35c8f
+updated: 2017-09-12T13:32:46.460654953Z
 imports:
 - name: github.com/abiosoft/errs
   version: bb1d81cbcfef620e37729aff2822abeca5a25235
 - name: github.com/aws/aws-sdk-go
-  version: 75d583c2afd3807d4d3f24b31b06feebb8849242
+  version: 49cd7b4cfcfcae1eb815db0a9139f07340bf49c8
   subpackages:
   - aws
   - aws/awserr
@@ -136,6 +136,10 @@ imports:
   - urlfetch
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/intercom/intercom-go.v2
+  version: 6a295d89392c06159c65688896d82091e7274b10
+  subpackages:
+  - interfaces
 - name: gopkg.in/validator.v2
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: gopkg.in/yaml.v2

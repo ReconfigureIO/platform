@@ -7,6 +7,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
@@ -22,8 +23,9 @@ const (
 )
 
 type SignupUser struct {
-	DB *gorm.DB
-	GH *github.Service
+	DB    *gorm.DB
+	GH    *github.Service
+	Leads leads.Leads
 }
 
 func (s *SignupUser) GetAuthToken(token string) (models.InviteToken, error) {
@@ -117,8 +119,11 @@ func (s *SignupUser) Callback(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
+
+	var invite models.InviteToken
+
 	if newUser {
-		invite, err := s.GetAuthToken(storedToken)
+		invite, err = s.GetAuthToken(storedToken)
 		if err != nil {
 			sugar.NotFoundOrError(c, err)
 			return
@@ -157,6 +162,14 @@ func (s *SignupUser) Callback(c *gin.Context) {
 	}
 	session.Set("user_id", user.ID)
 	session.Save()
+
+	// If we have a newUser, we need to mark the new user as invited
+	if newUser {
+		err = s.Leads.Invited(invite, user)
+		if err != nil {
+			sugar.NotFoundOrError(c, err)
+		}
+	}
 
 	c.Redirect(http.StatusFound, location)
 }
