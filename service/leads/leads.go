@@ -94,6 +94,9 @@ func (s *leads) Invite(num int) (invited int, err error) {
 }
 
 func (s *leads) Invited(token models.InviteToken, user models.User) error {
+	if token.IntercomId == "" {
+		return nil
+	}
 	contact := intercom.Contact{UserID: token.IntercomId}
 	intercom_user := intercom.User{Email: user.Email}
 	_, err := s.intercom.Contacts.Convert(&contact, &intercom_user)
