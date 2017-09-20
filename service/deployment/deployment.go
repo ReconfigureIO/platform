@@ -48,7 +48,7 @@ type ServiceConfig struct {
 	LogGroup string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
 	Image    string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
 	AMI      string `env:"RECO_DEPLOY_AMI"`
-	Bucket   string `env:"RECO_DEPLOY_BUCET" envDefault:"reconfigureio-builds"`
+	Bucket   string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
 }
 
 func New(conf ServiceConfig) Service {
