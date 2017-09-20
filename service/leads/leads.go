@@ -75,6 +75,9 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		return
 	}
 
+	untags := []intercom.Tagging{}
+	toTags := []intercom.Tagging{}
+
 	for _, c := range contacts.Users {
 		log.Printf("Inviting %v\n", c)
 
@@ -112,8 +115,6 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		}
 
 		// add invite token & tag as `invite_ready`
-		newTags := []intercom.Tag{readyTag}
-		contact.Tags = &(intercom.TagList{Tags: newTags})
 		contact.CustomAttributes["invite_token"] = t.Token
 		_, err = s.intercom.Contacts.Update(&contact)
 		if err != nil {
@@ -121,18 +122,29 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		}
 
 		// untag `can_invite` so we don't do it again
-		tagging := intercom.Tagging{Untag: intercom.Bool(true), ID: c.ID}
+		untags = append(untags, intercom.Tagging{Untag: intercom.Bool(true), ID: c.ID})
 
-		_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
-			Name:  "can_invite",
-			Users: []intercom.Tagging{tagging},
-		})
-		if err != nil {
-			return
-		}
+		// tag 'invite_ready` so we don't do it again
+		toTags = append(toTags, intercom.Tagging{ID: c.ID})
 
 		invited += 1
 	}
+
+	// untag can_invite
+	_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
+		Name:  "can_invite",
+		Users: untags,
+	})
+	if err != nil {
+		return
+	}
+
+	// tag invite_ready
+	_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
+		Name:  "invite_ready",
+		Users: toTags,
+	})
+
 	return
 }
 
