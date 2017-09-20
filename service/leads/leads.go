@@ -86,11 +86,36 @@ func (s *leads) Invite(num int) (invited int, err error) {
 			return
 		}
 
+		// Get the equivalent contact, since using the user api causes an error
+		contact := intercom.Contact{
+			ID:                     c.ID,
+			Email:                  c.Email,
+			Phone:                  c.Phone,
+			UserID:                 c.UserID,
+			Name:                   c.Name,
+			Avatar:                 c.Avatar,
+			LocationData:           c.LocationData,
+			LastRequestAt:          c.LastRequestAt,
+			CreatedAt:              c.CreatedAt,
+			UpdatedAt:              c.UpdatedAt,
+			SessionCount:           c.SessionCount,
+			LastSeenIP:             c.LastSeenIP,
+			SocialProfiles:         c.SocialProfiles,
+			UnsubscribedFromEmails: c.UnsubscribedFromEmails,
+			UserAgentData:          c.UserAgentData,
+			Tags:                   c.Tags,
+			Segments:               c.Segments,
+			Companies:              c.Companies,
+			CustomAttributes:       c.CustomAttributes,
+			UpdateLastRequestAt:    c.UpdateLastRequestAt,
+			NewSession:             c.NewSession,
+		}
+
 		// add invite token & tag as `invite_ready`
 		newTags := []intercom.Tag{readyTag}
-		c.Tags = &(intercom.TagList{Tags: newTags})
-		c.CustomAttributes["invite_token"] = t.Token
-		_, err = s.intercom.Users.Save(&c)
+		contact.Tags = &(intercom.TagList{Tags: newTags})
+		contact.CustomAttributes["invite_token"] = t.Token
+		_, err = s.intercom.Contacts.Update(&contact)
 		if err != nil {
 			return
 		}
