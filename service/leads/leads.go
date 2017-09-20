@@ -90,7 +90,7 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		newTags := []intercom.Tag{readyTag}
 		c.Tags = &(intercom.TagList{Tags: newTags})
 		c.CustomAttributes["invite_token"] = t.Token
-		s.intercom.Users.Save(&c)
+		_, err = s.intercom.Users.Save(&c)
 		if err != nil {
 			return
 		}
