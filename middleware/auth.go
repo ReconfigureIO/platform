@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -36,7 +37,7 @@ func SessionAuth(db *gorm.DB) gin.HandlerFunc {
 }
 
 // TokenAuth handles token authentication.
-func TokenAuth(db *gorm.DB) gin.HandlerFunc {
+func TokenAuth(db *gorm.DB, events events.EventService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, exists := c.Get(strUser)
 		if exists {
@@ -76,6 +77,7 @@ func TokenAuth(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		c.Set(strUser, user)
+		events.Seen(user)
 	}
 }
 

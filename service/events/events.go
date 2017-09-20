@@ -2,6 +2,8 @@ package events
 
 import (
 	"time"
+
+	"github.com/ReconfigureIO/platform/models"
 )
 
 type Event struct {
@@ -12,6 +14,8 @@ type Event struct {
 }
 
 type EventService interface {
+	// Mark that a user has been seen
+	Seen(models.User)
 	DrainEvents()
 	EnqueueEvent(Event)
 	Close()
