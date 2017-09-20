@@ -17,7 +17,7 @@ type Profile struct {
 func (p Profile) Get(c *gin.Context) {
 	user := middleware.GetUser(c)
 
-	sub, err := models.SubscriptionDataSource(p.DB).Current(user)
+	sub, err := models.SubscriptionDataSource(p.DB).CurrentSubscription(user)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -33,7 +33,7 @@ func (p Profile) Update(c *gin.Context) {
 	user := middleware.GetUser(c)
 	subs := models.SubscriptionDataSource(p.DB)
 
-	sub, err := subs.Current(user)
+	sub, err := subs.CurrentSubscription(user)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

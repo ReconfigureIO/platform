@@ -8,6 +8,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,9 @@ import (
 )
 
 // Deployment handles request for deployments.
-type Deployment struct{}
+type Deployment struct {
+	Events events.EventService
+}
 
 // Preload is common preload functionality.
 func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
@@ -68,12 +71,13 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure there is enough instance hours
 	user := middleware.GetUser(c)
-	billingHours := FetchBillingHours(user.ID)
+	billingService := Billing{}
+	billingHours := billingService.FetchBillingHours(user.ID)
 	// considering the complexity in calculating instance hours,
 	// a cache would be ideal here.
 	// this is not optimal yet :(
 	if h, err := billingHours.Net(); err == nil && h <= 0 {
-		sugar.ErrResponse(c, http.StatusUnauthorized, "No available instance hours")
+		sugar.ErrResponse(c, http.StatusPaymentRequired, "No available instance hours")
 		return
 	}
 
@@ -92,7 +96,7 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	instanceID, err := mockDeploy.RunDeployment(context.Background(), newDep, callbackURL)
+	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
@@ -112,6 +116,7 @@ func (d Deployment) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
+	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
 	sugar.SuccessResponse(c, 201, newDep)
 }
@@ -156,7 +161,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(mockDeploy, c, &targetDep)
+	streamDeploymentLogs(deploy, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
@@ -224,7 +229,7 @@ func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models
 	}
 
 	if event.Status == "TERMINATING" {
-		err = mockDeploy.StopDeployment(c, dep)
+		err = deploy.StopDeployment(c, dep)
 	}
 
 	return newEvent, err

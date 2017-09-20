@@ -30,7 +30,7 @@ Visit `https://api.reconfigure.io/oauth/logout`. This will return a 204.
 
 ## Schema
 
-All API access is over HTTP and is (after running `docker-compse up`) accessible on `localhost:8080`. Data is sent and received as JSON.
+All API access is over HTTP and is (after running `docker-compose up`) accessible on `localhost:8080`. Data is sent and received as JSON.
 
 Blank fields are included as `null` rather than being ommitted
 
@@ -119,6 +119,24 @@ To view all of the builds associated with a project do the following:
 ```
 curl -u $USER:$PASS -H GET localhost:8080/builds?project=0
 {"value":[{"id":56,"project":{"id":1,"name":"addition"},"job":{"events":[{"timestamp":"2017-04-12T21:41:13.273744Z","status":"QUEUED","code":0},{"timestamp":"2017-04-12T21:41:18.358054Z","status":"STARTED","code":0},{"timestamp":"2017-04-12T21:41:28.356844Z","status":"COMPLETED","code":0}]}}]}
+```
+
+#### GET /builds/{build_id}/reports
+
+To view one particular build's report:
+
+```
+curl -u $USER:$PASS -H GET localhost:8080/builds/79c41c5b-78c7-4231-b608-4e9f1598bfba/reports
+```
+
+#### POST /builds/{build_id}/reports?token={token}
+
+We use custom Content-Types to indicate the version of the report, for instance this is version 1: `application/vnd.reconfigure.io/reports-v1+json`
+
+To post a build report:
+
+```
+curl -XPOST -H "Content-Type: application/vnd.reconfigure.io/reports-v1+json" -d {report} localhost:8080/builds/79c41c5b-78c7-4231-b608-4e9f1598bfba/reports?token=579d0517-11b4-4834-847a-01cb91e8edba
 ```
 
 #### POST /builds

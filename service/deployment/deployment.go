@@ -1,4 +1,6 @@
-package mock_deployment
+package deployment
+
+//go:generate mockgen -source=deployment.go -package=deployment -destination=deployment_mock.go
 
 import (
 	"bytes"
@@ -37,7 +39,7 @@ type Deployment struct {
 	Build       BuildConfig     `json:"build"`
 }
 
-type Service struct {
+type service struct {
 	session *session.Session
 	Conf    ServiceConfig
 }
@@ -49,10 +51,27 @@ type ServiceConfig struct {
 	Bucket   string `env:"RECO_DEPLOY_BUCET" envDefault:"reconfigureio-builds"`
 }
 
-func New(conf ServiceConfig) *Service {
-	s := Service{Conf: conf}
+func New(conf ServiceConfig) Service {
+	s := service{Conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
+}
+
+// DeploymentRepo handles deployment details.
+type Service interface {
+	// RunDeployment creates an EC2 instance (a deployment)
+	RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error)
+	// StopDeployment stops the EC2 instance associated with a deployment
+	StopDeployment(ctx context.Context, deployment models.Deployment) error
+	// GetDepDetail does nothing at the moment
+	GetDepDetail(id int) (string, error)
+	// GetDeploymentStream gets the cloudwatch logstream for a given deployment
+	GetDeploymentStream(ctx context.Context, deployment models.Deployment) (*cloudwatchlogs.LogStream, error)
+	// DescribeInstanceStatus gets the statuses of the instances associated with
+	// a list of deployments
+	DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error)
+	// GetServiceConfig outputs the configuration of the service
+	GetServiceConfig() ServiceConfig
 }
 
 func (s *ServiceConfig) ContainerConfig(deployment models.Deployment, callbackUrl string) Deployment {
@@ -82,7 +101,7 @@ func (d Deployment) String() (string, error) {
 	return buff.String(), err
 }
 
-func (s *Service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
+func (s *service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
 	ec2Session := ec2.New(s.session)
 
 	encodedConfig, err := s.Conf.ContainerConfig(deployment, callbackUrl).String()
@@ -112,7 +131,7 @@ func (s *Service) RunDeployment(ctx context.Context, deployment models.Deploymen
 	return InstanceId, nil
 }
 
-func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
+func (s *service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
 	InstanceId := deployment.InstanceID
 	ec2Session := ec2.New(s.session)
 
@@ -127,11 +146,15 @@ func (s *Service) StopDeployment(ctx context.Context, deployment models.Deployme
 	return err
 }
 
-func (s *Service) GetDepDetail(id int) (string, error) {
+func (s *service) GetDepDetail(id int) (string, error) {
 	return "imaginary", nil
 }
 
-func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Deployment) (*cloudwatchlogs.LogStream, error) {
+func (s *service) GetServiceConfig() ServiceConfig {
+	return s.Conf
+}
+
+func (s *service) GetDeploymentStream(ctx context.Context, deployment models.Deployment) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
@@ -152,7 +175,7 @@ func (s *Service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 }
 
-func (s *Service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
+func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
 	ret := make(map[string]string)
 
 	var instanceids []*string

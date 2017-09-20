@@ -6,7 +6,7 @@ import:
   subpackages:
   - dialects/postgres
 - package: github.com/aws/aws-sdk-go
-  version: ^1.8.43
+  version: ^1.10.30
 - package: github.com/google/go-github
   subpackages:
   - github
@@ -31,3 +31,4 @@ import:
   - ginrus
 - package: github.com/sirupsen/logrus
   version: ^1.0.2
+- package: gopkg.in/intercom/intercom-go.v2

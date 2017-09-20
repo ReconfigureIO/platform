@@ -7,6 +7,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
@@ -22,8 +23,9 @@ const (
 )
 
 type SignupUser struct {
-	DB *gorm.DB
-	GH *github.Service
+	DB    *gorm.DB
+	GH    *github.Service
+	Leads leads.Leads
 }
 
 func (s *SignupUser) GetAuthToken(token string) (models.InviteToken, error) {
@@ -63,13 +65,10 @@ func (s *SignupUser) Logout(c *gin.Context) {
 
 func (s *SignupUser) SignUp(c *gin.Context) {
 	token := c.Param("token")
-	if token == "" {
-		sugar.ErrResponse(c, 400, "invite token required")
-		return
-	}
+
 	invite, err := s.GetAuthToken(token)
 	if err != nil {
-		sugar.NotFoundOrError(c, err)
+		sugar.TokenNotFoundOrError(c, err)
 		return
 	}
 	session := sessions.Default(c)
@@ -79,6 +78,12 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 
 	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
 	c.Redirect(http.StatusFound, url)
+}
+
+// user tried to sign up without an invite token
+func (s *SignupUser) NoToken(c *gin.Context) {
+	sugar.ErrResponse(c, 400, "invite token required to sign up to Reconfigure.io")
+	return
 }
 
 func (s *SignupUser) StoredToken(c *gin.Context, session sessions.Session) (string, bool, error) {
@@ -114,8 +119,11 @@ func (s *SignupUser) Callback(c *gin.Context) {
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
+
+	var invite models.InviteToken
+
 	if newUser {
-		invite, err := s.GetAuthToken(storedToken)
+		invite, err = s.GetAuthToken(storedToken)
 		if err != nil {
 			sugar.NotFoundOrError(c, err)
 			return
@@ -154,6 +162,14 @@ func (s *SignupUser) Callback(c *gin.Context) {
 	}
 	session.Set("user_id", user.ID)
 	session.Save()
+
+	// If we have a newUser, we need to mark the new user as invited
+	if newUser {
+		err = s.Leads.Invited(invite, user)
+		if err != nil {
+			sugar.NotFoundOrError(c, err)
+		}
+	}
 
 	c.Redirect(http.StatusFound, location)
 }

@@ -14,6 +14,13 @@ import (
 // Billing handles requests for billing.
 type Billing struct{}
 
+type BillingInterface interface {
+	Get(c *gin.Context)
+	Replace(c *gin.Context)
+	FetchBillingHours(userID string) BillingHours
+	RemainingHours(c *gin.Context)
+}
+
 // TokenUpdate is token update payload.
 type TokenUpdate struct {
 	Token string `json:"token"`
@@ -71,6 +78,17 @@ func (b Billing) Replace(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, models.DefaultSource(cust))
 }
 
+func (b Billing) RemainingHours(c *gin.Context) {
+	user := middleware.GetUser(c)
+	billingHours := b.FetchBillingHours(user.ID)
+	remaining, err := billingHours.Net()
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+	sugar.SuccessResponse(c, 200, remaining)
+}
+
 // BillingHours returns information about billing hours for user.
 // Hours are rounded up. i.e. 0 == 0, 1 hour == [1-60]minutes. e.t.c.
 type BillingHours interface {
@@ -84,7 +102,7 @@ type BillingHours interface {
 }
 
 // FetchBillingHours fetches and return billing hours for a user.
-func FetchBillingHours(userID string) BillingHours {
+func (b Billing) FetchBillingHours(userID string) BillingHours {
 	var user models.User
 	err := db.Model(&models.User{}).Where("id = ?", userID).First(&user).Error
 	if err != nil {
@@ -108,7 +126,7 @@ func (b billingHours) Available() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	return sub.Hours, err
 }
 
@@ -116,7 +134,7 @@ func (b billingHours) Used() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	if err != nil {
 		return 0, err
 	}
@@ -125,10 +143,11 @@ func (b billingHours) Used() (int, error) {
 }
 
 func (b billingHours) Net() (int, error) {
+	//If billingHours is invalid, stop
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.Current(b.user)
+	sub, err := b.subRepo.CurrentSubscription(b.user)
 	used, err := models.DeploymentHoursBtw(b.depRepo, b.user.ID, sub.StartTime, sub.EndTime)
 
 	if err != nil {

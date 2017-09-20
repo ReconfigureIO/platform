@@ -8,6 +8,8 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -45,6 +47,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
+
+	go events.DrainEvents()
+
 	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
@@ -52,6 +58,7 @@ func main() {
 
 	// setup components
 	db := setupDB(*conf)
+	leads := leads.New(conf.Reco.Intercom, db)
 
 	api.Configure(*conf)
 
@@ -86,7 +93,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db)
+	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)

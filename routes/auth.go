@@ -7,20 +7,22 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // Setup sets all auth routes.
-func SetupAuth(r gin.IRouter, db *gorm.DB) {
+func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads) {
 	gh := github.New(db)
 
 	authRoutes := r.Group("/oauth")
 	{
 
-		signup := auth.SignupUser{db, gh}
+		signup := auth.SignupUser{DB: db, GH: gh, Leads: leads}
 		authRoutes.GET("/signin", signup.ResignIn)
 		authRoutes.GET("/signup/:token", signup.SignUp)
+		authRoutes.GET("/signup/", signup.NoToken)
 		authRoutes.GET("/callback", signup.Callback)
 		authRoutes.GET("/logout", signup.Logout)
 	}

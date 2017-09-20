@@ -5,7 +5,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/mock_deployment"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -18,7 +18,7 @@ var (
 
 	awsSession aws.Service
 
-	mockDeploy *mock_deployment.Service
+	deploy deployment.Service
 )
 
 // DB sets the database to use for the API.
@@ -29,7 +29,7 @@ func DB(d *gorm.DB) {
 func Configure(conf config.Config) {
 	awsSession = aws.New(conf.Reco.AWS)
 
-	mockDeploy = mock_deployment.New(conf.Reco.Deploy)
+	deploy = deployment.New(conf.Reco.Deploy)
 
 }
 
