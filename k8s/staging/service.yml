@@ -4,7 +4,7 @@ metadata:
   labels:
     app: reconfigureio-api
     dns: route53
-  name: api-load-balancer
+  name: staging-platform-web
   namespace: default
   annotations:
     domainName: "staging-api.reconfigure.io"

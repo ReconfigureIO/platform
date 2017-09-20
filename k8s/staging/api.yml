@@ -1,7 +1,7 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: reconfigureio-api-deployment
+  name: staging-platform-web
 spec:
   replicas: 1
   template:
