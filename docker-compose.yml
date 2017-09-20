@@ -10,6 +10,7 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+      - RECO_INTERCOM_ACCESS_TOKEN
       - GITHUB_CLIENT_ID=c405f7d899fa411aaa69
       - GITHUB_CLIENT_SECRET=0105d6cd1bea780f5ecf651351f2579277f80b14
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
@@ -20,7 +21,6 @@ services:
       - RECO_ENV=development
       - STRIPE_KEY=sk_test_NvEpeLnLAV15b9TWJzZKLkvW
       - RECO_DEPLOY_AMI=ami-8e6a4df5
-      - RECO_INTERCOM_ACCESS_TOKEN=foobar
   test:
     extends: web-base
     depends_on:

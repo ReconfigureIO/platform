@@ -8,8 +8,9 @@ import (
 
 // InviteToken model.
 type InviteToken struct {
-	Token     string    `gorm:"type:varchar(128);primary_key" json:"token"`
-	Timestamp time.Time `json:"created_at"`
+	Token      string    `gorm:"type:varchar(128);primary_key" json:"token"`
+	IntercomId string    `gorm:"type:varchar(128)" json:"-"`
+	Timestamp  time.Time `json:"created_at"`
 }
 
 // NewInviteToken creates a new invite token.

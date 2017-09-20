@@ -3,16 +3,20 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/sirupsen/logrus"
 	stripe "github.com/stripe/stripe-go"
 )
 
@@ -51,9 +55,11 @@ func main() {
 	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
+	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
 
 	// setup components
 	db := setupDB(*conf)
+	leads := leads.New(conf.Reco.Intercom, db)
 
 	api.Configure(*conf)
 
@@ -88,7 +94,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db, events)
+	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)

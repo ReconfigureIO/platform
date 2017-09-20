@@ -41,7 +41,7 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes("secretKey", r, db, events)
+	r = SetupRoutes("secretKey", r, db, events, nil)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
