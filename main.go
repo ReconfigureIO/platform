@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/bshuster-repo/logruzio"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -47,6 +48,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ctx := logrus.Fields{
+		"ID":      "12adebacd8",
+		"Version": "0.1.0-dev",
+	}
+	hook, err := logruzio.New(conf.Reco.LogzioToken, "Platform", ctx)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	logrus.AddHook(hook)
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 

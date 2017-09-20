@@ -20,6 +20,7 @@ type RecoConfig struct {
 	Env             string `env:"RECO_ENV"`
 	PlatformMigrate bool   `env:"RECO_PLATFORM_MIGRATE"`
 	FeatureDeploy   bool   `env:"RECO_FEATURE_DEPLOY"`
+	LogzioToken     string `env:"LOGZIO_TOKEN"`
 	AWS             aws.ServiceConfig
 	Deploy          deployment.ServiceConfig
 	Intercom        events.IntercomConfig
