@@ -2,6 +2,7 @@ pipeline {
     agent { label "master" }
     environment {
         AWS_DEFAULT_REGION = "us-east-1"
+        KOPS_STATE_STORE=S3://k8s-reconfigure-infra
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
@@ -74,6 +75,9 @@ pipeline {
                         docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker").push()
                     }
                 }
+                sh 'kops export kubecfg k8s.reconfigure.io'
+                sh 'kubectl apply -f k8s/staging/'
+                sh 'kubectl rollout status deployment staging-platform-web'
                 sh 'make deploy-production'
             }
         }
