@@ -1,5 +1,5 @@
-hash: 1a79522552a51394eea5e071e50e7c8e641056eb434b67ee4a4c3dcda6f38cc1
-updated: 2017-09-20T10:23:04.805250215Z
+hash: 8a8b96239836a0201b08bf450596d217668f5be4874c7bef6e7e394640d6a6ec
+updated: 2017-09-20T12:24:48.518346249Z
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
@@ -40,6 +40,8 @@ imports:
   - service/sts
 - name: github.com/boj/redistore
   version: 4562487a4bee9a7c272b72bfaeda4917d0a47ab9
+- name: github.com/bshuster-repo/logruzio
+  version: b0b294934396cec7a3292f694193f73cb9ddd71f
 - name: github.com/caarlos0/env
   version: 0cf029d5748c52beb2c9d20c81880cb4bdf8f788
 - name: github.com/dchest/uniuri
