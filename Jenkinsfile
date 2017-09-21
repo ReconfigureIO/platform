@@ -66,7 +66,7 @@ pipeline {
                 expression { env.BRANCH_NAME in ["master"] }
             }
             steps {
-                sh 'make push-image deploy-staging'
+                sh 'make push-image migrate-staging deploy-staging'
                 sh 'make DOCKER_TAG=latest image push-image deploy-production'
             }
         }

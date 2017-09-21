@@ -83,6 +83,11 @@ deploy-production:
 	cp EB/worker/env-production.yaml EB/worker/env.yaml
 	cd EB && eb deploy --modules worker web --env-group-suffix production
 
+migrate-staging:
+	kubectl patch -o yaml -f k8s/migrate_staging.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
+	./ci/wait_for.sh job migrate-staging
+	kubectl delete job migrate-staging
+
 deploy-staging:
 	kubectl rollout pause deployment staging-platform-web
 	kubectl apply -f k8s/staging/
