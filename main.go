@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
@@ -11,9 +12,11 @@ import (
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/sirupsen/logrus"
 	stripe "github.com/stripe/stripe-go"
 )
 
@@ -47,11 +50,14 @@ func main() {
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 
-	go events.DrainEvents()
+	if conf.Reco.FeatureIntercom {
+		go events.DrainEvents()
+	}
 
 	stripe.Key = conf.StripeKey
 
 	r := gin.Default()
+	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
 
 	// setup components
 	db := setupDB(*conf)

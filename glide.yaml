@@ -26,4 +26,9 @@ import:
   version: ~1.2.0
 - package: github.com/caarlos0/env
   version: ^3.0.0
+- package: github.com/gin-gonic/contrib
+  subpackages:
+  - ginrus
+- package: github.com/sirupsen/logrus
+  version: ^1.0.2
 - package: gopkg.in/intercom/intercom-go.v2

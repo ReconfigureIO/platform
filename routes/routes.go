@@ -35,7 +35,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 	// signup & login flow
 	SetupAuth(r, db, leads)
 
-	apiRoutes := r.Group("/", middleware.TokenAuth(db), middleware.RequiresUser())
+	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
 	if os.Getenv("RECO_FEATURE_BILLING") == "1" {
 		fmt.Println("enabling billing api endpoints")
@@ -107,7 +107,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		}
 	}
 
-	eventRoutes := r.Group("", middleware.TokenAuth(db))
+	eventRoutes := r.Group("", middleware.TokenAuth(db, events))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
@@ -118,7 +118,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		}
 	}
 
-	reportRoutes := r.Group("", middleware.TokenAuth(db))
+	reportRoutes := r.Group("", middleware.TokenAuth(db, events))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
 	}

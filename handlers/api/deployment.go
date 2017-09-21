@@ -224,6 +224,9 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	eventMessage := "Deployment entered state:" + event.Status
+	sugar.EnqueueEvent(d.Events, c, eventMessage, map[string]interface{}{"deployment_id": dep.ID, "project_name": dep.Build.Project.Name, "message": event.Message})
+
 	sugar.SuccessResponse(c, 200, newEvent)
 }
 
