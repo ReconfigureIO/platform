@@ -58,10 +58,6 @@ pipeline {
             steps {
                 sh 'docker-compose run --rm web-base make all'
                 sh 'make image'
-                sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
-                sh 'docker tag reco-api:latest-worker 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker'
-                sh 'docker tag reco-api:latest ${env.GIT_COMMIT}'
-                sh 'docker tag reco-api:latest-worker ${env.GIT_COMMIT}'
             }
         }
 
@@ -70,16 +66,8 @@ pipeline {
                 expression { env.BRANCH_NAME in ["master"] }
             }
             steps {
-                sh '$(aws ecr get-login --region us-east-1)'
-                script {
-                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
-                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
-                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker").push()
-                    }
-                }
-                sh 'kops export kubecfg k8s.reconfigure.io'
-                sh 'make deploy-staging 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:${env.GIT_COMMIT}'
-                sh 'make deploy-production'
+                sh 'make push-image deploy-staging'
+                sh 'make DOCKER_TAG=latest image push-image deploy-production'
             }
         }
     }

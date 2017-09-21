@@ -14,13 +14,16 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production vet integration-tests
+.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
 
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
+
+DOCKER_TAG := ${VERSION}
+DOCKER_IMAGE := 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
@@ -67,8 +70,13 @@ clean:
 	find . -name '*_mock.go' -delete
 
 image: all
-	docker build -t "reco-api:latest" dist-image
-	docker build -t "reco-api:latest-worker" dist-worker
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} dist-image
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-worker dist-worker
+
+push-image:
+	$$(aws ecr get-login --region us-east-1)
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}-worker
 
 deploy-production:
 	cp EB/web/env-production.yaml EB/web/env.yaml
@@ -76,10 +84,8 @@ deploy-production:
 	cd EB && eb deploy --modules worker web --env-group-suffix production
 
 deploy-staging:
-	kops export kubecfg k8s.reconfigure.io
 	kubectl rollout pause deployment staging-platform-web
 	kubectl apply -f k8s/staging/
-	kubectl set image -f k8s/staging/api.yml api="$1"
+	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
 	kubectl rollout resume deployment staging-platform-web
 	kubectl rollout status deployment staging-platform-web
-	            
