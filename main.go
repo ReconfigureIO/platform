@@ -50,7 +50,7 @@ func main() {
 	}
 
 	ctx := logrus.Fields{
-		"ID":      "12adebacd8",
+		"ID":      conf.Reco.Env,
 		"Version": "0.1.0-dev",
 	}
 	hook, err := logruzio.New(conf.Reco.LogzioToken, "Platform", ctx)
