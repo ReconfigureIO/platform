@@ -15,6 +15,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	numConcurrentDeployments = 2 // number of concurrent deployments per user
+)
+
 // Deployment handles request for deployments.
 type Deployment struct {
 	Events events.EventService
@@ -78,6 +82,16 @@ func (d Deployment) Create(c *gin.Context) {
 	// this is not optimal yet :(
 	if h, err := billingHours.Net(); err == nil && h <= 0 {
 		sugar.ErrResponse(c, http.StatusPaymentRequired, "No available instance hours")
+		return
+	}
+
+	// check for number of concurrently running deployments.
+	dds := models.DeploymentDataSource(db)
+	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
+		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
+		return
+	} else if len(ad) >= numConcurrentDeployments {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
 		return
 	}
 

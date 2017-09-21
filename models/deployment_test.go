@@ -81,40 +81,79 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 	})
 }
 
-func TestDeploymentHoursHours(t *testing.T) {
+func TestDeploymentHoursBtw(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
 
-		zeroTime := time.Unix(0, 0)
+		dep := genDeployment("Foo", time.Hour+5*time.Minute)
 
-		dep := Deployment{
-			Build: Build{
-				Project: Project{
-					UserID: "Foo",
-				},
-			},
-			Command: "test",
-			Events: []DeploymentEvent{
-				DeploymentEvent{
-					Status:    "STARTED",
-					Timestamp: zeroTime.Add(time.Hour),
-				},
-				DeploymentEvent{
-					Status:    "TERMINATED",
-					Timestamp: zeroTime.Add(2*time.Hour + (5 * time.Minute)),
-				},
-			},
-		}
 		db.Create(&dep)
 
+		var zero time.Time
 		now := time.Now()
-		hours, err := DeploymentHoursBtw(&d, dep.Build.Project.UserID, zeroTime, now)
+		hours, err := DeploymentHoursBtw(&d, dep.Build.Project.UserID, zero, now)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 		if hours != 2 {
 			t.Errorf("Expected %v found %v", 2, hours)
+		}
+	})
+}
+
+// genDeployment generates a mock deployment.
+// if d > 0, the mock deployment will be in TERMINATED
+// status and have a duration of d.
+func genDeployment(userID string, d time.Duration) Deployment {
+	var start = (time.Unix(0, 0)).Add(time.Hour)
+	dep := Deployment{
+		Build: Build{
+			Project: Project{
+				UserID: userID,
+			},
+		},
+		Command: "test",
+		Events: []DeploymentEvent{
+			DeploymentEvent{
+				Status:    "STARTED",
+				Timestamp: start,
+			},
+		},
+	}
+	if d > 0 {
+		dep.Events = append(dep.Events, DeploymentEvent{
+			Status:    "TERMINATED",
+			Timestamp: start.Add(d),
+		})
+	}
+	return dep
+}
+
+func TestDeploymentActiveDeployments(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		userID := "user1"
+
+		deps := []Deployment{
+			genDeployment(userID, time.Hour),
+			genDeployment(userID, 0),
+			genDeployment(userID, 0),
+			genDeployment(userID, time.Hour*2),
+		}
+
+		for i := range deps {
+			db.Create(&(deps[i]))
+		}
+
+		ad, err := d.ActiveDeployments(userID)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if l := len(ad); l != 2 {
+			t.Errorf("Expected %v found %v", 2, l)
 		}
 	})
 }
