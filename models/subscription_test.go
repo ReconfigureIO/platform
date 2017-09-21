@@ -5,7 +5,6 @@ package models
 import (
 	"testing"
 
-	"github.com/jinzhu/gorm"
 	subscriptions "github.com/stripe/stripe-go/sub"
 )
 
