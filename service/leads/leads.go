@@ -116,6 +116,7 @@ func (s *leads) Invite(num int) (invited int, err error) {
 
 		// add invite token & tag as `invite_ready`
 		contact.CustomAttributes["invite_token"] = t.Token
+		log.Printf("Updating Contact %v\n", contact)
 		_, err = s.intercom.Contacts.Update(&contact)
 		if err != nil {
 			return
@@ -130,6 +131,7 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		invited += 1
 	}
 
+	log.Printf("Untagging\n")
 	// untag can_invite
 	_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
 		Name:  "can_invite",
@@ -139,6 +141,7 @@ func (s *leads) Invite(num int) (invited int, err error) {
 		return
 	}
 
+	log.Printf("Tagging\n")
 	// tag invite_ready
 	_, err = s.intercom.Tags.Tag(&intercom.TaggingList{
 		Name:  "invite_ready",
