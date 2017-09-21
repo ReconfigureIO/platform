@@ -51,13 +51,14 @@ func main() {
 
 	ctx := logrus.Fields{
 		"ID":      conf.Reco.Env,
-		"Version": "0.1.0-dev",
+		"Version": conf.Version,
 	}
-	hook, err := logruzio.New(conf.Reco.LogzioToken, "Platform", ctx)
+	hook, err := logruzio.New(conf.Reco.LogzioToken, conf.ProgramName, ctx)
 	if err != nil {
 		logrus.Fatal(err)
+	} else {
+		logrus.AddHook(hook)
 	}
-	logrus.AddHook(hook)
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 

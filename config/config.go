@@ -9,11 +9,13 @@ import (
 )
 
 type Config struct {
-	DbUrl     string     `env:"DATABASE_URL"`
-	SecretKey string     `env:"SECRET_KEY_BASE"`
-	StripeKey string     `env:"STRIPE_KEY"`
-	Port      string     `env:"PORT"`
-	Reco      RecoConfig `env:"RECO"`
+	ProgramName string     `env:"RECO_NAME"`
+	Version     string     `env:"RECO_VERSION"`
+	DbUrl       string     `env:"DATABASE_URL"`
+	SecretKey   string     `env:"SECRET_KEY_BASE"`
+	StripeKey   string     `env:"STRIPE_KEY"`
+	Port        string     `env:"PORT"`
+	Reco        RecoConfig `env:"RECO"`
 }
 
 type RecoConfig struct {
