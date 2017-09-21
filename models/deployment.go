@@ -108,9 +108,9 @@ on j.id = terminated.deployment_id
     and terminated.id = (
         select e2.id
         from deployment_events e2
-        where j.id = e2.deployment_id and e2.status <> 'TERMINATED'
+        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
     )
-where projects.user_id = ?
+where projects.user_id = ? and terminated IS NULL
 `
 )
 
