@@ -86,6 +86,7 @@ deploy-production:
 migrate-staging:
 	kubectl patch -o yaml -f k8s/migrate_staging.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
 	./ci/wait_for.sh job migrate-staging
+	kubectl logs job/migrate-staging
 	kubectl delete job migrate-staging
 
 deploy-staging:
