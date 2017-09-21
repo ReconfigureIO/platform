@@ -60,6 +60,8 @@ pipeline {
                 sh 'make image'
                 sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
                 sh 'docker tag reco-api:latest-worker 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker'
+                sh 'docker tag reco-api:latest ${env.GIT_COMMIT}'
+                sh 'docker tag reco-api:latest-worker ${env.GIT_COMMIT}'
             }
         }
 
@@ -76,8 +78,7 @@ pipeline {
                     }
                 }
                 sh 'kops export kubecfg k8s.reconfigure.io'
-                sh 'kubectl apply -f k8s/staging/'
-                sh 'kubectl rollout status deployment staging-platform-web'
+                sh 'make deploy-staging 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:${env.GIT_COMMIT}'
                 sh 'make deploy-production'
             }
         }

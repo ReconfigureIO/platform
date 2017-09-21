@@ -74,3 +74,12 @@ deploy-production:
 	cp EB/web/env-production.yaml EB/web/env.yaml
 	cp EB/worker/env-production.yaml EB/worker/env.yaml
 	cd EB && eb deploy --modules worker web --env-group-suffix production
+
+deploy-staging:
+	kops export kubecfg k8s.reconfigure.io
+	kubectl rollout pause deployment staging-platform-web
+	kubectl apply -f k8s/staging/
+	kubectl set image -f k8s/staging/api.yml api="$1"
+	kubectl rollout resume deployment staging-platform-web
+	kubectl rollout status deployment staging-platform-web
+	            
