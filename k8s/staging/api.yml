@@ -24,42 +24,6 @@ spec:
             port: 80
           initialDelaySeconds: 3
           periodSeconds: 3
-        env:
-        - name: AWS_REGION
-          value: "us-east-1"
-        - name: GITHUB_CLIENT_ID
-          value: ssm:///reconfigureio/platform/staging/github_client
-        - name: GITHUB_CLIENT_SECRET
-          value: ssm:///reconfigureio/platform/staging/github_secret
-        - name: DATABASE_URL
-          value: ssm:///reconfigureio/platform/staging/db
-        - name: SECRET_KEY_BASE
-          value: foobar
-        - name: STRIPE_KEY
-          value: ssm:///reconfigureio/platform/staging/stripe
-        - name: PORT
-          value: "80"
-        - name: RECO_ENV #reco short for reconfigure.io
-          value: production
-        - name: RECO_PLATFORM_MIGRATE
-          value: "true"
-        - name: RECO_FEATURE_DEPLOY
-          value: "true"
-        - name: RECO_AWS_LOG_GROUP
-          value: "/aws/batch/job"
-        - name: RECO_AWS_BUCKET
-          value: reconfigureio-builds
-        - name: RECO_AWS_QUEUE
-          value: staging-build-jobs
-        - name: RECO_AWS_JOB
-          value: sdaccel-builder-build-staging
-        - name: RECO_FEATURE_DEPLOY
-          value: "true"
-        - name: RECO_DEPLOY_LOG_GROUP
-          value: "/reconfigureio/deployments"
-        - name: RECO_DEPLOY_IMAGE
-          value: "reconfigureio/docker-aws-fpga-runtime:latest"
-        - name: RECO_DEPLOY_AMI
-          value: ami-8e6a4df5
-        - name: RECO_DEPLOY_BUCKET
-          value: "reconfigureio-builds"
+        envFrom:
+          - configMapRef:
+              name: staging-config
