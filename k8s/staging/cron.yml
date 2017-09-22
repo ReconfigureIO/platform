@@ -1,0 +1,23 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: staging-platform-cron
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reconfigureio-api
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
+    spec:
+      containers:
+      - name: cron
+        image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest
+        command: ["ssm-env"]
+        args:
+          - /cron
+          - cron
+        envFrom:
+          - configMapRef:
+              name: staging-config

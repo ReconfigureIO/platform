@@ -2,6 +2,7 @@ pipeline {
     agent { label "master" }
     environment {
         AWS_DEFAULT_REGION = "us-east-1"
+        KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
@@ -57,8 +58,6 @@ pipeline {
             steps {
                 sh 'docker-compose run --rm web-base make all'
                 sh 'make image'
-                sh 'docker tag reco-api:latest 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest'
-                sh 'docker tag reco-api:latest-worker 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker'
             }
         }
 
@@ -67,14 +66,8 @@ pipeline {
                 expression { env.BRANCH_NAME in ["master"] }
             }
             steps {
-                sh '$(aws ecr get-login --region us-east-1)'
-                script {
-                    docker.withRegistry("https://398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest") {
-                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest").push()
-                        docker.image("398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest-worker").push()
-                    }
-                }
-                sh 'make deploy-production'
+                sh 'make push-image migrate-staging deploy-staging'
+                sh 'make DOCKER_TAG=latest image push-image deploy-production'
             }
         }
     }
