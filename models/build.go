@@ -15,6 +15,7 @@ type BuildRepo interface {
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, ReportV1) error
 	GetBuildReport(build Build) (BuildReport, error)
+	ActiveBuilds(user User) ([]Build, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -36,6 +37,27 @@ ON j.batch_job_id = e.batch_job_id
     )
 WHERE (e.status in (?))
 LIMIT ?
+`
+	SQL_ACTIVE_BUILDS = `
+select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+from deployments j
+join builds on builds.id = j.build_id
+join projects on builds.project_id = projects.id
+left join deployment_events started
+on j.id = started.deployment_id
+    and started.id = (
+        select e1.id
+        from deployment_events e1
+        where j.id = e1.deployment_id and e1.status = 'STARTED'
+    )
+left outer join deployment_events terminated
+on j.id = terminated.deployment_id
+    and terminated.id = (
+        select e2.id
+        from deployment_events e2
+        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+    )
+where projects.user_id = ? and terminated IS NULL
 `
 )
 
@@ -61,6 +83,28 @@ func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Buil
 	}
 
 	return builds, nil
+}
+
+func (repo *buildRepo) ActiveBuilds(user User) ([]Builds, error) {
+	db := repo.db
+
+	rows, err := db.Raw(SQL_ACTIVE_BUILDS, userID).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	deps = []DeploymentHours{}
+	for rows.Next() {
+		var dep DeploymentHours
+		err = db.ScanRows(rows, &dep)
+		if err != nil {
+			return
+		}
+		deps = append(deps, dep)
+	}
+	rows.Close()
+
+	return
 }
 
 // Build model.

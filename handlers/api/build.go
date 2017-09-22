@@ -13,6 +13,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	maxConcurrentBuilds = 2 // number of concurrent builds per user
+)
+
 // Build handles requests for builds.
 type Build struct {
 	Events events.EventService
@@ -123,6 +127,16 @@ func (b Build) Create(c *gin.Context) {
 	err := Project{}.Query(c).First(&project, "projects.id = ?", post.ProjectID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	// check for number of concurrently running builds.
+	buildData := models.BuildDataSource(db)
+	if activeBuilds, err := buildData.ActiveBuilds(user); err != nil {
+		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving build information")
+		return
+	} else if len(activeBuilds) >= maxConcurrentBuilds {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent build max of %d", maxConcurrentBuilds))
 		return
 	}
 
