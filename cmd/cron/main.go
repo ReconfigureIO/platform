@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
@@ -89,12 +89,19 @@ func healthCmd() {
 
 func cronCmd() {
 	worker := cron.New()
+	schedule := func(d time.Duration, f func()) {
+		worker.Schedule(cron.Every(d), cron.FuncJob(f))
+	}
 
-	worker.AddFunc("*/5 * * * *", generatedAFIs)
-	worker.AddFunc("* * * * *", terminateDeployments)
-	worker.AddFunc("* * * * *", checkHours)
+	schedule(5*time.Minute, generatedAFIs)
+	schedule(time.Minute, terminateDeployments)
+	schedule(time.Minute, checkHours)
 
-	worker.Run()
+	worker.Start()
+
+	waitForever := make(chan struct{})
+	<-waitForever
+
 }
 
 func terminateDeployments() {
@@ -125,6 +132,6 @@ func checkHours() {
 }
 
 func exitWithErr(err interface{}) {
-	fmt.Println(err)
+	log.Println(err)
 	os.Exit(1)
 }
