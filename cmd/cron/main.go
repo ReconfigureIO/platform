@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/robfig/cron"
 	"github.com/spf13/cobra"
 )
 
@@ -28,21 +30,20 @@ var (
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
 	})
+
+	db *gorm.DB
+
 	RootCmd = &cobra.Command{
-		Use:   "worker",
-		Short: "The worker for reconfigure.io's platform",
-		Long:  `The worker for reconfigure.io's platform`,
-	}
-	helloWorldCmd = &cobra.Command{
-		Use:   "hello world",
-		Short: "runs hello world",
-		Run:   hello,
+		Use:              "worker",
+		Short:            "The worker for reconfigure.io's platform",
+		PersistentPreRun: setup,
 	}
 )
 
-func main() {
+func setup(*cobra.Command, []string) {
 	gormConnDets := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open("postgres", gormConnDets)
+	var err error
+	db, err = gorm.Open("postgres", gormConnDets)
 	db.LogMode(true)
 	api.DB(db)
 
@@ -50,28 +51,49 @@ func main() {
 		log.Fatalf("failed to connect to database: %s", err.Error())
 	}
 
-	Execute()
 }
 
-//add commands to root command
-func Execute() {
+// add commands to root command
+func main() {
+	RootCmd.AddCommand(commands...)
+
 	if err := RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-func health() {
-	err := db.DB().Ping()
-	if err != nil {
-		c.String(500, "error connecting to db")
-	} else {
-		c.String(200, "OK")
+var commands = []*cobra.Command{
+	// health
+	&cobra.Command{
+		Use:   "health",
+		Short: "Check platform health",
+		Run: func(*cobra.Command, []string) {
+			healthCmd()
+		},
+	},
+	// cron
+	&cobra.Command{
+		Use:   "cron",
+		Short: "Start cron worker",
+		Run: func(*cobra.Command, []string) {
+			cronCmd()
+		},
+	},
+}
+
+func healthCmd() {
+	if err := db.DB().Ping(); err != nil {
+		exitWithErr("error connecting to db")
 	}
 }
 
-func hello() {
-	log.Printf("Hello world\n")
-	c.String(200, "hello")
+func cronCmd() {
+	worker := cron.New()
+
+	worker.AddFunc("*/5 * * * *", generatedAFIs)
+	worker.AddFunc("* * * * *", terminateDeployments)
+
+	worker.Run()
 }
 
 func terminateDeployments() {
@@ -81,31 +103,27 @@ func terminateDeployments() {
 	err := deployment.NewInstances(d, deploy).UpdateInstanceStatus(ctx)
 
 	if err != nil {
-		log.Println(err.Error())
-		c.JSON(500, err)
-	} else {
-		c.Status(200)
+		exitWithErr(err)
 	}
-
 }
 
 func generatedAFIs() {
 	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
 
-	err := watcher.FindAFI(c, 100)
-
+	err := watcher.FindAFI(context.Background(), 100)
 	if err != nil {
-		log.Println(err.Error())
-		c.JSON(500, err)
-	} else {
-		c.Status(200)
+		exitWithErr(err)
 	}
 }
 
 func checkHours() {
-	if err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
-		c.String(200, "done")
-	} else {
-		c.String(500, err.Error())
+	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
+	if err != nil {
+		exitWithErr(err)
 	}
+}
+
+func exitWithErr(err interface{}) {
+	fmt.Println(err)
+	os.Exit(1)
 }
