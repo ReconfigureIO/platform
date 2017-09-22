@@ -2,7 +2,7 @@ pipeline {
     agent { label "master" }
     environment {
         AWS_DEFAULT_REGION = "us-east-1"
-        KOPS_STATE_STORE=S3://k8s-reconfigure-infra
+        KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
