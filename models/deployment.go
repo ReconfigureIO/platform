@@ -23,6 +23,9 @@ type DeploymentRepo interface {
 	// startTime and endTime.
 	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
 
+	// ActiveDeployments returns basic information about running deployments.
+	ActiveDeployments(userID string) ([]DeploymentHours, error)
+
 	AddEvent(Deployment, DeploymentEvent) error
 }
 
@@ -87,6 +90,27 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
     )
 where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
+`
+	sqlDeploymentInstances = `
+select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+from deployments j
+join builds on builds.id = j.build_id
+join projects on builds.project_id = projects.id
+left join deployment_events started
+on j.id = started.deployment_id
+    and started.id = (
+        select e1.id
+        from deployment_events e1
+        where j.id = e1.deployment_id and e1.status = 'STARTED'
+    )
+left outer join deployment_events terminated
+on j.id = terminated.deployment_id
+    and terminated.id = (
+        select e2.id
+        from deployment_events e2
+        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+    )
+where projects.user_id = ? and terminated IS NULL
 `
 )
 
@@ -178,6 +202,28 @@ func (repo *deploymentRepo) DeploymentHours(userID string, startTime, endTime ti
 	db := repo.db
 
 	rows, err := db.Raw(sqlDeploymentHours, userID, startTime, endTime).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	deps = []DeploymentHours{}
+	for rows.Next() {
+		var dep DeploymentHours
+		err = db.ScanRows(rows, &dep)
+		if err != nil {
+			return
+		}
+		deps = append(deps, dep)
+	}
+	rows.Close()
+
+	return
+}
+
+func (repo *deploymentRepo) ActiveDeployments(userID string) (deps []DeploymentHours, err error) {
+	db := repo.db
+
+	rows, err := db.Raw(sqlDeploymentInstances, userID).Rows()
 	if err != nil {
 		return nil, err
 	}
