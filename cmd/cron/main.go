@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
@@ -16,6 +17,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/robfig/cron"
 	"github.com/spf13/cobra"
+	stripe "github.com/stripe/stripe-go"
 )
 
 var (
@@ -55,6 +57,12 @@ func setup(*cobra.Command, []string) {
 
 // add commands to root command
 func main() {
+	conf, err := config.ParseEnvConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	stripe.Key = conf.StripeKey
+
 	RootCmd.AddCommand(commands...)
 
 	if err := RootCmd.Execute(); err != nil {
@@ -98,6 +106,7 @@ func cronCmd() {
 	schedule(time.Minute, checkHours)
 
 	worker.Start()
+	log.Printf("starting workers")
 
 	waitForever := make(chan struct{})
 	<-waitForever
@@ -105,6 +114,7 @@ func cronCmd() {
 }
 
 func terminateDeployments() {
+	log.Printf("terminating deployments")
 	d := models.DeploymentDataSource(db)
 	ctx := context.Background()
 
@@ -116,6 +126,7 @@ func terminateDeployments() {
 }
 
 func generatedAFIs() {
+	log.Printf("checking afis")
 	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
 
 	err := watcher.FindAFI(context.Background(), 100)
@@ -125,6 +136,7 @@ func generatedAFIs() {
 }
 
 func checkHours() {
+	log.Printf("checking deployments")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
 	if err != nil {
 		exitWithErr(err)
