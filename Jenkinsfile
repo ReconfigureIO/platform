@@ -62,12 +62,12 @@ pipeline {
         }
 
         stage ('deploy') {
-            when {
-                expression { env.BRANCH_NAME in ["master"] }
-            }
+//            when {
+//                expression { env.BRANCH_NAME in ["master"] }
+//            }
             steps {
                 sh 'make push-image migrate-staging deploy-staging'
-                sh 'make DOCKER_TAG=latest image push-image deploy-production' 
+//                sh 'make DOCKER_TAG=latest image push-image deploy-production'
             }
         }
     }
