@@ -94,4 +94,4 @@ deploy-staging:
 	kubectl apply -f k8s/staging/
 	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
 	kubectl rollout resume deployment staging-platform-web
-	kubectl rollout status --default-unreachable-toleration-seconds=20 deployment staging-platform-web 
+	kubectl rollout status deployment staging-platform-web
