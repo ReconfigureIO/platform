@@ -1,10 +1,10 @@
-hash: 1a79522552a51394eea5e071e50e7c8e641056eb434b67ee4a4c3dcda6f38cc1
-updated: 2017-09-20T10:23:04.805250215Z
+hash: 71728aa96602891e6edb22194af1cfae14857ee203a18848db0d101dafbeccb2
+updated: 2017-09-22T19:05:30.836246177Z
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
 - name: github.com/aws/aws-sdk-go
-  version: d76e48be81c125ffb3d030020b66d64731d2b9d0
+  version: 5615d2ed566a09d326f681c789310a2e5ba5de5d
   subpackages:
   - aws
   - aws/awserr
@@ -88,6 +88,8 @@ imports:
   version: e59506cc896acb7f7bf732d4fdf5e25f7ccd8983
 - name: github.com/gorilla/sessions
   version: b61c93cb7f67533c8bfbb5ea450efc07e5833c5e
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/jinzhu/gorm
   version: b1885a643b4977c9089d77eb07c0fd96591f94b8
   subpackages:
@@ -105,10 +107,16 @@ imports:
   - oid
 - name: github.com/mattn/go-isatty
   version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+- name: github.com/robfig/cron
+  version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+- name: github.com/spf13/cobra
+  version: b78744579491c1ceeaaa3b40205e56b0591b93a3
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/stripe/stripe-go
   version: 339ff3ba4d4b26f9179e31f958d8f68c5fd07b43
   subpackages:
