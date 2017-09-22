@@ -94,4 +94,5 @@ deploy-staging:
 	kubectl apply -f k8s/staging/
 	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
 	kubectl rollout resume deployment staging-platform-web
-	kubectl rollout status deployment staging-platform-web
+	curl --connect-timeout 5 --max-time 10 --retry 5 --retry-delay 0 --retry-max-time 40 'http://staging-api.reconfigure.io/ping'
+
