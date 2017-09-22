@@ -92,6 +92,7 @@ func cronCmd() {
 
 	worker.AddFunc("*/5 * * * *", generatedAFIs)
 	worker.AddFunc("* * * * *", terminateDeployments)
+	worker.AddFunc("* * * * *", checkHours)
 
 	worker.Run()
 }
