@@ -92,6 +92,6 @@ migrate-staging:
 deploy-staging:
 	kubectl rollout pause deployment staging-platform-web
 	kubectl apply -f k8s/staging/
-	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
+	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG} cron=${DOCKER_IMAGE}:${DOCKER_TAG}
 	kubectl rollout resume deployment staging-platform-web
 	kubectl rollout status deployment staging-platform-web
