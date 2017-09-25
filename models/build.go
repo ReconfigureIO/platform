@@ -10,7 +10,7 @@ import (
 )
 
 type BuildRepo interface {
-	// Return a list of deployments, with the statuses specified,
+	// Return a list of builds, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, ReportV1) error
