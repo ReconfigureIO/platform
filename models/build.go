@@ -20,7 +20,7 @@ type BuildRepo interface {
 
 type buildRepo struct{ db *gorm.DB }
 
-// DeploymentDataSource returns the data source for deployments.
+// BuildDataSource returns the data source for builds.
 func BuildDataSource(db *gorm.DB) BuildRepo {
 	return &buildRepo{db: db}
 }
@@ -85,7 +85,7 @@ func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Buil
 	return builds, nil
 }
 
-func (repo *buildRepo) ActiveBuilds(user User) ([]Builds, error) {
+func (repo *buildRepo) ActiveBuilds(user User) ([]Build, error) {
 	db := repo.db
 
 	rows, err := db.Raw(SQL_ACTIVE_BUILDS, userID).Rows()
