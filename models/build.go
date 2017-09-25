@@ -40,22 +40,22 @@ LIMIT ?
 `
 	SQL_ACTIVE_BUILDS = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
-from deployments j
-join builds on builds.id = j.build_id
+from builds j
 join projects on builds.project_id = projects.id
-left join deployment_events started
-on j.id = started.deployment_id
+join batchjobs on builds.batchjob_id = batchjobs.id
+left join batchjob_events started
+on batchjobs.id = started.batchjob_id
     and started.id = (
         select e1.id
-        from deployment_events e1
-        where j.id = e1.deployment_id and e1.status = 'STARTED'
+        from batchjob_events e1
+        where j.id = e1.batchjob_id and e1.status = 'STARTED'
     )
-left outer join deployment_events terminated
-on j.id = terminated.deployment_id
+left outer join batchjob_events terminated
+on batchjobs.id = terminated.batchjob_id
     and terminated.id = (
         select e2.id
-        from deployment_events e2
-        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+        from batchjob_events e2
+        where batchjobs.id = e2.batchjob_id and e2.status = 'TERMINATED'
     )
 where projects.user_id = ? and terminated IS NULL
 `
@@ -93,18 +93,18 @@ func (repo *buildRepo) ActiveBuilds(user User) ([]Builds, error) {
 		return nil, err
 	}
 
-	deps = []DeploymentHours{}
+	builds = []Build{}
 	for rows.Next() {
-		var dep DeploymentHours
-		err = db.ScanRows(rows, &dep)
+		var build Build
+		err = db.ScanRows(rows, &build)
 		if err != nil {
-			return
+			return nil, err
 		}
-		deps = append(deps, dep)
+		builds = append(builds, build)
 	}
 	rows.Close()
 
-	return
+	return builds, nil
 }
 
 // Build model.
