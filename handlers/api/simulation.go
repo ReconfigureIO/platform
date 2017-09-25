@@ -223,5 +223,8 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	eventMessage := "Simulation entered state:" + event.Status
+	sugar.EnqueueEvent(s.Events, c, eventMessage, map[string]interface{}{"simulation_id": sim.ID, "project_name": sim.Project.Name, "message": event.Message})
+
 	sugar.SuccessResponse(c, 200, newEvent)
 }

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: staging-config
+  namespace: default
+data:
+ AWS_REGION: "us-east-1"
+ GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/staging/github_client
+ GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/staging/github_secret
+ DATABASE_URL: ssm:///reconfigureio/platform/staging/db
+ SECRET_KEY_BASE: foobar
+ STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
+ PORT: "80"
+ RECO_ENV: production
+ RECO_PLATFORM_MIGRATE: "false"
+ RECO_FEATURE_DEPLOY: "true"
+ RECO_AWS_LOG_GROUP: "/aws/batch/job"
+ RECO_AWS_BUCKET: reconfigureio-builds
+ RECO_AWS_QUEUE: staging-build-jobs
+ RECO_AWS_JOB: sdaccel-builder-build-staging
+ RECO_FEATURE_DEPLOY: "true"
+ RECO_DEPLOY_LOG_GROUP: "/reconfigureio/deployments"
+ RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
+ RECO_DEPLOY_AMI: ami-8e6a4df5
+ RECO_DEPLOY_BUCKET: "reconfigureio-builds"

@@ -112,6 +112,7 @@ OptionSettings:
     GIN_MODE: release
     RECO_ENV: production
     RECO_FEATURE_BILLING: 1
+    RECO_FEATURE_INTERCOM: 1
     RECO_FEATURE_DEPLOY: 1
     PORT: '8080'
     GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client

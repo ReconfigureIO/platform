@@ -66,7 +66,9 @@ func main() {
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 
-	go events.DrainEvents()
+	if conf.Reco.FeatureIntercom {
+		go events.DrainEvents()
+	}
 
 	stripe.Key = conf.StripeKey
 

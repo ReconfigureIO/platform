@@ -221,6 +221,9 @@ func (g Graph) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	eventMessage := "Graph entered state:" + event.Status
+	sugar.EnqueueEvent(g.Events, c, eventMessage, map[string]interface{}{"graph_id": graph.ID, "project_name": graph.Project.Name, "message": event.Message})
+
 	sugar.SuccessResponse(c, 200, newEvent)
 
 }
