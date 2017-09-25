@@ -21,6 +21,10 @@ import (
 	stripe "github.com/stripe/stripe-go"
 )
 
+var (
+	version string
+)
+
 func setupDB(conf config.Config) *gorm.DB {
 	db, err := gorm.Open("postgres", conf.DbUrl)
 
@@ -50,8 +54,8 @@ func main() {
 	}
 
 	ctx := logrus.Fields{
-		"ID":      conf.Reco.Env,
-		"Version": conf.Version,
+		"Environment": conf.Reco.Env,
+		"Version":     version,
 	}
 	hook, err := logruzio.New(conf.Reco.LogzioToken, conf.ProgramName, ctx)
 	if err != nil {
