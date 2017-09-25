@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/bshuster-repo/logruzio"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,10 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/sirupsen/logrus"
 	stripe "github.com/stripe/stripe-go"
+)
+
+var (
+	version string
 )
 
 func setupDB(conf config.Config) *gorm.DB {
@@ -46,6 +51,17 @@ func main() {
 	conf, err := config.ParseEnvConfig()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	ctx := logrus.Fields{
+		"Environment": conf.Reco.Env,
+		"Version":     version,
+	}
+	hook, err := logruzio.New(conf.Reco.LogzioToken, conf.ProgramName, ctx)
+	if err != nil {
+		logrus.Fatal(err)
+	} else {
+		logrus.AddHook(hook)
 	}
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
