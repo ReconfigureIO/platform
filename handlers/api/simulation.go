@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -11,6 +12,10 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+)
+
+const (
+	maxConcurrentSimulations = 2 // number of concurrent simulations per user
 )
 
 // Simulation handles simulation requests.
@@ -85,6 +90,17 @@ func (s Simulation) Create(c *gin.Context) {
 	err := Project{}.Query(c).First(&project, "projects.id = ?", post.ProjectID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	// check for number of concurrently running simulations.
+	user := middleware.GetUser(c)
+	simData := models.SimulationDataSource(db)
+	if activeSims, err := simData.ActiveSimulations(user); err != nil {
+		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving simulation information")
+		return
+	} else if len(activeSims) >= maxConcurrentSimulations {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent simulation max of %d", maxConcurrentSimulations))
 		return
 	}
 

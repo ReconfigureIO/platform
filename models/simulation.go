@@ -1,14 +1,11 @@
 package models
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/jinzhu/gorm"
 )
 
 type SimulationRepo interface {
-	ActiveSimulations(user User) ([]Build, error)
+	ActiveSimulations(user User) ([]Simulation, error)
 }
 
 type simulationRepo struct{ db *gorm.DB }
@@ -74,12 +71,12 @@ type PostSimulation struct {
 func (repo *simulationRepo) ActiveSimulations(user User) ([]Simulation, error) {
 	db := repo.db
 
-	rows, err := db.Raw(SQL_ACTIVE_SIMULATIONS, userID).Rows()
+	rows, err := db.Raw(SQL_ACTIVE_SIMULATIONS, user.ID).Rows()
 	if err != nil {
 		return nil, err
 	}
 
-	sims = []Simulation{}
+	sims := []Simulation{}
 	for rows.Next() {
 		var sim Simulation
 		err = db.ScanRows(rows, &sim)

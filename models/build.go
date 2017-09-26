@@ -88,12 +88,12 @@ func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Buil
 func (repo *buildRepo) ActiveBuilds(user User) ([]Build, error) {
 	db := repo.db
 
-	rows, err := db.Raw(SQL_ACTIVE_BUILDS, userID).Rows()
+	rows, err := db.Raw(SQL_ACTIVE_BUILDS, user.ID).Rows()
 	if err != nil {
 		return nil, err
 	}
 
-	builds = []Build{}
+	builds := []Build{}
 	for rows.Next() {
 		var build Build
 		err = db.ScanRows(rows, &build)

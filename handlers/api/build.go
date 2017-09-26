@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -131,6 +132,7 @@ func (b Build) Create(c *gin.Context) {
 	}
 
 	// check for number of concurrently running builds.
+	user := middleware.GetUser(c)
 	buildData := models.BuildDataSource(db)
 	if activeBuilds, err := buildData.ActiveBuilds(user); err != nil {
 		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving build information")
