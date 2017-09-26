@@ -23,3 +23,4 @@ data:
  RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
  RECO_DEPLOY_AMI: ami-8e6a4df5
  RECO_DEPLOY_BUCKET: "reconfigureio-builds"
+ RECO_FEATURE_BILLING: 1
