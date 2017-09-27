@@ -21,7 +21,8 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
-	Events events.EventService
+	Events           events.EventService
+	UseSpotInstances bool
 }
 
 // Preload is common preload functionality.
@@ -100,7 +101,7 @@ func (d Deployment) Create(c *gin.Context) {
 		BuildID:      post.BuildID,
 		Command:      post.Command,
 		Token:        uniuri.NewLen(64),
-		SpotInstance: true,
+		SpotInstance: d.UseSpotInstances,
 	}
 
 	err = db.Create(&newDep).Error
