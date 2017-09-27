@@ -97,6 +97,14 @@ func main() {
 		}
 	})
 
+	r.POST("/rollover-credit", func(c *gin.Context) {
+		if err := billing_hours.RolloverHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
+			c.String(200, "done")
+		} else {
+			c.String(500, err.Error())
+		}
+	})
+
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + port)
 }
