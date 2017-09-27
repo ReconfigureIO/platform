@@ -58,7 +58,7 @@ func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentR
 	return nil
 }
 
-func RolloverHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo, deploy deployment.Service) error {
+func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo) error {
 	// Get all the active users
 	users, err := ds.ActiveUsers()
 	if err != nil {
@@ -83,8 +83,15 @@ func RolloverHours(ds models.SubscriptionRepo, deployments models.DeploymentRepo
 				log.Printf("Error: %s", err)
 			}
 
-			//Remove hours added by billing period
-			subscriptionInfo.Hours = ((subscriptionInfo.Hours - usedHours) + usedHours)
+			//has the user used credits this month?
+			if usedHours > subscriptionInfo.Hours {
+				debit := usedHours - subscriptionInfo.Hours
+				err = ds.AddDebit(user, debit)
+				if err != nil {
+					log.Printf("Error while adding %s hours debit to user: %s", debit, user.ID)
+					log.Printf("Error: %s", err)
+				}
+			}
 		}
 	}
 

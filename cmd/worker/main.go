@@ -97,8 +97,8 @@ func main() {
 		}
 	})
 
-	r.POST("/rollover-credit", func(c *gin.Context) {
-		if err := billing_hours.RolloverHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
+	r.POST("/update-debit", func(c *gin.Context) {
+		if err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())

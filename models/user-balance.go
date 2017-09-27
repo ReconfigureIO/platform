@@ -15,6 +15,8 @@ import (
 type UserBalanceRepo interface {
 	AvailableCredit(user User) (int, error)
 	AddDebit(user User, hours int) error
+	ActiveUsers() ([]User, error)
+	CurrentSubscription(User) (SubscriptionInfo, error)
 }
 
 // UserBalance holds information about a user's subscription, credits and debits.
@@ -85,4 +87,12 @@ func (repo *userBalanceRepo) AddDebit(user User, hours int) error {
 	if err != nil {
 		return err
 	}
+}
+
+func (repo *userBalanceRepo) ActiveUsers() ([]User, error) {
+	return SubscriptionDataSource(repo.db).ActiveUsers()
+}
+
+func (repo *userBalanceRepo) CurrentSubscription(user User) (SubscriptionInfo, error) {
+	return SubscriptionDataSource(repo.db).CurrentSubscription(user)
 }
