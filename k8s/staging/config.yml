@@ -11,7 +11,7 @@ data:
  SECRET_KEY_BASE: foobar
  STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
  PORT: "80"
- RECO_ENV: production
+ RECO_ENV: staging
  RECO_PLATFORM_MIGRATE: "false"
  RECO_FEATURE_DEPLOY: "true"
  RECO_AWS_LOG_GROUP: "/aws/batch/job"
