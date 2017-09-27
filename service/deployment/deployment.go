@@ -116,7 +116,7 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	cfg := ec2.RequestSpotInstancesInput{
 		InstanceCount:       aws.Int64(1),
 		LaunchSpecification: &launch,
-		SpotPrice:           aws.String("0.30"),
+		SpotPrice:           aws.String("0.60"),
 		Type:                aws.String("one-time"),
 	}
 
