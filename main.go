@@ -28,7 +28,7 @@ var (
 func setupDB(conf config.Config) *gorm.DB {
 	db, err := gorm.Open("postgres", conf.DbUrl)
 
-	if conf.Reco.Env != "release" {
+	if conf.Reco.Env != "production" {
 		db.LogMode(true)
 	}
 
