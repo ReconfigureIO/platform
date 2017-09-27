@@ -105,7 +105,7 @@ func TestActiveBuilds(t *testing.T) {
 			db.Create(&(builds[i]))
 		}
 
-		activeBuilds, err := buildData.ActiveBuilds(user.ID)
+		activeBuilds, err := buildData.ActiveBuilds(user)
 		if err != nil {
 			t.Error(err)
 			return
