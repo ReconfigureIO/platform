@@ -96,10 +96,11 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	newDep := models.Deployment{
-		Build:   build,
-		BuildID: post.BuildID,
-		Command: post.Command,
-		Token:   uniuri.NewLen(64),
+		Build:        build,
+		BuildID:      post.BuildID,
+		Command:      post.Command,
+		Token:        uniuri.NewLen(64),
+		SpotInstance: true,
 	}
 
 	err = db.Create(&newDep).Error
