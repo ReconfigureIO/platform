@@ -8,27 +8,46 @@ import (
 type Queue interface {
 	// Push adds an entry to the queue.
 	Push(Job)
-	// Pop returns the most recently completed entry.
-	// This blocks until an entry is done.
-	Pop() Job
-	// Concurrent sets the number of entries that can run concurrently.
-	Concurrent(n int)
+	// Start starts and monitors the queue.
+	// All popped jobs are passed to the job runner to run.
+	// This blocks forever.
+	Start()
+}
+
+// JobRunner manage jobs in the queue.
+type JobRunner interface {
+	Run(Job)
+	Stop(Job)
 }
 
 // Job is queue entry.
 type Job struct {
-	Id      string
-	Meta    map[string]interface{}
-	Weight  int
-	Execute func()
+	Id     string
+	Meta   map[string]interface{}
+	Weight int
 }
 
 // queueImpl is the implementation of Queue using
 // container/heap as underlying priority queue.
 type queueImpl struct {
 	queue      priorityQueue
-	running    map[string]Job
+	runner     JobRunner
 	concurrent int
+}
+
+func New(runner JobRunner, concurrent int) Queue {
+	return &queueImpl{
+		queue:      priorityQueue{},
+		runner:     nil,
+		concurrent: concurrent,
+	}
+}
+
+func (q *queueImpl) Push(j Job) {
+	q.queue.Push(j)
+}
+func (q *queueImpl) Start() {
+
 }
 
 var _ heap.Interface = priorityQueue{}
