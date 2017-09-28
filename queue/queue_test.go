@@ -9,11 +9,11 @@ import (
 )
 
 var jobs = []Job{
-	Job{Id: "1", Weight: 4},
-	Job{Id: "2", Weight: 1},
-	Job{Id: "3", Weight: 5},
-	Job{Id: "4", Weight: 3},
-	Job{Id: "5", Weight: 2},
+	Job{ID: "1", Weight: 4},
+	Job{ID: "2", Weight: 1},
+	Job{ID: "3", Weight: 5},
+	Job{ID: "4", Weight: 3},
+	Job{ID: "5", Weight: 2},
 }
 
 func TestPriorityQueue(t *testing.T) {
@@ -30,9 +30,9 @@ func TestPriorityQueue(t *testing.T) {
 	}
 }
 
-func TestQueue(t *testing.T) {
+func TestMemoryQueue(t *testing.T) {
 	runner := &fakeRunner{}
-	var queue = New(runner, 2)
+	var queue = NewWithMemoryStore(runner, 2, "deployment")
 	for _, job := range jobs {
 		queue.Push(job)
 	}
@@ -46,8 +46,8 @@ func TestQueue(t *testing.T) {
 	}
 
 	for _, job := range jobs {
-		if _, ok := runner.dispatched[job.Id]; !ok {
-			t.Errorf("Job %s not dispatched", job.Id)
+		if _, ok := runner.dispatched[job.ID]; !ok {
+			t.Errorf("Job %s not dispatched", job.ID)
 		}
 	}
 }
@@ -58,7 +58,7 @@ type fakeRunner struct {
 }
 
 func (f *fakeRunner) Run(job Job) {
-	log.Println("starting", job.Id)
+	log.Println("starting", job.ID)
 	time.Sleep(time.Second * 2)
 
 	f.Lock()
@@ -66,9 +66,9 @@ func (f *fakeRunner) Run(job Job) {
 	if f.dispatched == nil {
 		f.dispatched = make(map[string]struct{})
 	}
-	f.dispatched[job.Id] = struct{}{}
+	f.dispatched[job.ID] = struct{}{}
 }
 
 func (f fakeRunner) Stop(job Job) {
-	log.Println("stopping", job.Id)
+	log.Println("stopping", job.ID)
 }
