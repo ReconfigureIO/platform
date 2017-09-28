@@ -39,7 +39,7 @@ var _ Queue = &queueImpl{}
 // queueImpl is the implementation of Queue using
 // container/heap as underlying priority queue.
 type queueImpl struct {
-	queue      priorityQueue
+	queue      *priorityQueue
 	dispatched map[*Job]struct{}
 
 	runner     JobRunner
@@ -52,8 +52,9 @@ type queueImpl struct {
 // New creates a new Queue.
 func New(runner JobRunner, concurrent int) Queue {
 	return &queueImpl{
-		queue:      priorityQueue{},
+		queue:      &priorityQueue{},
 		runner:     runner,
+		dispatched: make(map[*Job]struct{}),
 		concurrent: concurrent,
 	}
 }
@@ -62,7 +63,7 @@ func (q *queueImpl) Push(j Job) {
 	q.Lock()
 	defer q.Unlock()
 
-	q.queue.Push(j)
+	heap.Push(q.queue, j)
 }
 
 func (q *queueImpl) Start() {
@@ -75,15 +76,23 @@ func (q *queueImpl) Start() {
 	}()
 
 	for !stop {
-		// TODO 5 second suffices for now,
+		// TODO 1 second suffices for now,
 		// it may change in the future.
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 1)
 
 		q.RLock()
 		toRun := q.concurrent - len(q.dispatched)
+		length := q.queue.Len()
 		q.RUnlock()
-		for i := 0; i < toRun; i++ {
-			go q.dispatch()
+		for i := 0; i < toRun && i < length; i++ {
+			// pop from priority queue and add
+			// to dispatched jobs.
+			q.Lock()
+			job := heap.Pop(q.queue).(Job)
+			q.dispatched[&job] = struct{}{}
+			q.Unlock()
+
+			go q.dispatch(&job)
 		}
 
 	}
@@ -93,20 +102,13 @@ func (q *queueImpl) Halt() {
 	close(q.halt)
 }
 
-func (q *queueImpl) dispatch() {
-	// pop from priority queue and add
-	// to dispatched jobs.
-	q.Lock()
-	job := q.queue.Pop().(Job)
-	q.dispatched[&job] = struct{}{}
-	q.Unlock()
-
+func (q *queueImpl) dispatch(job *Job) {
 	// run job
-	q.runner.Run(job)
+	q.runner.Run(*job)
 
 	// delete from dispatched jobs
 	q.Lock()
-	delete(q.dispatched, &job)
+	delete(q.dispatched, job)
 	q.Unlock()
 }
 
