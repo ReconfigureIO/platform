@@ -6,8 +6,10 @@ import (
 
 // UserBalanceRepo handles user balance details.
 type UserBalanceRepo interface {
-	AvailableCredit(user User) (int, error)
-	AddDebit(user User, hours int) error
+	AvailableCredit(User) (int, error)
+	PurchasedCredit(User) (int, error)
+	AddDebit(User, int) error
+	AddCredit(User, int) error
 	ActiveUsers() ([]User, error)
 	CurrentSubscription(User) (SubscriptionInfo, error)
 	UpdatePlan(User, string) (SubscriptionInfo, error)
@@ -80,6 +82,7 @@ func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 	return userBalance, nil
 }
 
+// Returns the total number of hours available across subscription and purchased credits
 func (repo *userBalanceRepo) AvailableCredit(user User) (int, error) {
 	balance, err := repo.GetUserBalance(user)
 	if err != nil {
@@ -88,6 +91,29 @@ func (repo *userBalanceRepo) AvailableCredit(user User) (int, error) {
 
 	available := balance.Subscription.Hours + (balance.Credits.Hours - balance.Debits.Hours)
 	return available, nil
+}
+
+// Returns the number of purchased credits
+func (repo *userBalanceRepo) PurchasedCredit(user User) (int, error) {
+	balance, err := repo.GetUserBalance(user)
+	if err != nil {
+		return 0, err
+	}
+
+	return balance.Credits.Hours, nil
+}
+
+func (repo *userBalanceRepo) AddCredit(user User, credit int) error {
+	balance, err := repo.GetUserBalance(user)
+	if err != nil {
+		return err
+	}
+	balance.Credits.Hours = balance.Credits.Hours + credit
+	err = repo.db.Save(&balance.Credits).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (repo *userBalanceRepo) AddDebit(user User, hours int) error {
