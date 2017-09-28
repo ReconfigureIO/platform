@@ -2,6 +2,8 @@ package queue
 
 import (
 	"container/heap"
+	"sync"
+	"time"
 )
 
 // Queue is a job queue.
@@ -9,9 +11,14 @@ type Queue interface {
 	// Push adds an entry to the queue.
 	Push(Job)
 	// Start starts and monitors the queue.
-	// All popped jobs are passed to the job runner to run.
+	// Jobs are dispatched to the job runner accordingly.
 	// This blocks forever.
 	Start()
+	// Halt stops the queue from dispatching jobs to
+	// job runner.
+	// Halt should only be called after the Queue has been
+	// started. i.e. Start has been previously called.
+	Halt()
 }
 
 // JobRunner manage jobs in the queue.
@@ -27,27 +34,80 @@ type Job struct {
 	Weight int
 }
 
+var _ Queue = &queueImpl{}
+
 // queueImpl is the implementation of Queue using
 // container/heap as underlying priority queue.
 type queueImpl struct {
 	queue      priorityQueue
+	dispatched map[*Job]struct{}
+
 	runner     JobRunner
+	halt       chan struct{}
 	concurrent int
+
+	sync.RWMutex
 }
 
+// New creates a new Queue.
 func New(runner JobRunner, concurrent int) Queue {
 	return &queueImpl{
 		queue:      priorityQueue{},
-		runner:     nil,
+		runner:     runner,
 		concurrent: concurrent,
 	}
 }
 
 func (q *queueImpl) Push(j Job) {
+	q.Lock()
+	defer q.Unlock()
+
 	q.queue.Push(j)
 }
-func (q *queueImpl) Start() {
 
+func (q *queueImpl) Start() {
+	q.halt = make(chan struct{})
+
+	stop := false
+	go func() {
+		<-q.halt
+		stop = true
+	}()
+
+	for !stop {
+		// TODO 5 second suffices for now,
+		// it may change in the future.
+		time.Sleep(time.Second * 5)
+
+		q.RLock()
+		toRun := q.concurrent - len(q.dispatched)
+		q.RUnlock()
+		for i := 0; i < toRun; i++ {
+			go q.dispatch()
+		}
+
+	}
+}
+
+func (q *queueImpl) Halt() {
+	close(q.halt)
+}
+
+func (q *queueImpl) dispatch() {
+	// pop from priority queue and add
+	// to dispatched jobs.
+	q.Lock()
+	job := q.queue.Pop().(Job)
+	q.dispatched[&job] = struct{}{}
+	q.Unlock()
+
+	// run job
+	q.runner.Run(job)
+
+	// delete from dispatched jobs
+	q.Lock()
+	delete(q.dispatched, &job)
+	q.Unlock()
 }
 
 var _ heap.Interface = priorityQueue{}
