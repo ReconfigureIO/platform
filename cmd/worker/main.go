@@ -98,7 +98,7 @@ func main() {
 	})
 
 	r.POST("/update-debit", func(c *gin.Context) {
-		if err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db), deploy); err == nil {
+		if err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db)); err == nil {
 			c.String(200, "done")
 		} else {
 			c.String(500, err.Error())

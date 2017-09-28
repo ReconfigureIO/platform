@@ -15,9 +15,6 @@ type UserBalanceRepo interface {
 
 // UserBalance holds information about a user's subscription, credits and debits.
 type UserBalance struct {
-	uuidHook
-	ID           string `gorm:"primary_key" json:"id"`
-	UserID       string `json:"-"`
 	Subscription SubscriptionInfo
 	Credits      Credits
 	Debits       Debits
@@ -26,6 +23,7 @@ type UserBalance struct {
 type Credits struct {
 	uuidHook
 	ID         string `gorm:"primary_key" json:"id"`
+	User       User   `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     string `json:"-"`
 	StripeID   string `json:"-"`
 	Identifier string `json:"id"`
@@ -56,28 +54,50 @@ type userBalanceRepo struct {
 	db *gorm.DB
 }
 
-func (repo *userBalanceRepo) AvailableCredit(user User) (int, error) {
+func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 	db := repo.db
-	userBalance := UserBalance{}
-	err := db.Where("ID = ?", user.ID).First(&userBalance).Error
+	userCredits := Credits{}
+	err := db.Where("UserID = ?", user.ID).First(&userCredits).Error
+	if err != nil {
+		return UserBalance{}, err
+	}
+	userDebits := Debits{}
+	err = db.Where("UserID = ?", user.ID).First(&userDebits).Error
+	if err != nil {
+		return UserBalance{}, err
+	}
+	subscriptionInfo, err := repo.CurrentSubscription(user)
+	if err != nil {
+		return UserBalance{}, err
+	}
+
+	userBalance := UserBalance{
+		Subscription: subscriptionInfo,
+		Credits:      userCredits,
+		Debits:       userDebits,
+	}
+
+	return userBalance, nil
+}
+
+func (repo *userBalanceRepo) AvailableCredit(user User) (int, error) {
+	balance, err := repo.GetUserBalance(user)
 	if err != nil {
 		return 0, err
 	}
 
-	available := userBalance.Subscription.Hours + (userBalance.Credits.Hours - userBalance.Debits.Hours)
+	available := balance.Subscription.Hours + (balance.Credits.Hours - balance.Debits.Hours)
 	return available, nil
 }
 
 func (repo *userBalanceRepo) AddDebit(user User, hours int) error {
-	db := repo.db
-	userBalance := UserBalance{}
-	err := db.Where("ID = ?", user.ID).First(&userBalance).Error
+	balance, err := repo.GetUserBalance(user)
 	if err != nil {
 		return err
 	}
 
-	userBalance.Debits.Hours = userBalance.Debits.Hours + hours
-	err = db.Save(&userBalance).Error
+	balance.Debits.Hours = balance.Debits.Hours + hours
+	err = repo.db.Save(&balance.Debits).Error
 	if err != nil {
 		return err
 	}

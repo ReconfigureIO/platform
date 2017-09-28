@@ -19,7 +19,7 @@ func TestShouldNotCreateDuplicateSubscriptions(t *testing.T) {
 			StripeToken: "cus_AgZQTeZbnY6AE4",
 		}
 
-		subs := repo(db)
+		subs := newSubscriptionRepo(db)
 		c, err := subs.cachedCustomer(u)
 		if err != nil {
 			t.Fatal(err)
@@ -33,21 +33,21 @@ func TestShouldNotCreateDuplicateSubscriptions(t *testing.T) {
 			}
 		}
 
-		subs = repo(db)
+		subs = newSubscriptionRepo(db)
 
 		_, err = subs.UpdatePlan(u, PlanSingleUser)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		subs = repo(db)
+		subs = newSubscriptionRepo(db)
 
 		_, err = subs.UpdatePlan(u, PlanSingleUser)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		subs = repo(db)
+		subs = newSubscriptionRepo(db)
 		c, err = subs.cachedCustomer(u)
 		if err != nil {
 			t.Fatal(err)
