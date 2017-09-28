@@ -110,15 +110,15 @@ func (q *queueImpl) dispatch() {
 	q.Unlock()
 }
 
-var _ heap.Interface = priorityQueue{}
+var _ heap.Interface = &priorityQueue{}
 
 type priorityQueue []Job
 
-func (q priorityQueue) Len() int           { return len(q) }
-func (q priorityQueue) Swap(i, j int)      { q[i], q[j] = q[j], q[i] }
-func (q priorityQueue) Less(i, j int) bool { return q[i].Weight < q[j].Weight }
-func (q priorityQueue) Push(x interface{}) { q.push(x) }
-func (q priorityQueue) Pop() interface{}   { return q.pop() }
+func (q priorityQueue) Len() int            { return len(q) }
+func (q priorityQueue) Swap(i, j int)       { q[i], q[j] = q[j], q[i] }
+func (q priorityQueue) Less(i, j int) bool  { return q[j].Weight < q[i].Weight }
+func (q *priorityQueue) Push(x interface{}) { q.push(x) }
+func (q *priorityQueue) Pop() interface{}   { return q.pop() }
 func (q *priorityQueue) push(x interface{}) {
 	entry, ok := x.(Job)
 	if !ok {
