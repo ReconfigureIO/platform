@@ -1,14 +1,7 @@
 package models
 
 import (
-	"fmt"
-	"strconv"
-	"time"
-
 	"github.com/jinzhu/gorm"
-	stripe "github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/customer"
-	subscriptions "github.com/stripe/stripe-go/sub"
 )
 
 // UserBalanceRepo handles user balance details.
@@ -17,6 +10,7 @@ type UserBalanceRepo interface {
 	AddDebit(user User, hours int) error
 	ActiveUsers() ([]User, error)
 	CurrentSubscription(User) (SubscriptionInfo, error)
+	UpdatePlan(User, string) (SubscriptionInfo, error)
 }
 
 // UserBalance holds information about a user's subscription, credits and debits.
@@ -49,10 +43,10 @@ type Debits struct {
 
 // UserBalanceDataSource returns data source for user balances using db.
 func UserBalanceDataSource(db *gorm.DB) UserBalanceRepo {
-	return repo(db)
+	return newUserBalanceRepo(db)
 }
 
-func repo(db *gorm.DB) *userBalanceRepo {
+func newUserBalanceRepo(db *gorm.DB) *userBalanceRepo {
 	return &userBalanceRepo{
 		db: db,
 	}
@@ -87,6 +81,7 @@ func (repo *userBalanceRepo) AddDebit(user User, hours int) error {
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 func (repo *userBalanceRepo) ActiveUsers() ([]User, error) {
@@ -95,4 +90,8 @@ func (repo *userBalanceRepo) ActiveUsers() ([]User, error) {
 
 func (repo *userBalanceRepo) CurrentSubscription(user User) (SubscriptionInfo, error) {
 	return SubscriptionDataSource(repo.db).CurrentSubscription(user)
+}
+
+func (repo *userBalanceRepo) UpdatePlan(user User, plan string) (SubscriptionInfo, error) {
+	return SubscriptionDataSource(repo.db).UpdatePlan(user, plan)
 }

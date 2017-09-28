@@ -111,14 +111,14 @@ func (b Billing) FetchBillingHours(userID string) BillingHours {
 	return billingHours{
 		user:    user,
 		depRepo: models.DeploymentDataSource(db),
-		subRepo: models.SubscriptionDataSource(db),
+		subRepo: models.UserBalanceDataSource(db),
 	}
 }
 
 type billingHours struct {
 	user    models.User
 	depRepo models.DeploymentRepo
-	subRepo models.SubscriptionRepo
+	subRepo models.UserBalanceRepo
 	err     error
 }
 
@@ -126,8 +126,8 @@ func (b billingHours) Available() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.CurrentSubscription(b.user)
-	return sub.Hours, err
+	available, err := b.subRepo.AvailableCredit(b.user)
+	return available, err
 }
 
 func (b billingHours) Used() (int, error) {
@@ -153,6 +153,10 @@ func (b billingHours) Net() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	net := sub.Hours - used
+	available, err := b.subRepo.AvailableCredit(b.user)
+	if err != nil {
+		return 0, err
+	}
+	net := available - used
 	return net, nil
 }
