@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -41,7 +42,7 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes("secretKey", r, db, events, nil)
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

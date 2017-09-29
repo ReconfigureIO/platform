@@ -28,7 +28,7 @@ var (
 func setupDB(conf config.Config) *gorm.DB {
 	db, err := gorm.Open("postgres", conf.DbUrl)
 
-	if conf.Reco.Env != "release" {
+	if conf.Reco.Env != "production" {
 		db.LogMode(true)
 	}
 
@@ -112,7 +112,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)
