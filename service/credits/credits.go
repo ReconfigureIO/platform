@@ -49,7 +49,11 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo) 
 					log.Printf("Error while adding %s hours debit to user: %s", debit, user.ID)
 					log.Printf("Error: %s", err)
 				}
-				err := stripeSync(user, ds)
+				err = stripeSync(user, ds)
+				if err != nil {
+					log.Printf("Error while syncing to stripe for user: %s", user.ID)
+					log.Printf("Error: %s", err)
+				}
 			}
 		}
 	}
@@ -80,7 +84,7 @@ func AddCredits(desiredCredits int, ds models.UserBalanceRepo, user models.User)
 }
 
 func stripeSync(user models.User, ds models.UserBalanceRepo) error {
-	cust, err := customer.Get(user.StripeToken)
+	cust, err := customer.Get(user.StripeToken, &stripe.CustomerParams{})
 	if err != nil {
 		return err
 	}
@@ -89,19 +93,21 @@ func stripeSync(user models.User, ds models.UserBalanceRepo) error {
 		return err
 	}
 	// if credits in stripe are higher than we have on record there's a problem
-	if userBalance.Credits.Hours < cust.Metadata.Credit_hours {
+	if string(userBalance.Credits.Hours) < cust.Meta["credit_hours"] {
 		return fmt.Errorf("User %s has a credit mismatch in stripe", user.ID)
 	}
 
-	if userBalance.Debits.Hours < cust.Metadata.Debit_hours {
+	if string(userBalance.Debits.Hours) < cust.Meta["debit_hours"] {
 		return fmt.Errorf("User %s has a debit mismatch in stripe", user.ID)
 	}
 
-	cust.Metadata.Credit_hours = userBalance.Credits.Hours
-	cust.Metadata.Debit_hours = userBalance.Debits.Hours
+	params := &stripe.CustomerParams{}
+	params.AddMeta("debit_hours", string(userBalance.Debits.Hours))
+	params.AddMeta("credit_hours", string(userBalance.Credits.Hours))
 
-	_, err = customer.Update(cust)
+	_, err = customer.Update(user.StripeToken, params)
 	if err != nil {
 		return err
 	}
+	return nil
 }
