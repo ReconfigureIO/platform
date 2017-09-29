@@ -1,12 +1,29 @@
+// +build integration
+
 package queue
 
 import (
 	"container/heap"
 	"log"
+	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/ReconfigureIO/platform/handlers/api"
+	_ "github.com/ReconfigureIO/platform/models"
+	"github.com/jinzhu/gorm" // db
 )
+
+func init() {
+	gormConnDets := os.Getenv("DATABASE_URL")
+	db, err := gorm.Open("postgres", gormConnDets)
+	if err != nil {
+		log.Fatal(err)
+	}
+	db.LogMode(true)
+	api.DB(db)
+}
 
 var jobs = []Job{
 	Job{ID: "1", Weight: 4},
@@ -33,6 +50,28 @@ func TestPriorityQueue(t *testing.T) {
 func TestMemoryQueue(t *testing.T) {
 	runner := &fakeRunner{}
 	var queue = NewWithMemoryStore(runner, 2, "deployment")
+	for _, job := range jobs {
+		queue.Push(job)
+	}
+	go queue.Start()
+	for {
+		time.Sleep(time.Second * 1)
+		if len(runner.dispatched) >= 5 {
+			queue.Halt()
+			break
+		}
+	}
+
+	for _, job := range jobs {
+		if _, ok := runner.dispatched[job.ID]; !ok {
+			t.Errorf("Job %s not dispatched", job.ID)
+		}
+	}
+}
+
+func TestDBQueue(t *testing.T) {
+	runner := &fakeRunner{}
+	var queue = NewWithDBStore(runner, 2, "deployment")
 	for _, job := range jobs {
 		queue.Push(job)
 	}
