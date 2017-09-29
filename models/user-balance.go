@@ -1,5 +1,7 @@
 package models
 
+//go:generate mockgen -source=user-balance.go -package=models -destination=user-balance_mock.go
+
 import (
 	"github.com/jinzhu/gorm"
 )
@@ -13,6 +15,7 @@ type UserBalanceRepo interface {
 	ActiveUsers() ([]User, error)
 	CurrentSubscription(User) (SubscriptionInfo, error)
 	UpdatePlan(User, string) (SubscriptionInfo, error)
+	GetUserBalance(User) (UserBalance, error)
 }
 
 // UserBalance holds information about a user's subscription, credits and debits.
@@ -27,7 +30,6 @@ type Credits struct {
 	ID         string `gorm:"primary_key" json:"id"`
 	User       User   `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     string `json:"-"`
-	StripeID   string `json:"-"`
 	Identifier string `json:"id"`
 	Hours      int
 }
@@ -36,7 +38,6 @@ type Debits struct {
 	uuidHook
 	ID         string `gorm:"primary_key" json:"id"`
 	UserID     string `json:"-"`
-	StripeID   string `json:"-"`
 	Identifier string `json:"id"`
 	Hours      int
 }
