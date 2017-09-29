@@ -1,12 +1,14 @@
 package credits
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/charge"
+	"github.com/stripe/stripe-go/customer"
 )
 
 const (
@@ -47,6 +49,7 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo) 
 					log.Printf("Error while adding %s hours debit to user: %s", debit, user.ID)
 					log.Printf("Error: %s", err)
 				}
+				err := stripeSync(user, ds)
 			}
 		}
 	}
@@ -74,4 +77,31 @@ func AddCredits(desiredCredits int, ds models.UserBalanceRepo, user models.User)
 		// TODO revoke the charge if we fail here
 	}
 	return nil
+}
+
+func stripeSync(user models.User, ds models.UserBalanceRepo) error {
+	cust, err := customer.Get(user.StripeToken)
+	if err != nil {
+		return err
+	}
+	userBalance, err := ds.GetUserBalance(user)
+	if err != nil {
+		return err
+	}
+	// if credits in stripe are higher than we have on record there's a problem
+	if userBalance.Credits.Hours < cust.Metadata.Credit_hours {
+		return fmt.Errorf("User %s has a credit mismatch in stripe", user.ID)
+	}
+
+	if userBalance.Debits.Hours < cust.Metadata.Debit_hours {
+		return fmt.Errorf("User %s has a debit mismatch in stripe", user.ID)
+	}
+
+	cust.Metadata.Credit_hours = userBalance.Credits.Hours
+	cust.Metadata.Debit_hours = userBalance.Debits.Hours
+
+	_, err = customer.Update(cust)
+	if err != nil {
+		return err
+	}
 }
