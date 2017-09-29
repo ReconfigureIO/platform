@@ -5,6 +5,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/credits"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	stripe "github.com/stripe/stripe-go"
@@ -24,6 +25,10 @@ type BillingInterface interface {
 // TokenUpdate is token update payload.
 type TokenUpdate struct {
 	Token string `json:"token"`
+}
+
+type BuyCredits struct {
+	Quantity int `json:"quantity"`
 }
 
 // Get the default card info for the customer for frontend display
@@ -87,6 +92,21 @@ func (b Billing) RemainingHours(c *gin.Context) {
 		return
 	}
 	sugar.SuccessResponse(c, 200, remaining)
+}
+
+func (b Billing) AddCredits(c *gin.Context) {
+	post := BuyCredits{}
+	err := c.BindJSON(&post)
+	if err != nil {
+		return
+	}
+	user := middleware.GetUser(c)
+	userBalanceRepo := models.UserBalanceDataSource(db)
+	err = credits.AddCredits(post.Quantity, userBalanceRepo, user)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
 }
 
 // BillingHours returns information about billing hours for user.
