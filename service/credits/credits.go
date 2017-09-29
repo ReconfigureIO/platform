@@ -31,7 +31,7 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo) 
 		}
 
 		//if we're at the end of the billing period
-		if subscriptionInfo.EndTime.After(time.Now()) {
+		if subscriptionInfo.EndTime.Before(time.Now()) {
 			// Get the user's used hours for this billing period
 			usedHours, err := models.DeploymentHoursBtw(deployments, user.ID, subscriptionInfo.StartTime, subscriptionInfo.EndTime)
 			if err != nil {
