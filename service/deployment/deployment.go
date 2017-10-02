@@ -101,13 +101,37 @@ func (d Deployment) String() (string, error) {
 	return buff.String(), err
 }
 
-func (s *service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
+func (s *service) runSpotInstance(ctx context.Context, deployment models.Deployment, callbackUrl string, encodedConfig string) (string, error) {
 	ec2Session := ec2.New(s.session)
 
-	encodedConfig, err := s.Conf.ContainerConfig(deployment, callbackUrl).String()
+	launch := ec2.RequestSpotLaunchSpecification{
+		ImageId:      aws.String(s.Conf.AMI),
+		InstanceType: aws.String("f1.2xlarge"),
+		UserData:     aws.String(encodedConfig),
+		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
+			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
+		},
+	}
+
+	cfg := ec2.RequestSpotInstancesInput{
+		InstanceCount:       aws.Int64(1),
+		LaunchSpecification: &launch,
+		SpotPrice:           aws.String("0.60"),
+		Type:                aws.String("one-time"),
+	}
+
+	resp, err := ec2Session.RequestSpotInstancesWithContext(ctx, &cfg)
 	if err != nil {
 		return "", err
 	}
+
+	InstanceId := *resp.SpotInstanceRequests[0].SpotInstanceRequestId
+
+	return InstanceId, nil
+}
+
+func (s *service) runInstance(ctx context.Context, deployment models.Deployment, callbackUrl string, encodedConfig string) (string, error) {
+	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.RunInstancesInput{
 		ImageId: aws.String(s.Conf.AMI),
@@ -122,17 +146,31 @@ func (s *service) RunDeployment(ctx context.Context, deployment models.Deploymen
 	}
 
 	resp, err := ec2Session.RunInstancesWithContext(ctx, &cfg)
+
 	if err != nil {
 		return "", err
 	}
 
 	InstanceId := *resp.Instances[0].InstanceId
-
 	return InstanceId, nil
 }
 
-func (s *service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
-	InstanceId := deployment.InstanceID
+func (s *service) RunDeployment(ctx context.Context, deployment models.Deployment, callbackUrl string) (string, error) {
+	encodedConfig, err := s.Conf.ContainerConfig(deployment, callbackUrl).String()
+	if err != nil {
+		return "", err
+	}
+
+	if deployment.SpotInstance {
+		instanceId, err := s.runSpotInstance(ctx, deployment, callbackUrl, encodedConfig)
+		return instanceId, err
+	}
+
+	instanceId, err := s.runInstance(ctx, deployment, callbackUrl, encodedConfig)
+	return instanceId, err
+}
+
+func (s *service) stopInstance(ctx context.Context, InstanceId string) error {
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.TerminateInstancesInput{
@@ -144,6 +182,60 @@ func (s *service) StopDeployment(ctx context.Context, deployment models.Deployme
 	_, err := ec2Session.TerminateInstancesWithContext(ctx, &cfg)
 
 	return err
+}
+
+func (s *service) stopSpotInstance(ctx context.Context, InstanceId string) error {
+	ec2Session := ec2.New(s.session)
+
+	input := &ec2.CancelSpotInstanceRequestsInput{
+		SpotInstanceRequestIds: []*string{
+			aws.String(InstanceId),
+		},
+	}
+
+	_, err := ec2Session.CancelSpotInstanceRequestsWithContext(ctx, input)
+	if err != nil {
+		return err
+	}
+
+	descInput := &ec2.DescribeSpotInstanceRequestsInput{
+		SpotInstanceRequestIds: []*string{
+			aws.String(InstanceId),
+		},
+	}
+
+	result, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, descInput)
+	if err != nil {
+		return err
+	}
+
+	instanceIds := []*string{}
+
+	for _, req := range result.SpotInstanceRequests {
+		if req.InstanceId != nil {
+			instanceIds = append(instanceIds, req.InstanceId)
+		}
+	}
+
+	if len(instanceIds) > 0 {
+		cfg := ec2.TerminateInstancesInput{
+			InstanceIds: instanceIds,
+		}
+
+		_, err = ec2Session.TerminateInstancesWithContext(ctx, &cfg)
+	}
+
+	return err
+}
+
+func (s *service) StopDeployment(ctx context.Context, deployment models.Deployment) error {
+	InstanceId := deployment.InstanceID
+
+	if deployment.SpotInstance {
+		return s.stopSpotInstance(ctx, InstanceId)
+	}
+	return s.stopInstance(ctx, InstanceId)
+
 }
 
 func (s *service) GetDepDetail(id int) (string, error) {
