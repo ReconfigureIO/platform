@@ -17,7 +17,12 @@ type Queue interface {
 
 // JobRunner manage jobs in the queue.
 type JobRunner interface {
+	// Run runs the job.
+	// This function is expected to block until the job has finished running.
+	// The queue treats the job as done and move on to the next
+	// job on return of this function.
 	Run(Job)
+	// Stop stops the job.
 	Stop(Job)
 }
 
