@@ -45,7 +45,7 @@ func (q *QueueService) Fetch(jobType string, limit int) ([]string, error) {
 	rows, err := q.db.Model(&models.QueueEntry{}).
 		Select("type_id").
 		Where("status = ?", models.StatusQueued).
-		Order("weight desc, created_at desc").
+		Order("weight desc, created_at").
 		Limit(limit).
 		Rows()
 	if err != nil {
