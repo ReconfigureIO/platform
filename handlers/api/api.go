@@ -26,8 +26,6 @@ var (
 	deploy deployment.Service
 
 	deploymentQueue queue.Queue
-
-	hostname string
 )
 
 // DB sets the database to use for the API.
@@ -39,16 +37,11 @@ func Configure(conf config.Config) {
 	awsSession = aws.New(conf.Reco.AWS)
 
 	deploy = deployment.New(conf.Reco.Deploy)
+}
 
-	hostname = conf.Host
-
-	deploymentQueue = queue.NewWithDBStore(
-		db,
-		DeploymentRunner{},
-		maxConcurrentJobs,
-		"deployment",
-	)
-	go deploymentQueue.Start()
+// DepQueue sets the deployment queue.
+func DepQueue(q queue.Queue) {
+	deploymentQueue = q
 }
 
 // Transaction runs a transaction, rolling back if error != nil.

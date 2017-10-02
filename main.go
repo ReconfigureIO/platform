@@ -9,8 +9,10 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/bshuster-repo/logruzio"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
@@ -45,6 +47,22 @@ func setupDB(conf config.Config) *gorm.DB {
 		migration.MigrateSchema()
 	}
 	return db
+}
+
+func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
+	runner := queue.DeploymentRunner{
+		Hostname: conf.Host,
+		DB:       db,
+		Service:  deployment.New(conf.Reco.Deploy),
+	}
+	deploymentQueue := queue.NewWithDBStore(
+		db,
+		runner,
+		2, // TODO make this non static.
+		"deployment",
+	)
+	go deploymentQueue.Start()
+	return deploymentQueue
 }
 
 func main() {
@@ -116,6 +134,15 @@ func main() {
 	// routes
 	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
 
+	// queue
+	depoymentQueue := startDeploymentQueue(*conf, db)
+	api.DepQueue(depoymentQueue)
+
 	// Listen and Server in 0.0.0.0:$PORT
-	r.Run(":" + conf.Port)
+	err = r.Run(":" + conf.Port)
+
+	// Code would normally not reach here.
+	if err != nil {
+		depoymentQueue.Halt()
+	}
 }
