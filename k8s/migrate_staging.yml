@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-staging
+spec:
+  activeDeadlineSeconds: 100
+  template:
+    metadata:
+      name: migrate-staging
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrate-staging
+        image: foo
+        command: ["ssm-env"]
+        args: ["/deploy_schema"]
+        envFrom:
+          - configMapRef:
+              name: staging-config

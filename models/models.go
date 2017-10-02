@@ -100,13 +100,14 @@ type PostDepEvent struct {
 // Deployment model.
 type Deployment struct {
 	uuidHook
-	ID         string            `gorm:"primary_key" json:"id"`
-	Build      Build             `json:"build" gorm:"ForeignKey:BuildID"`
-	BuildID    string            `json:"-"`
-	Command    string            `json:"command"`
-	Token      string            `json:"-"`
-	InstanceID string            `json:"-"`
-	Events     []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
+	ID           string            `gorm:"primary_key" json:"id"`
+	Build        Build             `json:"build" gorm:"ForeignKey:BuildID"`
+	BuildID      string            `json:"-"`
+	Command      string            `json:"command"`
+	Token        string            `json:"-"`
+	InstanceID   string            `json:"-"`
+	SpotInstance bool              `json:"-" gorm:"not null"`
+	Events       []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
 }
 
 // PostDeployment is post request body for new deployment.

@@ -9,21 +9,23 @@ import (
 )
 
 type Config struct {
-	DbUrl     string     `env:"DATABASE_URL"`
-	SecretKey string     `env:"SECRET_KEY_BASE"`
-	StripeKey string     `env:"STRIPE_KEY"`
-	Port      string     `env:"PORT"`
-	Reco      RecoConfig `env:"RECO"`
+	ProgramName string     `env:"RECO_NAME"`
+	DbUrl       string     `env:"DATABASE_URL"`
+	SecretKey   string     `env:"SECRET_KEY_BASE"`
+	StripeKey   string     `env:"STRIPE_KEY"`
+	Port        string     `env:"PORT"`
+	Reco        RecoConfig `env:"RECO"`
 }
 
 type RecoConfig struct {
-	Env             string `env:"RECO_ENV"`
-	PlatformMigrate bool   `env:"RECO_PLATFORM_MIGRATE"`
-	FeatureDeploy   bool   `env:"RECO_FEATURE_DEPLOY"`
-	FeatureIntercom bool   `env:"RECO_FEATURE_INTERCOM"`
-	AWS             aws.ServiceConfig
-	Deploy          deployment.ServiceConfig
-	Intercom        events.IntercomConfig
+	Env                     string `env:"RECO_ENV"`
+	PlatformMigrate         bool   `env:"RECO_PLATFORM_MIGRATE"`
+	LogzioToken             string `env:"LOGZIO_TOKEN"`
+	FeatureIntercom         bool   `env:"RECO_FEATURE_INTERCOM"`
+	FeatureUseSpotInstances bool   `env:"RECO_FEATURE_USE_SPOT_INSTANCES"`
+	AWS                     aws.ServiceConfig
+	Deploy                  deployment.ServiceConfig
+	Intercom                events.IntercomConfig
 }
 
 func ParseEnvConfig() (*Config, error) {

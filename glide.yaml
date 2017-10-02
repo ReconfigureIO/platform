@@ -32,3 +32,7 @@ import:
 - package: github.com/sirupsen/logrus
   version: ^1.0.2
 - package: gopkg.in/intercom/intercom-go.v2
+- package: github.com/bshuster-repo/logruzio 
+- package: github.com/robfig/cron
+  version: ^1.0.0
+- package: github.com/spf13/cobra

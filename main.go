@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/bshuster-repo/logruzio"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,14 @@ import (
 	stripe "github.com/stripe/stripe-go"
 )
 
+var (
+	version string
+)
+
 func setupDB(conf config.Config) *gorm.DB {
 	db, err := gorm.Open("postgres", conf.DbUrl)
 
-	if conf.Reco.Env != "release" {
+	if conf.Reco.Env != "production" {
 		db.LogMode(true)
 	}
 
@@ -46,6 +51,17 @@ func main() {
 	conf, err := config.ParseEnvConfig()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	ctx := logrus.Fields{
+		"Environment": conf.Reco.Env,
+		"Version":     version,
+	}
+	hook, err := logruzio.New(conf.Reco.LogzioToken, conf.ProgramName, ctx)
+	if err != nil {
+		logrus.Fatal(err)
+	} else {
+		logrus.AddHook(hook)
 	}
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
@@ -96,7 +112,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)

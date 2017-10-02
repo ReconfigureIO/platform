@@ -8,9 +8,11 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres" // postgres driver
+	stripe "github.com/stripe/stripe-go"
 )
 
 func init() {
+	stripe.Key = os.Getenv("STRIPE_KEY")
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {

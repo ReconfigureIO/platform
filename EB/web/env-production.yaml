@@ -111,14 +111,13 @@ OptionSettings:
     AWS_REGION: us-east-1
     GIN_MODE: release
     RECO_ENV: production
-    RECO_FEATURE_BILLING: 1
     RECO_FEATURE_INTERCOM: 1
-    RECO_FEATURE_DEPLOY: 1
     PORT: '8080'
     GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client
     GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
     DATABASE_URL: ssm:///reconfigureio/platform/production/db
     STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
+    LOGZIO_TOKEN: ssm:///reconfigureio/platform/production/logzio_token
     RECO_DEPLOY_AMI: ami-8e6a4df5
     RECO_INTERCOM_ACCESS_TOKEN: ssm:///reconfigureio/platform/production/intercom_token
 Platform:
