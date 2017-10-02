@@ -108,6 +108,9 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 		ImageId:      aws.String(s.Conf.AMI),
 		InstanceType: aws.String("f1.2xlarge"),
 		UserData:     aws.String(encodedConfig),
+		Placement: &ec2.SpotPlacement{
+			AvailabilityZone: aws.String("us-east-1d"),
+		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
 		},
