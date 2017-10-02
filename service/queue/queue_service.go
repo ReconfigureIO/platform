@@ -1,16 +1,19 @@
-package api
+package queue
 
 import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/jinzhu/gorm"
 )
 
-// Queue manages job queue using database.
-type Queue struct{}
+// QueueService manages job queue using database.
+type QueueService struct {
+	db *gorm.DB
+}
 
 // Push pushes a job into the queue.
-func (q Queue) Push(jobType string, jobID string, weight int) error {
+func (q *QueueService) Push(jobType string, jobID string, weight int) error {
 	entry := models.QueueEntry{
 		Type:      jobType,
 		TypeID:    jobID,
@@ -18,28 +21,28 @@ func (q Queue) Push(jobType string, jobID string, weight int) error {
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
 	}
-	return db.Create(&entry).Error
+	return q.db.Create(&entry).Error
 }
 
 // Update updates a job on the queue.
-func (q Queue) Update(jobType string, jobID string, status string) error {
-	return db.Model(&models.QueueEntry{}).
+func (q *QueueService) Update(jobType string, jobID string, status string) error {
+	return q.db.Model(&models.QueueEntry{}).
 		Where("type = ? AND type_id = ?", jobType, jobID).
 		Update("status", status).Error
 }
 
 // Count counts the amount of jobs with status.
-func (q Queue) Count(jobType, status string) (int, error) {
+func (q *QueueService) Count(jobType, status string) (int, error) {
 	var count int
-	err := db.Model(&models.QueueEntry{}).
+	err := q.db.Model(&models.QueueEntry{}).
 		Where("status = ?", status).Count(&count).Error
 	return count, err
 }
 
 // Fetch fetches jobs by priority in the queue.
-func (q Queue) Fetch(jobType string, limit int) ([]string, error) {
+func (q *QueueService) Fetch(jobType string, limit int) ([]string, error) {
 	var jobs []string
-	rows, err := db.Model(&models.QueueEntry{}).
+	rows, err := q.db.Model(&models.QueueEntry{}).
 		Select("type_id").
 		Where("status = ?", models.StatusQueued).
 		Order("weight desc").
