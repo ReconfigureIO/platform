@@ -72,6 +72,7 @@ func main() {
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
 		}
+		conf.Host = "https://api.reconfigure.io"
 	default:
 		corsConfig.AllowOrigins = []string{
 			"http://app-staging.reconfigure.io",
@@ -79,6 +80,7 @@ func main() {
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
 		}
+		conf.Host = "https://staging-api.reconfigure.io"
 	}
 
 	r.Use(cors.New(corsConfig))
