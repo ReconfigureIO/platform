@@ -15,6 +15,7 @@ type Config struct {
 	StripeKey   string     `env:"STRIPE_KEY"`
 	Port        string     `env:"PORT"`
 	Reco        RecoConfig `env:"RECO"`
+	Host        string     `env:"RECO_HOST_NAME"`
 }
 
 type RecoConfig struct {

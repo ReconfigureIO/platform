@@ -21,6 +21,19 @@ type JobRunner interface {
 	Stop(Job)
 }
 
+// NewJobRunner creates a new JobRunner with start and stop functions.
+func NewJobRunner(run, stop func(Job)) JobRunner {
+	return jobRunner{
+		run:  run,
+		stop: stop,
+	}
+}
+
+type jobRunner struct{ run, stop func(j Job) }
+
+func (r jobRunner) Run(j Job)  { r.run(j) }
+func (r jobRunner) Stop(j Job) { r.stop(j) }
+
 // Job is queue entry.
 type Job struct {
 	ID     string

@@ -3,12 +3,14 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -108,31 +110,70 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+	deploymentQueue.Push(queue.Job{
+		ID:     newDep.ID,
+		Weight: 2, // TODO prioritize paying customers
+	})
 
-	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
+	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
+
+	sugar.SuccessResponse(c, 201, newDep)
+}
+
+// DeploymentRunner is queue job runner implementation for deployments.
+type DeploymentRunner struct{}
+
+var _ queue.JobRunner = DeploymentRunner{}
+
+// Run satisifies queue.JobRunner interface.
+func (d DeploymentRunner) Run(j queue.Job) {
+	depID := j.ID
+
+	deployment := models.Deployment{}
+	err := db.First(&deployment, "id = ?", depID).Error
+	// TODO what should be done for errors while starting a deployment.
 	if err != nil {
-		sugar.InternalError(c, err)
+		log.Println(err)
+	}
+
+	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", hostname, deployment.ID, deployment.Token)
+
+	instanceID, err := deploy.RunDeployment(context.Background(), deployment, callbackURL)
+	if err != nil {
+		log.Println(err)
 		return
 	}
 
-	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
+	err = db.Model(&deployment).Update("InstanceID", instanceID).Error
 
 	if err != nil {
-		sugar.InternalError(c, err)
+		log.Println(err)
 		return
 	}
 
 	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
-
+	err = db.Model(&deployment).Association("Events").Append(newEvent).Error
 	if err != nil {
-		sugar.InternalError(c, err)
+		log.Println(err)
 		return
 	}
-	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
+}
 
-	sugar.SuccessResponse(c, 201, newDep)
+// Stop satisifies queue.JobRunner interface.
+func (d DeploymentRunner) Stop(j queue.Job) {
+	depID := j.ID
+
+	deployment := models.Deployment{}
+	err := db.First(&deployment, "id = ?", depID).Error
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = deploy.StopDeployment(context.Background(), deployment)
+	if err != nil {
+		log.Println(err)
+	}
+
 }
 
 // List lists all deployments.

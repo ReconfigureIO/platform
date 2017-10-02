@@ -6,9 +6,14 @@ import (
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+)
+
+const (
+	maxConcurrentJobs = 2
 )
 
 var (
@@ -19,6 +24,10 @@ var (
 	awsSession aws.Service
 
 	deploy deployment.Service
+
+	deploymentQueue queue.Queue
+
+	hostname string
 )
 
 // DB sets the database to use for the API.
@@ -31,6 +40,15 @@ func Configure(conf config.Config) {
 
 	deploy = deployment.New(conf.Reco.Deploy)
 
+	hostname = conf.Host
+
+	deploymentQueue = queue.NewWithDBStore(
+		db,
+		DeploymentRunner{},
+		maxConcurrentJobs,
+		"deployment",
+	)
+	go deploymentQueue.Start()
 }
 
 // Transaction runs a transaction, rolling back if error != nil.
