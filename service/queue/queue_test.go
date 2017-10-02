@@ -10,19 +10,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ReconfigureIO/platform/handlers/api"
 	_ "github.com/ReconfigureIO/platform/models"
-	"github.com/jinzhu/gorm" // db
+	"github.com/jinzhu/gorm"
 )
 
-func init() {
+func connectDB() *gorm.DB {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
 		log.Fatal(err)
 	}
 	db.LogMode(true)
-	api.DB(db)
+	return db
 }
 
 var jobs = []Job{
@@ -33,23 +32,9 @@ var jobs = []Job{
 	Job{ID: "5", Weight: 2},
 }
 
-func TestPriorityQueue(t *testing.T) {
-	var queue = priorityQueue(jobs)
-	heap.Init(&queue)
-	expected := []int{
-		5, 4, 3, 2, 1,
-	}
-	for i := 0; i < len(expected); i++ {
-		job := heap.Pop(&queue).(Job)
-		if job.Weight != expected[i] {
-			t.Errorf("Expected %d found %d", expected[i], job.Weight)
-		}
-	}
-}
-
-func TestMemoryQueue(t *testing.T) {
+func TestDBQueue(t *testing.T) {
 	runner := &fakeRunner{}
-	var queue = NewWithMemoryStore(runner, 2, "deployment")
+	var queue = NewWithDBStore(connectDB(), runner, 2, "deployment")
 	for _, job := range jobs {
 		queue.Push(job)
 	}
@@ -69,9 +54,23 @@ func TestMemoryQueue(t *testing.T) {
 	}
 }
 
-func TestDBQueue(t *testing.T) {
+func TestPriorityQueue(t *testing.T) {
+	var queue = priorityQueue(jobs)
+	heap.Init(&queue)
+	expected := []int{
+		5, 4, 3, 2, 1,
+	}
+	for i := 0; i < len(expected); i++ {
+		job := heap.Pop(&queue).(Job)
+		if job.Weight != expected[i] {
+			t.Errorf("Expected %d found %d", expected[i], job.Weight)
+		}
+	}
+}
+
+func TestMemoryQueue(t *testing.T) {
 	runner := &fakeRunner{}
-	var queue = NewWithDBStore(runner, 2, "deployment")
+	var queue = NewWithMemoryStore(runner, 2, "deployment")
 	for _, job := range jobs {
 		queue.Push(job)
 	}
