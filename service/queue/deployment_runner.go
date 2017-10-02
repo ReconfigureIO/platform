@@ -52,6 +52,19 @@ func (d DeploymentRunner) Run(j Job) {
 		log.Println(err)
 		return
 	}
+
+	// wait for deployment
+	for {
+		var dep models.Deployment
+		err := d.DB.First(&dep, "id = ?", depID).Error
+		if err != nil {
+			log.Println(err)
+		}
+		if dep.HasFinished() {
+			break
+		}
+		time.Sleep(time.Minute * 1)
+	}
 }
 
 // Stop satisifies queue.JobRunner interface.
