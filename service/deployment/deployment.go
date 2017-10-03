@@ -274,11 +274,17 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	ret := make(map[string]string)
 
 	var instanceids []*string
+	var spotInstanceIDs []*string
 	for _, deployment := range deployments {
-		instanceids = append(instanceids, &deployment.InstanceID)
+		if deployment.SpotInstance {
+			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+		} else {
+			instanceids = append(instanceids, &deployment.InstanceID)
+		}
+
 	}
 	ec2Session := ec2.New(s.session)
-
+	//regular instances
 	cfg := ec2.DescribeInstancesInput{
 		InstanceIds: instanceids,
 	}
@@ -291,6 +297,46 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	for _, reservation := range results.Reservations {
 		for _, instance := range reservation.Instances {
 			ret[*instance.InstanceId] = *instance.State.Name
+		}
+	}
+
+	//spot instance
+	cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
+		SpotInstanceRequestIds: spotInstanceIDs,
+	}
+
+	spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
+	if err != nil {
+		return ret, err
+	}
+
+	// A map for the spotinstance ec2 instances
+	spotInstanceMap := make(map[string]string)
+	spotInstanceIds := []*string{}
+
+	for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
+		instanceId := (*string)(spotInstanceRequest.InstanceId)
+		if instanceId != nil {
+			spotInstanceIds = append(spotInstanceIds, instanceId)
+			spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
+			spotInstanceMap[*instanceId] = *spotId
+		}
+	}
+
+	spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: spotInstanceIds,
+	})
+
+	if err != nil {
+		return ret, err
+	}
+
+	for _, reservation := range spotInstanceResults.Reservations {
+		for _, instance := range reservation.Instances {
+			spotId, ok := spotInstanceMap[*instance.InstanceId]
+			if ok {
+				ret[spotId] = *instance.State.Name
+			}
 		}
 	}
 
