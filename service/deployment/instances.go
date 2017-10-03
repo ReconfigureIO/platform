@@ -2,11 +2,11 @@ package deployment
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	log "github.com/sirupsen/logrus"
 )
 
 var (

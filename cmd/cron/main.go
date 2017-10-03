@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	stripe "github.com/stripe/stripe-go"
 )
