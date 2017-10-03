@@ -289,7 +289,7 @@ func isNotFound(err error) bool {
 }
 
 func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
-	log.Printf("DescribingStatus for deployments: %+v", deployments)
+	log.Printf("DescribingStatus for deployments: %+v\n", deployments)
 
 	ret := make(map[string]string)
 
