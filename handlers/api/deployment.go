@@ -112,6 +112,9 @@ func (d Deployment) Create(c *gin.Context) {
 
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
+	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
+
 	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -124,9 +127,6 @@ func (d Deployment) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-
-	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
 
 	if err != nil {
 		sugar.InternalError(c, err)
