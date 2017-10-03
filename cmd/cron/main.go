@@ -40,6 +40,8 @@ var (
 		Short:            "The worker for reconfigure.io's platform",
 		PersistentPreRun: setup,
 	}
+
+	version string
 )
 
 func setup(*cobra.Command, []string) {

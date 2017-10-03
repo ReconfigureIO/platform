@@ -12,8 +12,6 @@ import (
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,6 +27,8 @@ var (
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
 	})
+
+	version string
 )
 
 func main() {
