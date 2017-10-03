@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/ReconfigureIO/platform/models"
 	awsservice "github.com/ReconfigureIO/platform/service/aws"
