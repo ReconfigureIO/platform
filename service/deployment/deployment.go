@@ -302,16 +302,21 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 
 	//spot instance
 	cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
-		InstanceIds: spotInstanceIDs,
+		SpotInstanceRequestIds: spotInstanceIDs,
 	}
 
-	results, err = ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
+	spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
 	if err != nil {
 		return ret, err
 	}
 
-	for _, spotInstanceRequest := range results.SpotInstanceRequests {
-		ret[*spotInstanceRequest.InstanceId] = *spotInstanceRequest.State
+	for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
+		spotInstances, err := ec2Session.DescribeInstancesWithContext(ctx, ec2.DescribeInstancesInput{InstanceIds: []string{*spotInstanceRequest.InstanceId}})
+		for _, reservation := range spotInstances.Reservations {
+			for _, instance := range reservation.Instances {
+				ret[*spotInstanceRequest.InstanceId] = *instance.State.Name
+			}
+		}
 	}
 
 	return ret, nil
