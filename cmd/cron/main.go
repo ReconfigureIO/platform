@@ -43,10 +43,17 @@ var (
 )
 
 func setup(*cobra.Command, []string) {
-	gormConnDets := os.Getenv("DATABASE_URL")
-	var err error
-	db, err = gorm.Open("postgres", gormConnDets)
-	db.LogMode(true)
+	conf, err := config.ParseEnvConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = config.SetupLogging(version, conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db := config.SetupDB(conf)
 	api.DB(db)
 
 	if err != nil {

@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	stripe "github.com/stripe/stripe-go"
 )
 
 var (
@@ -36,8 +35,6 @@ func main() {
 	if conf.Reco.FeatureIntercom {
 		go events.DrainEvents()
 	}
-
-	stripe.Key = conf.StripeKey
 
 	r := gin.New()
 	r.Use(ginrus.Ginrus(log.StandardLogger(), time.RFC3339, true))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
@@ -31,9 +32,17 @@ var (
 )
 
 func main() {
-	gormConnDets := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open("postgres", gormConnDets)
-	db.LogMode(true)
+	conf, err := config.ParseEnvConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = config.SetupLogging(version, conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db := config.SetupDB(conf)
 	api.DB(db)
 
 	if err != nil {
