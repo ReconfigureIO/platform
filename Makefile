@@ -71,7 +71,7 @@ clean:
 
 image: all
 	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} dist-image
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-worker dist-worker
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-worker --build-arg VERSION=${DOCKER_TAG} dist-worker
 
 push-image:
 	$$(aws ecr get-login --region us-east-1)
