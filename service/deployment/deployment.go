@@ -274,11 +274,17 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	ret := make(map[string]string)
 
 	var instanceids []*string
+	var spotInstanceIDs []*string
 	for _, deployment := range deployments {
-		instanceids = append(instanceids, &deployment.InstanceID)
+		if deployment.SpotInstance {
+			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+		} else {
+			instanceids = append(instanceids, &deployment.InstanceID)
+		}
+
 	}
 	ec2Session := ec2.New(s.session)
-
+	//regular instances
 	cfg := ec2.DescribeInstancesInput{
 		InstanceIds: instanceids,
 	}
@@ -292,6 +298,20 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 		for _, instance := range reservation.Instances {
 			ret[*instance.InstanceId] = *instance.State.Name
 		}
+	}
+
+	//spot instance
+	cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
+		InstanceIds: spotInstanceIDs,
+	}
+
+	results, err = ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, spotInstanceRequest := range results.SpotInstanceRequests {
+		ret[*spotInstanceRequest.InstanceId] = *spotInstanceRequest.State
 	}
 
 	return ret, nil
