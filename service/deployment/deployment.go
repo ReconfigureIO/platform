@@ -310,11 +310,32 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 		return ret, err
 	}
 
+	// A map for the spotinstance ec2 instances
+	spotInstanceMap := make(map[string]string)
+	spotInstanceIds := []*string{}
+
 	for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
-		spotInstances, err := ec2Session.DescribeInstancesWithContext(ctx, ec2.DescribeInstancesInput{InstanceIds: []string{*spotInstanceRequest.InstanceId}})
-		for _, reservation := range spotInstances.Reservations {
-			for _, instance := range reservation.Instances {
-				ret[*spotInstanceRequest.InstanceId] = *instance.State.Name
+		instanceId := (*string)(spotInstanceRequest.InstanceId)
+		if instanceId != nil {
+			spotInstanceIds = append(spotInstanceIds, instanceId)
+			spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
+			spotInstanceMap[*instanceId] = *spotId
+		}
+	}
+
+	spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: spotInstanceIds,
+	})
+
+	if err != nil {
+		return ret, err
+	}
+
+	for _, reservation := range spotInstanceResults.Reservations {
+		for _, instance := range reservation.Instances {
+			spotId, ok := spotInstanceMap[*instance.InstanceId]
+			if ok {
+				ret[spotId] = *instance.State.Name
 			}
 		}
 	}
