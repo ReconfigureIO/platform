@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -14,6 +13,7 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 // StreamBatchLogs streams batch logs from AWS.

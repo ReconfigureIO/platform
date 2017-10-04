@@ -2,11 +2,11 @@ package billing_hours
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	log "github.com/sirupsen/logrus"
 )
 
 // Cancel deployments whenever the user has too many billable hours
