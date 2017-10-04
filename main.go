@@ -1,42 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"time"
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	stripe "github.com/stripe/stripe-go"
+	log "github.com/sirupsen/logrus"
 )
 
-func setupDB(conf config.Config) *gorm.DB {
-	db, err := gorm.Open("postgres", conf.DbUrl)
-
-	if conf.Reco.Env != "release" {
-		db.LogMode(true)
-	}
-
-	if err != nil {
-		fmt.Println(err)
-		panic("failed to connect database")
-	}
-
-	api.DB(db)
-
-	// check migration
-	if conf.Reco.PlatformMigrate {
-		fmt.Println("performing migration...")
-		migration.MigrateSchema()
-	}
-	return db
-}
+var (
+	version string
+)
 
 func main() {
 	conf, err := config.ParseEnvConfig()
@@ -44,16 +25,32 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = config.SetupLogging(version, conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
 
-	go events.DrainEvents()
+	if conf.Reco.FeatureIntercom {
+		go events.DrainEvents()
+	}
 
-	stripe.Key = conf.StripeKey
-
-	r := gin.Default()
+	r := gin.New()
+	r.Use(ginrus.Ginrus(log.StandardLogger(), time.RFC3339, true))
+	r.Use(gin.Recovery())
 
 	// setup components
-	db := setupDB(*conf)
+	db := config.SetupDB(conf)
+	api.DB(db)
+
+	// check migration
+	if conf.Reco.PlatformMigrate {
+		log.Println("performing migration...")
+		migration.MigrateSchema()
+	}
+
+	leads := leads.New(conf.Reco.Intercom, db)
 
 	api.Configure(*conf)
 
@@ -88,7 +85,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db, events)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// Listen and Server in 0.0.0.0:$PORT
 	r.Run(":" + conf.Port)

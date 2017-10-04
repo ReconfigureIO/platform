@@ -14,13 +14,16 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production deploy-staging vet integration-tests
+.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
 
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
+
+DOCKER_TAG := ${VERSION}
+DOCKER_IMAGE := 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api
 
 all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 
@@ -67,15 +70,36 @@ clean:
 	find . -name '*_mock.go' -delete
 
 image: all
-	docker build -t "reco-api:latest" dist-image
-	docker build -t "reco-api:latest-worker" dist-worker
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} dist-image
+	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-worker --build-arg VERSION=${DOCKER_TAG} dist-worker
+
+push-image:
+	$$(aws ecr get-login --region us-east-1)
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}-worker
 
 deploy-production:
 	cp EB/web/env-production.yaml EB/web/env.yaml
 	cp EB/worker/env-production.yaml EB/worker/env.yaml
 	cd EB && eb deploy --modules worker web --env-group-suffix production
 
+migrate-staging:
+	kubectl patch -o yaml -f k8s/migrate_staging.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
+	./ci/wait_for.sh job migrate-staging
+	kubectl logs job/migrate-staging
+	kubectl delete job migrate-staging
+
 deploy-staging:
-	cp EB/web/env-staging.yaml EB/web/env.yaml
-	cp EB/worker/env-staging.yaml EB/worker/env.yaml
-	cd EB && eb deploy --modules worker web --env-group-suffix staging
+	kubectl rollout pause deployment staging-platform-web
+	kubectl rollout pause deployment staging-platform-cron
+
+	kubectl apply -f k8s/staging/
+
+	kubectl set image -f k8s/staging/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
+	kubectl set image -f k8s/staging/cron.yml cron=${DOCKER_IMAGE}:${DOCKER_TAG}
+
+	kubectl rollout resume deployment staging-platform-web
+	kubectl rollout resume deployment staging-platform-cron
+
+	kubectl rollout status deployment staging-platform-web
+	kubectl rollout status deployment staging-platform-cron

@@ -46,6 +46,10 @@ func (s SubscriptionInfo) Empty() bool {
 
 // SubscriptionDataSource returns data source for subscriptions using db.
 func SubscriptionDataSource(db *gorm.DB) SubscriptionRepo {
+	return repo(db)
+}
+
+func repo(db *gorm.DB) *subscriptionRepo {
 	return &subscriptionRepo{
 		db:            db,
 		customerCache: make(map[string]stripe.Customer),
@@ -62,6 +66,10 @@ type subscriptionRepo struct {
 // DefaultSource doesn't actually include the card info, so search the
 // sources on the customer for the card info
 func DefaultSource(cust *stripe.Customer) *stripe.Card {
+	if cust == nil {
+		return nil
+	}
+
 	def := cust.DefaultSource.ID
 	for _, source := range cust.Sources.Values {
 		if source.ID == def {
@@ -136,7 +144,7 @@ func (s *subscriptionRepo) CurrentSubscription(user User) (sub SubscriptionInfo,
 	// is always gonna have at most one subscription. In which
 	// case, we can just return Values[0].Plan.ID directly.
 	for _, val := range stripeCustomer.Subs.Values {
-		if val.Status != "active" {
+		if (val.Status != subscriptions.Active) && (val.Status != subscriptions.Trialing) {
 			continue
 		}
 		subInfo, err := fromSub(user, *val)

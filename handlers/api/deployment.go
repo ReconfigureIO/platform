@@ -15,9 +15,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	numConcurrentDeployments = 2 // number of concurrent deployments per user
+)
+
 // Deployment handles request for deployments.
 type Deployment struct {
-	Events events.EventService
+	Events           events.EventService
+	UseSpotInstances bool
 }
 
 // Preload is common preload functionality.
@@ -81,11 +86,22 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
+	// check for number of concurrently running deployments.
+	dds := models.DeploymentDataSource(db)
+	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
+		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
+		return
+	} else if len(ad) >= numConcurrentDeployments {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
+		return
+	}
+
 	newDep := models.Deployment{
-		Build:   build,
-		BuildID: post.BuildID,
-		Command: post.Command,
-		Token:   uniuri.NewLen(64),
+		Build:        build,
+		BuildID:      post.BuildID,
+		Command:      post.Command,
+		Token:        uniuri.NewLen(64),
+		SpotInstance: d.UseSpotInstances,
 	}
 
 	err = db.Create(&newDep).Error
@@ -209,6 +225,9 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 500, nil)
 		return
 	}
+
+	eventMessage := "Deployment entered state:" + event.Status
+	sugar.EnqueueEvent(d.Events, c, eventMessage, map[string]interface{}{"deployment_id": dep.ID, "project_name": dep.Build.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
 }
