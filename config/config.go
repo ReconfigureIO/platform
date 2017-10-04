@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
+	stripe "github.com/stripe/stripe-go"
 )
 
 type Config struct {
@@ -55,6 +56,8 @@ func ParseEnvConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	stripe.Key = conf.StripeKey
 
 	return &conf, nil
 }

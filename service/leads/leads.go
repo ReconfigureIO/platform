@@ -2,11 +2,11 @@ package leads
 
 import (
 	"errors"
-	"log"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 

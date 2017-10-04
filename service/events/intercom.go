@@ -1,10 +1,10 @@
 package events
 
 import (
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
+	log "github.com/sirupsen/logrus"
 	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 
