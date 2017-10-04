@@ -107,9 +107,11 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	ec2Session := ec2.New(s.session)
 
 	launch := ec2.RequestSpotLaunchSpecification{
-		ImageId:      aws.String(s.Conf.AMI),
-		InstanceType: aws.String("f1.2xlarge"),
-		UserData:     aws.String(encodedConfig),
+		ImageId:          aws.String(s.Conf.AMI),
+		InstanceType:     aws.String("f1.2xlarge"),
+		SubnetId:         aws.String("subnet-fa2a9c9e"),
+		SecurityGroupIds: []aws.String(aws.String("sg-7fbfbe0c")),
+		UserData:         aws.String(encodedConfig),
 		Placement: &ec2.SpotPlacement{
 			AvailabilityZone: aws.String("us-east-1d"),
 		},
@@ -144,6 +146,8 @@ func (s *service) runInstance(ctx context.Context, deployment models.Deployment,
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
 		MinCount:                          aws.Int64(1),
+		SubnetId:                          aws.String("subnet-fa2a9c9e"),
+		SecurityGroupIds:                  []aws.String(aws.String("sg-7fbfbe0c")),
 		UserData:                          aws.String(encodedConfig),
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
