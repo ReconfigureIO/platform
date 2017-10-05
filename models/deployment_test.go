@@ -85,7 +85,7 @@ func TestDeploymentHoursBtw(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
 
-		dep := genDeployment("Foo", time.Hour+5*time.Minute)
+		dep := genDeployment("Foo", time.Hour+5*time.Minute, "STARTED")
 
 		db.Create(&dep)
 
@@ -105,7 +105,7 @@ func TestDeploymentHoursBtw(t *testing.T) {
 // genDeployment generates a mock deployment.
 // if d > 0, the mock deployment will be in TERMINATED
 // status and have a duration of d.
-func genDeployment(userID string, d time.Duration) Deployment {
+func genDeployment(userID string, d time.Duration, initialState string) Deployment {
 	var start = (time.Unix(0, 0)).Add(time.Hour)
 	dep := Deployment{
 		Build: Build{
@@ -116,7 +116,7 @@ func genDeployment(userID string, d time.Duration) Deployment {
 		Command: "test",
 		Events: []DeploymentEvent{
 			DeploymentEvent{
-				Status:    "STARTED",
+				Status:    initialState,
 				Timestamp: start,
 			},
 		},
@@ -137,10 +137,11 @@ func TestDeploymentActiveDeployments(t *testing.T) {
 		userID := "user1"
 
 		deps := []Deployment{
-			genDeployment(userID, time.Hour),
-			genDeployment(userID, 0),
-			genDeployment(userID, 0),
-			genDeployment(userID, time.Hour*2),
+			genDeployment(userID, time.Hour, "STARTED"),
+			genDeployment(userID, 0, "STARTED"),
+			genDeployment(userID, 0, "STARTED"),
+			genDeployment(userID, time.Hour*2, "STARTED"),
+			genDeployment(userID, 0, "QUEUED"),
 		}
 
 		for i := range deps {
