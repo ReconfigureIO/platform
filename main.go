@@ -132,8 +132,10 @@ func main() {
 	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// queue
-	depoymentQueue := startDeploymentQueue(*conf, db)
-	api.DepQueue(depoymentQueue)
+	if conf.Reco.FeatureDepQueue {
+		depoymentQueue := startDeploymentQueue(*conf, db)
+		api.DepQueue(depoymentQueue)
+	}
 
 	// Listen and Server in 0.0.0.0:$PORT
 	err = r.Run(":" + conf.Port)
