@@ -132,9 +132,10 @@ func main() {
 	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// queue
+	var deploymentQueue queue.Queue
 	if conf.Reco.FeatureDepQueue {
-		depoymentQueue := startDeploymentQueue(*conf, db)
-		api.DepQueue(depoymentQueue)
+		deploymentQueue = startDeploymentQueue(*conf, db)
+		api.DepQueue(deploymentQueue)
 	}
 
 	// Listen and Server in 0.0.0.0:$PORT
@@ -142,6 +143,8 @@ func main() {
 
 	// Code would normally not reach here.
 	if err != nil {
-		depoymentQueue.Halt()
+		if deploymentQueue != nil {
+			deploymentQueue.Halt()
+		}
 	}
 }
