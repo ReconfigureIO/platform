@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	numConcurrentDeployments = 2 // number of concurrent deployments per user
+	numQueuedDeployments = 2 // number of concurrent deployments in queue per user
 )
 
 // Deployment handles request for deployments.
@@ -85,13 +85,12 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	// check for number of concurrently running deployments.
-	dds := models.DeploymentDataSource(db)
-	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
+	// check number of queued deployments owned by user.
+	if ad, err := deploymentQueue.CountUserQueuedDeployments(user.ID); err != nil {
 		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
 		return
-	} else if len(ad) >= numConcurrentDeployments {
-		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
+	} else if len(ad) >= numQueuedDeployments {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded queued deployment max of %d", numQueuedDeployments))
 		return
 	}
 
@@ -135,6 +134,7 @@ func (d Deployment) List(c *gin.Context) {
 
 	err := q.Find(&deployments).Error
 
+	// TODO: List deployments in queue too
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return
