@@ -51,8 +51,8 @@ type ServiceConfig struct {
 	Image         string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
 	AMI           string `env:"RECO_DEPLOY_AMI"`
 	Bucket        string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
-	Subnet        string `env:"RECO_AWS_DEPLOY_SUBNET" envDefault:"subnet-fa2a9c9e"`
-	SecurityGroup string `env:"RECO_AWS_DEPLOY_SG" envDefault:"sg-7fbfbe0c"`
+	Subnet        string `env:"RECO_DEPLOY_SUBNET" envDefault:"subnet-fa2a9c9e"`
+	SecurityGroup string `env:"RECO_DEPLOY_SG" envDefault:"sg-7fbfbe0c"`
 }
 
 func New(conf ServiceConfig) Service {
