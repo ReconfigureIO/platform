@@ -95,7 +95,7 @@ func (d Deployment) Create(c *gin.Context) {
 	// check for number of concurrently running deployments.
 	dds := models.DeploymentDataSource(db)
 	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
-		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
+		sugar.InternalError(c, err)
 		return
 	} else if len(ad) >= numConcurrentDeployments {
 		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
