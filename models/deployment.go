@@ -114,7 +114,7 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where projects.user_id = ? and terminated IS NULL
+where projects.user_id = ? and terminated IS NULL and started IS NOT NULL
 `
 )
 
