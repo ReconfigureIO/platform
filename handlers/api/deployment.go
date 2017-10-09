@@ -86,10 +86,10 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	// check number of queued deployments owned by user.
-	if ad, err := deploymentQueue.CountUserQueuedDeployments(user.ID); err != nil {
+	if ad, err := deploymentQueue.CountUserJobsInStatus(user, "queued"); err != nil {
 		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
 		return
-	} else if len(ad) >= numQueuedDeployments {
+	} else if ad >= numQueuedDeployments {
 		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded queued deployment max of %d", numQueuedDeployments))
 		return
 	}

@@ -1,5 +1,9 @@
 package queue
 
+import (
+	"github.com/ReconfigureIO/platform/models"
+)
+
 // Queue is a job queue.
 type Queue interface {
 	// Push adds an entry to the queue.
@@ -13,6 +17,7 @@ type Queue interface {
 	// Halt should only be called after the Queue has been
 	// started. i.e. Start has been previously called.
 	Halt()
+	CountUserJobsInStatus(user models.User, status string) (int, error)
 }
 
 // JobRunner manage jobs in the queue.
@@ -43,4 +48,5 @@ func (r jobRunner) Stop(j Job) { r.stop(j) }
 type Job struct {
 	ID     string
 	Weight int
+	User   models.User
 }
