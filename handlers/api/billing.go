@@ -154,5 +154,8 @@ func (b billingHours) Net() (int, error) {
 		return 0, err
 	}
 	net := sub.Hours - used
+	if net < 0 {
+		net = 0
+	}
 	return net, nil
 }
