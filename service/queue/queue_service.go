@@ -45,7 +45,10 @@ func (q *QueueService) Count(jobType, status string) (int, error) {
 func (q *QueueService) CountUserJobsInStatus(jobType string, user models.User, status string) (int, error) {
 	var count int
 	err := q.db.Model(&models.QueueEntry{}).
-		Where("status = ?", status).Count(&count).Error
+		Where("status = ?", status).
+		Where("type = ?", jobType).
+		Where("user_id = ?", user.ID).
+		Count(&count).Error
 	return count, err
 }
 
