@@ -37,6 +37,7 @@ type Credits struct {
 type Debits struct {
 	uuidHook
 	ID         string `gorm:"primary_key" json:"id"`
+	User       User   `json:"-" gorm:"ForeignKey:UserID"`
 	UserID     string `json:"-"`
 	Identifier string `json:"id"`
 	Hours      int
@@ -59,19 +60,39 @@ type userBalanceRepo struct {
 
 func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 	db := repo.db
-	userCredits := Credits{}
-	err := db.Where("UserID = ?", user.ID).First(&userCredits).Error
-	if err != nil {
-		return UserBalance{}, err
-	}
-	userDebits := Debits{}
-	err = db.Where("UserID = ?", user.ID).First(&userDebits).Error
-	if err != nil {
-		return UserBalance{}, err
-	}
+
 	subscriptionInfo, err := repo.CurrentSubscription(user)
 	if err != nil {
 		return UserBalance{}, err
+	}
+
+	userCredits := Credits{}
+	err = db.Where("user_id = ?", user.ID).First(&userCredits).Error
+	if err != nil {
+		//if missing add it
+		userCredits = Credits{
+			User:       user,
+			Identifier: subscriptionInfo.Identifier,
+			Hours:      0,
+		}
+		err = db.Create(newCredits).Error
+		if err != nil {
+			return UserBalance{}, err
+		}
+	}
+	userDebits := Debits{}
+	err = db.Where("user_id = ?", user.ID).First(&userDebits).Error
+	if err != nil {
+		//if missing add it
+		userDebits = Debits{
+			User:       user,
+			Identifier: subscriptionInfo.Identifier,
+			Hours:      0,
+		}
+		err = db.Create(newDebits).Error
+		if err != nil {
+			return UserBalance{}, err
+		}
 	}
 
 	userBalance := UserBalance{
