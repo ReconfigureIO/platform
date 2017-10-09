@@ -44,7 +44,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		billingRoutes.GET("/payment-info", billing.Get)
 		billingRoutes.POST("/payment-info", billing.Replace)
 		billingRoutes.GET("/hours-remaining", billing.RemainingHours)
-    billingRoutes.POST("/buy-credits", billing.AddCredits)
+		billingRoutes.POST("/buy-credits", billing.AddCredits)
 
 	}
 
