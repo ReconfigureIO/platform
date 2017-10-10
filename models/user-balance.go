@@ -75,7 +75,7 @@ func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 			Identifier: subscriptionInfo.Identifier,
 			Hours:      0,
 		}
-		err = db.Create(newCredits).Error
+		err = db.Create(userCredits).Error
 		if err != nil {
 			return UserBalance{}, err
 		}
@@ -89,7 +89,7 @@ func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 			Identifier: subscriptionInfo.Identifier,
 			Hours:      0,
 		}
-		err = db.Create(newDebits).Error
+		err = db.Create(userDebits).Error
 		if err != nil {
 			return UserBalance{}, err
 		}
