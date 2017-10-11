@@ -2,6 +2,7 @@ package queue
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -17,6 +18,7 @@ type dbQueue struct {
 	service    QueueService
 
 	halt chan struct{}
+	once sync.Once
 }
 
 // NewWithDBStore creates a new queue using database as storage for queue state.
@@ -35,32 +37,47 @@ func (d *dbQueue) Push(job Job) {
 
 func (d *dbQueue) Start() {
 	d.halt = make(chan struct{})
-	stop := false
 
-	go func() {
-		<-d.halt
-		stop = true
-	}()
+	ticker := time.NewTicker(time.Second * 1)
 
-	for !stop {
-		time.Sleep(time.Second * 10)
-		dispatched, err := d.service.Count(d.jobType, models.StatusStarted)
+	// pick jobs in limbo and re-queue them.
+	d.once.Do(func() {
+		stuckJobs, err := d.service.FetchWithStatus(d.jobType, models.StatusStarted)
 		if err != nil {
 			log.Println(err)
-			continue
+			return
 		}
-		toRun := d.concurrent - dispatched
-		if toRun > 0 {
-			jobs, err := d.service.Fetch(d.jobType, toRun)
+		for _, sj := range stuckJobs {
+			err := d.service.Update(d.jobType, sj, models.StatusQueued)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	})
+
+loop:
+	for {
+		select {
+		case <-d.halt:
+			break loop
+		case <-ticker.C:
+			dispatched, err := d.service.Count(d.jobType, models.StatusStarted)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
+			toRun := d.concurrent - dispatched
+			if toRun > 0 {
+				jobs, err := d.service.Fetch(d.jobType, toRun)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
 
-			for _, jobID := range jobs {
-				go d.dispatch(jobID)
+				for _, jobID := range jobs {
+					go d.dispatch(jobID)
+				}
 			}
-
 		}
 	}
 }

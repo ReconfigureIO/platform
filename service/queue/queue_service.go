@@ -61,3 +61,25 @@ func (q *QueueService) Fetch(jobType string, limit int) ([]string, error) {
 	}
 	return jobs, nil
 }
+
+// Fetch fetches jobs with status.
+func (q *QueueService) FetchWithStatus(jobType string, status string) ([]string, error) {
+	var jobs []string
+	rows, err := q.db.Model(&models.QueueEntry{}).
+		Select("type_id").
+		Where("status = ?", status).
+		Order("weight desc, created_at").
+		Rows()
+	if err != nil {
+		return jobs, err
+	}
+	for rows.Next() {
+		var job string
+		err := rows.Scan(&job)
+		if err != nil {
+			return jobs, err
+		}
+		jobs = append(jobs, job)
+	}
+	return jobs, nil
+}
