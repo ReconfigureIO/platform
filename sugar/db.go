@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	stripe "github.com/stripe/stripe-go"
 	validator "gopkg.in/validator.v2"
 )
 
@@ -69,4 +70,13 @@ func ValidateRequest(c *gin.Context, object interface{}) bool {
 	}
 	ErrResponse(c, 400, err)
 	return false
+}
+
+func StripeError(c *gin.Context, err error) {
+	stripeErr, ok := err.(*stripe.Error)
+	if !ok {
+		InternalError(c, err)
+		return
+	}
+	ErrResponse(c, stripeErr.HTTPStatusCode, fmt.Errorf("Payment error %v occured: %v", stripeErr.Code, stripeErr.Msg))
 }
