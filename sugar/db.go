@@ -78,5 +78,5 @@ func StripeError(c *gin.Context, err error) {
 		InternalError(c, err)
 		return
 	}
-	ErrResponse(c, stripeErr.HTTPStatusCode, fmt.Errorf("Payment error %v occured: %v", stripeErr.Code, stripeErr.Msg))
+	ErrResponse(c, stripeErr.HTTPStatusCode, fmt.Errorf("Billing error %v occured: %v", stripeErr.Code, stripeErr.Msg))
 }
