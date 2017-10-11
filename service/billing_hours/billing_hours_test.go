@@ -54,6 +54,15 @@ func TestCheckUserHours(t *testing.T) {
 
 }
 
+func TestUpdateDebits() {
+	// expected functionality
+
+	// take two times
+	// calculate used deployment hours in that time
+	// if those deployment hours exceed their subscription for that time period (how many hours did they have in their subscription for that time period?)
+	// debit = debit + (deploymentHours - subscriptionHours)
+}
+
 type billingHours struct {
 }
 
