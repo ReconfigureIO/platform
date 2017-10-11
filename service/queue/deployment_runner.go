@@ -26,9 +26,9 @@ func (d DeploymentRunner) Run(j Job) {
 
 	deployment := models.Deployment{}
 	err := d.DB.First(&deployment, "id = ?", depID).Error
-	// TODO what should be done for errors while starting a deployment.
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", d.Hostname, deployment.ID, deployment.Token)
@@ -81,5 +81,4 @@ func (d DeploymentRunner) Stop(j Job) {
 	if err != nil {
 		log.Println(err)
 	}
-
 }
