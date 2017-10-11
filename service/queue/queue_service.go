@@ -35,7 +35,8 @@ func (q *QueueService) Update(jobType string, jobID string, status string) error
 func (q *QueueService) Count(jobType, status string) (int, error) {
 	var count int
 	err := q.db.Model(&models.QueueEntry{}).
-		Where("status = ?", status).Count(&count).Error
+		Where("status = ? AND type = ?", status, jobType).
+		Count(&count).Error
 	return count, err
 }
 
@@ -44,7 +45,7 @@ func (q *QueueService) Fetch(jobType string, limit int) ([]string, error) {
 	var jobs []string
 	rows, err := q.db.Model(&models.QueueEntry{}).
 		Select("type_id").
-		Where("status = ?", models.StatusQueued).
+		Where("status = ? AND type = ?", models.StatusQueued, jobType).
 		Order("weight desc, created_at").
 		Limit(limit).
 		Rows()
@@ -67,7 +68,7 @@ func (q *QueueService) FetchWithStatus(jobType string, status string) ([]string,
 	var jobs []string
 	rows, err := q.db.Model(&models.QueueEntry{}).
 		Select("type_id").
-		Where("status = ?", status).
+		Where("status = ? AND type = ?", status, jobType).
 		Order("weight desc, created_at").
 		Rows()
 	if err != nil {
