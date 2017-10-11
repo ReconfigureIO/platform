@@ -36,24 +36,10 @@ func (d *dbQueue) Push(job Job) {
 }
 
 func (d *dbQueue) Start() {
+	d.resetStuckJobs()
+
 	d.halt = make(chan struct{})
-
-	ticker := time.NewTicker(time.Second * 1)
-
-	// pick jobs in limbo and re-queue them.
-	d.once.Do(func() {
-		stuckJobs, err := d.service.FetchWithStatus(d.jobType, models.StatusStarted)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		for _, sj := range stuckJobs {
-			err := d.service.Update(d.jobType, sj, models.StatusQueued)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	})
+	ticker := time.NewTicker(time.Second * 10)
 
 loop:
 	for {
@@ -84,6 +70,25 @@ loop:
 
 func (d *dbQueue) Halt() {
 	close(d.halt)
+}
+
+func (d *dbQueue) resetStuckJobs() {
+	// pick jobs in limbo and re-queue them.
+	// use sync.Once to ensure that this can only be
+	// executed once.
+	d.once.Do(func() {
+		stuckJobs, err := d.service.FetchWithStatus(d.jobType, models.StatusStarted)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for _, sj := range stuckJobs {
+			err := d.service.Update(d.jobType, sj, models.StatusQueued)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	})
 }
 
 func (d *dbQueue) dispatch(jobID string) {
