@@ -46,13 +46,13 @@ func (d DeploymentRunner) Run(j Job) {
 	// Get the user's used hours for this billing period
 	usedHours, err := models.DeploymentHoursBtw(deploymentsDS, j.User.ID, subscriptionInfo.StartTime, time.Now())
 	if err != nil {
-		log.Printf("Error while retrieving deployment hours used by user: %s", user.ID)
+		log.Printf("Error while retrieving deployment hours used by user: %s", j.User.ID)
 		log.Printf("Error: %s", err)
 		return
 	}
 
 	if usedHours >= subscriptionInfo.Hours {
-		log.Printf("User %s does not have enough hours remaining to deploy %s", user.ID, deployment.ID)
+		log.Printf("User %s does not have enough hours remaining to deploy %s", j.User.ID, deployment.ID)
 		return
 	}
 
