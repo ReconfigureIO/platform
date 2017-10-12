@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ReconfigureIO/platform/config"
@@ -22,28 +21,6 @@ import (
 var (
 	version string
 )
-
-func setupDB(conf config.Config) *gorm.DB {
-	db, err := gorm.Open("postgres", conf.DbUrl)
-
-	if conf.Reco.Env != "release" {
-		db.LogMode(true)
-	}
-
-	if err != nil {
-		fmt.Println(err)
-		panic("failed to connect database")
-	}
-
-	api.DB(db)
-
-	// check migration
-	if conf.Reco.PlatformMigrate {
-		fmt.Println("performing migration...")
-		migration.MigrateSchema()
-	}
-	return db
-}
 
 func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
 	runner := queue.DeploymentRunner{
