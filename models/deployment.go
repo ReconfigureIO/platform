@@ -81,6 +81,7 @@ on j.id = started.deployment_id
         select e1.id
         from deployment_events e1
         where j.id = e1.deployment_id and e1.status = 'STARTED'
+        limit 1
     )
 left outer join deployment_events terminated
 on j.id = terminated.deployment_id
@@ -88,6 +89,7 @@ on j.id = terminated.deployment_id
         select e2.id
         from deployment_events e2
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+        limit 1
     )
 where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
 `
@@ -102,6 +104,7 @@ on j.id = started.deployment_id
         select e1.id
         from deployment_events e1
         where j.id = e1.deployment_id and e1.status = 'STARTED'
+        limit 1
     )
 left outer join deployment_events terminated
 on j.id = terminated.deployment_id
@@ -109,6 +112,7 @@ on j.id = terminated.deployment_id
         select e2.id
         from deployment_events e2
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+        limit 1
     )
 where projects.user_id = ? and terminated IS NULL
 `
