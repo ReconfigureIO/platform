@@ -29,6 +29,31 @@ func (d DeploymentRunner) Run(j Job) {
 	// TODO what should be done for errors while starting a deployment.
 	if err != nil {
 		log.Println(err)
+		return
+	}
+
+	//Can user still afford to run deployment?
+	subscriptionDS := models.SubscriptionDataSource(d.DB)
+	// Get the user's subscription info for this billing period.
+	subscriptionInfo, err := subscriptionDS.CurrentSubscription(j.User)
+	if err != nil {
+		log.Printf("Error while retrieving subscription info for user: %s", j.User.ID)
+		log.Printf("Error: %s", err)
+		return
+	}
+
+	deploymentsDS := models.DeploymentDataSource(d.DB)
+	// Get the user's used hours for this billing period
+	usedHours, err := models.DeploymentHoursBtw(deploymentsDS, j.User.ID, subscriptionInfo.StartTime, time.Now())
+	if err != nil {
+		log.Printf("Error while retrieving deployment hours used by user: %s", user.ID)
+		log.Printf("Error: %s", err)
+		return
+	}
+
+	if usedHours >= subscriptionInfo.Hours {
+		log.Printf("User %s does not have enough hours remaining to deploy %s", user.ID, deployment.ID)
+		return
 	}
 
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", d.Hostname, deployment.ID, deployment.Token)
