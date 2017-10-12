@@ -121,6 +121,7 @@ OptionSettings:
     RECO_DEPLOY_AMI: ami-8e6a4df5
     RECO_INTERCOM_ACCESS_TOKEN: ssm:///reconfigureio/platform/production/intercom_token
     RECO_FEATURE_USE_SPOT_INSTANCES: "true"
+    RECO_FEATURE_DEP_QUEUE: "false"
 Platform:
   PlatformArn: arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit
     Amazon Linux/2.5.0
