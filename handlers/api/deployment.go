@@ -60,146 +60,87 @@ func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 
 // Create creates a new deployment
 func (d Deployment) Create(c *gin.Context) {
+	post := models.PostDeployment{}
+	c.BindJSON(&post)
+
+	if !sugar.ValidateRequest(c, post) {
+		return
+	}
+
+	// Ensure that the project exists, and the user has permissions for it
+	build := models.Build{}
+	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	// Ensure there is enough instance hours
+	user := middleware.GetUser(c)
+	billingService := Billing{}
+	billingHours := billingService.FetchBillingHours(user.ID)
+	// considering the complexity in calculating instance hours,
+	// a cache would be ideal here.
+	// this is not optimal yet :(
+	if h, err := billingHours.Net(); err == nil && h <= 0 {
+		sugar.ErrResponse(c, http.StatusPaymentRequired, "No available instance hours")
+		return
+	}
+
+	// check for number of concurrently running deployments.
+	dds := models.DeploymentDataSource(db)
+	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
+		sugar.InternalError(c, err)
+		return
+	} else if len(ad) >= numConcurrentDeployments {
+		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
+		return
+	}
+
+	newDep := models.Deployment{
+		Build:        build,
+		BuildID:      post.BuildID,
+		Command:      post.Command,
+		Token:        uniuri.NewLen(64),
+		SpotInstance: d.UseSpotInstances,
+	}
+
+	err = db.Create(&newDep).Error
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	// use deployment queue if enabled
 	if deploymentQueue != nil {
-		d.CreateWithQueue(c)
-		return
+		deploymentQueue.Push(queue.Job{
+			ID:     newDep.ID,
+			Weight: 2, // TODO prioritize paying customers
+		})
+	} else {
+		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+
+		instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
+		err = db.Model(&newDep).Update("InstanceID", instanceID).Error
+
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
+		newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+		err = db.Model(&newDep).Association("Events").Append(newEvent).Error
+
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
 	}
-
-	post := models.PostDeployment{}
-	c.BindJSON(&post)
-
-	if !sugar.ValidateRequest(c, post) {
-		return
-	}
-
-	// Ensure that the project exists, and the user has permissions for it
-	build := models.Build{}
-	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
-	if err != nil {
-		sugar.NotFoundOrError(c, err)
-		return
-	}
-
-	// Ensure there is enough instance hours
-	user := middleware.GetUser(c)
-	billingService := Billing{}
-	billingHours := billingService.FetchBillingHours(user.ID)
-	// considering the complexity in calculating instance hours,
-	// a cache would be ideal here.
-	// this is not optimal yet :(
-	if h, err := billingHours.Net(); err == nil && h <= 0 {
-		sugar.ErrResponse(c, http.StatusPaymentRequired, "No available instance hours")
-		return
-	}
-
-	// check for number of concurrently running deployments.
-	dds := models.DeploymentDataSource(db)
-	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
-		sugar.InternalError(c, err)
-		return
-	} else if len(ad) >= numConcurrentDeployments {
-		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
-		return
-	}
-
-	newDep := models.Deployment{
-		Build:        build,
-		BuildID:      post.BuildID,
-		Command:      post.Command,
-		Token:        uniuri.NewLen(64),
-		SpotInstance: d.UseSpotInstances,
-	}
-
-	err = db.Create(&newDep).Error
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
-
-	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
-
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
-
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
-
-	sugar.SuccessResponse(c, 201, newDep)
-}
-
-// Create creates a new deployment using queue.
-func (d Deployment) CreateWithQueue(c *gin.Context) {
-	post := models.PostDeployment{}
-	c.BindJSON(&post)
-
-	if !sugar.ValidateRequest(c, post) {
-		return
-	}
-
-	// Ensure that the project exists, and the user has permissions for it
-	build := models.Build{}
-	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
-	if err != nil {
-		sugar.NotFoundOrError(c, err)
-		return
-	}
-
-	// Ensure there is enough instance hours
-	user := middleware.GetUser(c)
-	billingService := Billing{}
-	billingHours := billingService.FetchBillingHours(user.ID)
-	// considering the complexity in calculating instance hours,
-	// a cache would be ideal here.
-	// this is not optimal yet :(
-	if h, err := billingHours.Net(); err == nil && h <= 0 {
-		sugar.ErrResponse(c, http.StatusPaymentRequired, "No available instance hours")
-		return
-	}
-
-	// check for number of concurrently running deployments.
-	dds := models.DeploymentDataSource(db)
-	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
-		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
-		return
-	} else if len(ad) >= numConcurrentDeployments {
-		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
-		return
-	}
-
-	newDep := models.Deployment{
-		Build:        build,
-		BuildID:      post.BuildID,
-		Command:      post.Command,
-		Token:        uniuri.NewLen(64),
-		SpotInstance: d.UseSpotInstances,
-	}
-
-	err = db.Create(&newDep).Error
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	deploymentQueue.Push(queue.Job{
-		ID:     newDep.ID,
-		Weight: 2, // TODO prioritize paying customers
-	})
 
 	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
