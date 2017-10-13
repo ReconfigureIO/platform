@@ -10,7 +10,7 @@ import (
 type UserBalanceRepo interface {
 	AvailableCredit(User) (int, error)
 	PurchasedCredit(User) (int, error)
-	AddDebit(User, int) error
+	AddDebit(User, int, string) error
 	AddCredit(User, int) error
 	ActiveUsers() ([]User, error)
 	CurrentSubscription(User) (SubscriptionInfo, error)
@@ -34,13 +34,13 @@ type Credits struct {
 	Hours      int
 }
 
-type Debits struct {
+type Debit struct {
 	uuidHook
-	ID         string `gorm:"primary_key" json:"id"`
-	User       User   `json:"-" gorm:"ForeignKey:UserID"`
-	UserID     string `json:"-"`
-	Identifier string `json:"id"`
-	Hours      int
+	ID        string `gorm:"primary_key" json:"id"`
+	User      User   `json:"-" gorm:"ForeignKey:UserID"`
+	UserID    string `json:"-"`
+	InvoiceID string `json:"invoice_id"`
+	Hours     int
 }
 
 // UserBalanceDataSource returns data source for user balances using db.
@@ -138,18 +138,14 @@ func (repo *userBalanceRepo) AddCredit(user User, credit int) error {
 	return nil
 }
 
-func (repo *userBalanceRepo) AddDebit(user User, hours int) error {
-	balance, err := repo.GetUserBalance(user)
-	if err != nil {
-		return err
+func (repo *userBalanceRepo) AddDebit(user User, hours int, invoiceID string) error {
+	newDebit := Debit{
+		User:      user,
+		InvoiceID: invoiceID,
+		Hours:     hours,
 	}
-
-	balance.Debits.Hours = balance.Debits.Hours + hours
-	err = repo.db.Save(&balance.Debits).Error
-	if err != nil {
-		return err
-	}
-	return nil
+	err := repo.db.Create(&newDebit).Error
+	return err
 }
 
 func (repo *userBalanceRepo) ActiveUsers() ([]User, error) {

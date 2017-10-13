@@ -86,7 +86,7 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, 
 				// has the user used credits this month?
 				if usedHours > subscriptionInfo.Hours {
 					debit := usedHours - subscriptionInfo.Hours
-					err = ds.AddDebit(user, debit)
+					err = ds.AddDebit(user, debit, invoice.ID)
 					if err != nil {
 						log.Printf("Error while adding %s hours debit to user: %s", debit, user.ID)
 						log.Printf("Error: %s", err)
