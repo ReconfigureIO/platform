@@ -47,10 +47,12 @@ type service struct {
 }
 
 type ServiceConfig struct {
-	LogGroup string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
-	Image    string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
-	AMI      string `env:"RECO_DEPLOY_AMI"`
-	Bucket   string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
+	LogGroup      string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
+	Image         string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
+	AMI           string `env:"RECO_DEPLOY_AMI"`
+	Bucket        string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
+	Subnet        string `env:"RECO_DEPLOY_SUBNET" envDefault:"subnet-fa2a9c9e"`
+	SecurityGroup string `env:"RECO_DEPLOY_SG" envDefault:"sg-7fbfbe0c"`
 }
 
 func New(conf ServiceConfig) Service {
@@ -107,9 +109,11 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	ec2Session := ec2.New(s.session)
 
 	launch := ec2.RequestSpotLaunchSpecification{
-		ImageId:      aws.String(s.Conf.AMI),
-		InstanceType: aws.String("f1.2xlarge"),
-		UserData:     aws.String(encodedConfig),
+		ImageId:          aws.String(s.Conf.AMI),
+		InstanceType:     aws.String("f1.2xlarge"),
+		SubnetId:         aws.String(s.Conf.Subnet),
+		SecurityGroupIds: []*string{aws.String(s.Conf.SecurityGroup)},
+		UserData:         aws.String(encodedConfig),
 		Placement: &ec2.SpotPlacement{
 			AvailabilityZone: aws.String("us-east-1d"),
 		},
@@ -144,6 +148,8 @@ func (s *service) runInstance(ctx context.Context, deployment models.Deployment,
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
 		MinCount:                          aws.Int64(1),
+		SubnetId:                          aws.String(s.Conf.Subnet),
+		SecurityGroupIds:                  []*string{aws.String(s.Conf.SecurityGroup)},
 		UserData:                          aws.String(encodedConfig),
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
