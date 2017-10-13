@@ -33,7 +33,7 @@ Goals
     Are things named in such a way that a domain expert can find them?
 
 - [ ] Does it introduce non-domain concepts?
-    What does the user of this need to learn outside of our domain in order to use this? e.g. exporting Lens instead of a function
+    What does the user of this need to learn outside of our domain in order to use this?
 
 Testing
 -------
