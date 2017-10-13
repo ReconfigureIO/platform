@@ -1,0 +1,29 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: production-platform-web
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reconfigureio-api
+      annotations:
+        iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
+    spec:
+      containers:
+      - name: api
+        image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest
+        ports:
+        - containerPort: 80
+        command: ["ssm-env"]
+        args: ["/main"]
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 80
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        envFrom:
+          - configMapRef:
+              name: production-config

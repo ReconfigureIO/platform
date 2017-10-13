@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: production-config
+  namespace: default
+data:
+ AWS_REGION: "us-east-1"
+ GITHUB_CLIENT_ID: ssm:///reconfigureio/platform/production/github_client
+ GITHUB_CLIENT_SECRET: ssm:///reconfigureio/platform/production/github_secret
+ DATABASE_URL: ssm:///reconfigureio/platform/production/db
+ STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
+ LOGZIO_TOKEN: ssm:///reconfigureio/platform/production/logzio_token
+ RECO_PLATFORM_MIGRATE: "false"
+ RECO_AWS_LOG_GROUP: "/aws/batch/job"
+ RECO_AWS_BUCKET: reconfigureio-builds
+ RECO_AWS_QUEUE: staging-build-jobs
+ RECO_AWS_JOB: sdaccel-builder-build-staging
+ RECO_DEPLOY_LOG_GROUP: "/reconfigureio/deployments"
+ GIN_MODE: release
+ RECO_ENV: production
+ RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
+ RECO_FEATURE_INTERCOM: 1
+ PORT: '8080'
+ RECO_DEPLOY_AMI: ami-8e6a4df5
+ RECO_DEPLOY_BUCKET: "reconfigureio-builds"
+ RECO_DEPLOY_SUBNET: subnet-ef8096b5
+ RECO_DEPLOY_SG: sg-7fbfbe0c
+ RECO_INTERCOM_ACCESS_TOKEN: ssm:///reconfigureio/platform/production/intercom_token
+ RECO_FEATURE_USE_SPOT_INSTANCES: "true"
+ RECO_FEATURE_DEP_QUEUE: "false"
