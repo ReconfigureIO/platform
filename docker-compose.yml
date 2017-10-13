@@ -49,4 +49,4 @@ services:
       - web
     links:
       - db
-    command: bash -c "make clean all && glide install && ./dist-image/dist/worker"
+    command: bash -c "glide install && make clean all && ./dist-image/dist/worker"

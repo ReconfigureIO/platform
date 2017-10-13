@@ -55,7 +55,7 @@ func setup(*cobra.Command, []string) {
 		log.Fatal(err)
 	}
 
-	db := config.SetupDB(conf)
+	db = config.SetupDB(conf)
 	api.DB(db)
 
 	if err != nil {
