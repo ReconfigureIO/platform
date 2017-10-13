@@ -1,19 +1,23 @@
-## Type of change
+Type of change
+==============
 
 <!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 
-## Description
+Description
+===========
 
 <!--- What does this code solve? How does it solve it? -->
 
-## Review Checklist
+Review Checklist
+================
 
 <!--- Don't edit this, the reviewer will. Make sure you follow it though -->
 
-### Goals
+Goals
+-----
 
 - [ ] Does it solve the problem?
 
@@ -31,7 +35,8 @@
 - [ ] Does it introduce non-domain concepts?
     What does the user of this need to learn outside of our domain in order to use this? e.g. exporting Lens instead of a function
 
-### Testing
+Testing
+-------
 
 - [ ] Do we integration test changes to external services?
 
