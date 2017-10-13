@@ -1,12 +1,12 @@
 package queue
 
 import (
-	"log"
 	"sync"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ Queue = &dbQueue{}
