@@ -20,7 +20,7 @@ data:
  RECO_ENV: production
  RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
  RECO_FEATURE_INTERCOM: "1"
- PORT: '8080'
+ PORT: '80'
  RECO_DEPLOY_AMI: ami-8e6a4df5
  RECO_DEPLOY_BUCKET: "reconfigureio-builds"
  RECO_DEPLOY_SUBNET: subnet-ef8096b5
