@@ -22,5 +22,6 @@ spec:
     targetPort: 80
   selector:
     app: reconfigureio-api
+    environment: production
   sessionAffinity: None
   type: LoadBalancer

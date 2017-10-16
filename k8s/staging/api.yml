@@ -8,6 +8,7 @@ spec:
     metadata:
       labels:
         app: reconfigureio-api
+        environment: staging
       annotations:
         iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
     spec:

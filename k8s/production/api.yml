@@ -2,18 +2,26 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: production-platform-web
+  labels:
+    app: reconfigureio-api
+    environment: production
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: reconfigureio-api
+      environment: production
   template:
     metadata:
       labels:
         app: reconfigureio-api
+        environment: production
       annotations:
         iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
     spec:
       containers:
       - name: api
-        image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest
+        image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:josh-test-prod
         ports:
         - containerPort: 80
         command: ["ssm-env"]
