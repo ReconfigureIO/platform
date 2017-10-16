@@ -3,12 +3,12 @@ package queue
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // DeploymentRunner is queue job runner implementation for deployments.
