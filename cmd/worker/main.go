@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
@@ -12,8 +12,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -28,12 +27,22 @@ var (
 		Queue:         "build-jobs",
 		JobDefinition: "sdaccel-builder-build",
 	})
+
+	version string
 )
 
 func main() {
-	gormConnDets := os.Getenv("DATABASE_URL")
-	db, err := gorm.Open("postgres", gormConnDets)
-	db.LogMode(true)
+	conf, err := config.ParseEnvConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = config.SetupLogging(version, conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db := config.SetupDB(conf)
 	api.DB(db)
 
 	if err != nil {

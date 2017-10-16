@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/config"
@@ -13,41 +11,16 @@ import (
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
-	"github.com/bshuster-repo/logruzio"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/sirupsen/logrus"
-	stripe "github.com/stripe/stripe-go"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
 	version string
 )
-
-func setupDB(conf config.Config) *gorm.DB {
-	db, err := gorm.Open("postgres", conf.DbUrl)
-
-	if conf.Reco.Env != "release" {
-		db.LogMode(true)
-	}
-
-	if err != nil {
-		fmt.Println(err)
-		panic("failed to connect database")
-	}
-
-	api.DB(db)
-
-	// check migration
-	if conf.Reco.PlatformMigrate {
-		fmt.Println("performing migration...")
-		migration.MigrateSchema()
-	}
-	return db
-}
 
 func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
 	runner := queue.DeploymentRunner{
@@ -71,15 +44,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := logrus.Fields{
-		"Environment": conf.Reco.Env,
-		"Version":     version,
-	}
-	hook, err := logruzio.New(conf.Reco.LogzioToken, conf.ProgramName, ctx)
+	err = config.SetupLogging(version, conf)
 	if err != nil {
-		logrus.Fatal(err)
-	} else {
-		logrus.AddHook(hook)
+		log.Fatal(err)
 	}
 
 	events := events.NewIntercomEventService(conf.Reco.Intercom, 100)
@@ -88,13 +55,20 @@ func main() {
 		go events.DrainEvents()
 	}
 
-	stripe.Key = conf.StripeKey
-
-	r := gin.Default()
-	r.Use(ginrus.Ginrus(logrus.StandardLogger(), time.RFC3339, true))
+	r := gin.New()
+	r.Use(ginrus.Ginrus(log.StandardLogger(), time.RFC3339, true))
+	r.Use(gin.Recovery())
 
 	// setup components
-	db := setupDB(*conf)
+	db := config.SetupDB(conf)
+	api.DB(db)
+
+	// check migration
+	if conf.Reco.PlatformMigrate {
+		log.Println("performing migration...")
+		migration.MigrateSchema()
+	}
+
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	api.Configure(*conf)
@@ -132,17 +106,22 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.SecretKey, r, db, events, leads)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
 
 	// queue
-	depoymentQueue := startDeploymentQueue(*conf, db)
-	api.DepQueue(depoymentQueue)
+	var deploymentQueue queue.Queue
+	if conf.Reco.FeatureDepQueue {
+		deploymentQueue = startDeploymentQueue(*conf, db)
+		api.DepQueue(deploymentQueue)
+	}
 
 	// Listen and Server in 0.0.0.0:$PORT
 	err = r.Run(":" + conf.Port)
 
 	// Code would normally not reach here.
 	if err != nil {
-		depoymentQueue.Halt()
+		if deploymentQueue != nil {
+			deploymentQueue.Halt()
+		}
 	}
 }

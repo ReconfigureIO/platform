@@ -1,9 +1,7 @@
 package routes
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
@@ -16,7 +14,7 @@ import (
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads) *gin.Engine {
+func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads) *gin.Engine {
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -37,19 +35,15 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
-	if os.Getenv("RECO_FEATURE_BILLING") == "1" {
-		fmt.Println("enabling billing api endpoints")
-
-		billing := api.Billing{}
-		profile := profile.Profile{DB: db}
-		billingRoutes := apiRoutes.Group("/user")
-		{
-			billingRoutes.GET("", profile.Get)
-			billingRoutes.PUT("", profile.Update)
-			billingRoutes.GET("/payment-info", billing.Get)
-			billingRoutes.POST("/payment-info", billing.Replace)
-			billingRoutes.GET("/hours-remaining", billing.RemainingHours)
-		}
+	billing := api.Billing{}
+	profile := profile.Profile{DB: db}
+	billingRoutes := apiRoutes.Group("/user")
+	{
+		billingRoutes.GET("", profile.Get)
+		billingRoutes.PUT("", profile.Update)
+		billingRoutes.GET("/payment-info", billing.Get)
+		billingRoutes.POST("/payment-info", billing.Replace)
+		billingRoutes.GET("/hours-remaining", billing.RemainingHours)
 	}
 
 	build := api.Build{Events: events}
@@ -92,19 +86,17 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		graphRoute.GET("/:id/graph", graph.Download)
 	}
 
-	deploymentEnabled := os.Getenv("RECO_FEATURE_DEPLOY") == "1"
+	deployment := api.Deployment{
+		Events:           events,
+		UseSpotInstances: config.FeatureUseSpotInstances,
+	}
 
-	deployment := api.Deployment{Events: events}
-
-	if deploymentEnabled {
-
-		deploymentRoute := apiRoutes.Group("/deployments")
-		{
-			deploymentRoute.GET("", deployment.List)
-			deploymentRoute.POST("", deployment.Create)
-			deploymentRoute.GET("/:id", deployment.Get)
-			deploymentRoute.GET("/:id/logs", deployment.Logs)
-		}
+	deploymentRoute := apiRoutes.Group("/deployments")
+	{
+		deploymentRoute.GET("", deployment.List)
+		deploymentRoute.POST("", deployment.Create)
+		deploymentRoute.GET("/:id", deployment.Get)
+		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
 	eventRoutes := r.Group("", middleware.TokenAuth(db, events))
@@ -112,10 +104,7 @@ func SetupRoutes(secretKey string, r *gin.Engine, db *gorm.DB, events events.Eve
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
 		eventRoutes.POST("/graphs/:id/events", graph.CreateEvent)
-
-		if deploymentEnabled {
-			eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
-		}
+		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
 
 	reportRoutes := r.Group("", middleware.TokenAuth(db, events))

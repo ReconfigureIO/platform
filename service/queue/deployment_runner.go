@@ -3,12 +3,12 @@ package queue
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // DeploymentRunner is queue job runner implementation for deployments.
@@ -26,7 +26,6 @@ func (d DeploymentRunner) Run(j Job) {
 
 	deployment := models.Deployment{}
 	err := d.DB.First(&deployment, "id = ?", depID).Error
-	// TODO what should be done for errors while starting a deployment.
 	if err != nil {
 		log.Println(err)
 		return
@@ -106,5 +105,4 @@ func (d DeploymentRunner) Stop(j Job) {
 	if err != nil {
 		log.Println(err)
 	}
-
 }

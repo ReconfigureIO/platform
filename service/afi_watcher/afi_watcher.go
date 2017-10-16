@@ -2,10 +2,10 @@ package afi_watcher
 
 import (
 	"context"
-	"log"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
+	log "github.com/sirupsen/logrus"
 )
 
 var (

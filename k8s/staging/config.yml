@@ -11,16 +11,15 @@ data:
  SECRET_KEY_BASE: foobar
  STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
  PORT: "80"
- RECO_ENV: production
+ RECO_ENV: staging
  RECO_PLATFORM_MIGRATE: "false"
- RECO_FEATURE_DEPLOY: "true"
  RECO_AWS_LOG_GROUP: "/aws/batch/job"
  RECO_AWS_BUCKET: reconfigureio-builds
  RECO_AWS_QUEUE: staging-build-jobs
  RECO_AWS_JOB: sdaccel-builder-build-staging
- RECO_FEATURE_DEPLOY: "true"
  RECO_DEPLOY_LOG_GROUP: "/reconfigureio/deployments"
  RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
  RECO_DEPLOY_AMI: ami-8e6a4df5
  RECO_DEPLOY_BUCKET: "reconfigureio-builds"
- RECO_FEATURE_BILLING: "1"
+ RECO_FEATURE_USE_SPOT_INSTANCES: "true"
+ RECO_FEATURE_DEP_QUEUE: "true"
