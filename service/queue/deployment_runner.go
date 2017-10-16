@@ -13,9 +13,10 @@ import (
 
 // DeploymentRunner is queue job runner implementation for deployments.
 type DeploymentRunner struct {
-	Hostname string
-	Service  deployment.Service
-	DB       *gorm.DB
+	Hostname     string
+	Service      deployment.Service
+	DB           *gorm.DB
+	waitInterval time.Duration
 }
 
 var _ JobRunner = DeploymentRunner{}
@@ -40,13 +41,12 @@ func (d DeploymentRunner) Run(j Job) {
 	}
 
 	err = d.DB.Model(&deployment).Update("InstanceID", instanceID).Error
-
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: models.StatusQueued}
 	err = d.DB.Model(&deployment).Association("Events").Append(newEvent).Error
 	if err != nil {
 		log.Println(err)
@@ -56,14 +56,23 @@ func (d DeploymentRunner) Run(j Job) {
 	// wait for deployment
 	for {
 		var dep models.Deployment
-		err := d.DB.First(&dep, "id = ?", depID).Error
+		err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp")
+		}).First(&dep, "id = ?", depID).Error
+
 		if err != nil {
 			log.Println(err)
 		}
+
 		if dep.HasFinished() {
 			break
 		}
-		time.Sleep(time.Minute * 1)
+
+		interval := d.waitInterval
+		if interval == 0 {
+			interval = time.Second * 60
+		}
+		time.Sleep(interval)
 	}
 }
 

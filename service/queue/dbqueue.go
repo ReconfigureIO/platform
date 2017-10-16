@@ -12,10 +12,11 @@ import (
 var _ Queue = &dbQueue{}
 
 type dbQueue struct {
-	jobType    string
-	runner     JobRunner
-	concurrent int
-	service    QueueService
+	jobType      string
+	runner       JobRunner
+	concurrent   int
+	service      QueueService
+	waitInterval time.Duration
 
 	halt chan struct{}
 	once sync.Once
@@ -24,10 +25,11 @@ type dbQueue struct {
 // NewWithDBStore creates a new queue using database as storage for queue state.
 func NewWithDBStore(db *gorm.DB, runner JobRunner, concurrent int, jobType string) Queue {
 	return &dbQueue{
-		jobType:    jobType,
-		runner:     runner,
-		concurrent: concurrent,
-		service:    QueueService{db: db},
+		jobType:      jobType,
+		runner:       runner,
+		concurrent:   concurrent,
+		service:      QueueService{db: db},
+		waitInterval: time.Second * 60,
 	}
 }
 
@@ -39,7 +41,7 @@ func (d *dbQueue) Start() {
 	d.resetStuckJobs()
 
 	d.halt = make(chan struct{})
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(d.waitInterval)
 
 loop:
 	for {

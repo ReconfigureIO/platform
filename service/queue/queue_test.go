@@ -20,7 +20,7 @@ func connectDB() *gorm.DB {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.LogMode(true)
+	// db.LogMode(true)
 	return db
 }
 
