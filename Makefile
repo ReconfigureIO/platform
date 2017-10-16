@@ -105,4 +105,4 @@ deploy-staging:
 	kubectl rollout status deployment staging-platform-cron
 
 compose-test:
-	(docker-compose rm -f -s db || 0) && docker-compose run --rm test bash -c "go test -v -tags=integration ${ARGS}"
+	(docker-compose rm -f -s db || 0) && docker-compose run --rm test bash -c "go test -v ${ARGS}"
