@@ -90,8 +90,8 @@ deploy-production:
 
 	kubectl apply -f k8s/production/
 
-#	kubectl set image -f k8s/production/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
-	kubectl set image -f k8s/production/cron.yml cron=${DOCKER_IMAGE}:${DOCKER_TAG}
+	kubectl set image -f k8s/production/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
+#	kubectl set image -f k8s/production/cron.yml cron=${DOCKER_IMAGE}:${DOCKER_TAG}
 
 	kubectl rollout resume deployment production-platform-web
 #	kubectl rollout resume deployment production-platform-cron
