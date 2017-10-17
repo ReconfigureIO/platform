@@ -86,18 +86,18 @@ migrate-production:
 
 deploy-production:
 	kubectl rollout pause deployment production-platform-web
-	kubectl rollout pause deployment production-platform-cron
+#	kubectl rollout pause deployment production-platform-cron
 
 	kubectl apply -f k8s/production/
 
-	kubectl set image -f k8s/production/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
+#	kubectl set image -f k8s/production/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
 	kubectl set image -f k8s/production/cron.yml cron=${DOCKER_IMAGE}:${DOCKER_TAG}
 
 	kubectl rollout resume deployment production-platform-web
-	kubectl rollout resume deployment production-platform-cron
+#	kubectl rollout resume deployment production-platform-cron
 
 	kubectl rollout status deployment production-platform-web
-	kubectl rollout status deployment production-platform-cron
+#	kubectl rollout status deployment production-platform-cron
 
 migrate-staging:
 	kubectl patch -o yaml -f k8s/migrate_staging.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
