@@ -57,14 +57,9 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, 
 
 func AddCredits(desiredCredits int, ds models.UserBalanceRepo, user models.User) error {
 	totalCharge := hourPrice * desiredCredits
+	chargeDescription := "Charge for deployment time with Reconfigure.io"
 
-	chargeParams := &stripe.ChargeParams{
-		Amount:   uint64(totalCharge),
-		Currency: "usd",
-		Desc:     "Charge for deployment time with Reconfigure.io",
-		Customer: user.StripeToken,
-	}
-	_, err := charge.New(chargeParams)
+	_, err := stripe.ChargeUser(totalCharge, chargeDescription, user)
 	if err != nil {
 		return err
 	}
@@ -76,32 +71,3 @@ func AddCredits(desiredCredits int, ds models.UserBalanceRepo, user models.User)
 	}
 	return nil
 }
-
-// func stripeSync(user models.User, ds models.UserBalanceRepo) error {
-// 	cust, err := customer.Get(user.StripeToken, &stripe.CustomerParams{})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	userBalance, err := ds.GetUserBalance(user)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	// if credits in stripe are higher than we have on record there's a problem
-// 	if string(userBalance.Credits.Hours) < cust.Meta["credit_hours"] {
-// 		return fmt.Errorf("User %s has a credit mismatch in stripe", user.ID)
-// 	}
-
-// 	if string(userBalance.Debits.Hours) < cust.Meta["debit_hours"] {
-// 		return fmt.Errorf("User %s has a debit mismatch in stripe", user.ID)
-// 	}
-
-// 	params := &stripe.CustomerParams{}
-// 	params.AddMeta("debit_hours", string(userBalance.Debits.Hours))
-// 	params.AddMeta("credit_hours", string(userBalance.Credits.Hours))
-
-// 	_, err = customer.Update(user.StripeToken, params)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
