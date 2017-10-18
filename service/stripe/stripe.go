@@ -6,26 +6,29 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/charge"
-	"github.com/stripe/stripe-go/customer"
 	"github.com/stripe/stripe-go/invoice"
 )
 
-func GetUserInvoices(start time.Time, end time.Time, user models.User) []invoice.Invoice {
+func GetUserInvoices(start time.Time, end time.Time, user models.User) []stripe.Invoice {
 	invoiceListParams := &stripe.InvoiceListParams{
-		Customer: user.Stripe_token,
+		Customer: user.StripeToken,
 		DateRange: &stripe.RangeQueryParams{
 			GreaterThan: start.Unix(),
 			LesserThan:  end.Unix(),
 		},
 	}
 
-	invoices := invoice.List(invoiceListParams)
+	invoices := []stripe.Invoice{}
+	invoiceIter := invoice.List(invoiceListParams)
+	for invoiceIter.Next() {
+		invoices = append(invoices, invoiceIter.Current().(stripe.Invoice))
+	}
 	return invoices
 }
 
-func ChargeUser(charge int, description string, user models.User) (charge.Charge, err) {
+func ChargeUser(amount int, description string, user models.User) (*stripe.Charge, error) {
 	chargeParams := &stripe.ChargeParams{
-		Amount:   uint64(charge),
+		Amount:   uint64(amount),
 		Currency: "usd",
 		Desc:     description,
 		Customer: user.StripeToken,
