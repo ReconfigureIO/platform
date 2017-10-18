@@ -21,17 +21,16 @@ type UserBalanceRepo interface {
 // UserBalance holds information about a user's subscription, credits and debits.
 type UserBalance struct {
 	Subscription SubscriptionInfo
-	Credits      Credits
-	Debits       Debits
+	Credits      []Credit
+	Debits       []Debit
 }
 
-type Credits struct {
+type Credit struct {
 	uuidHook
-	ID         string `gorm:"primary_key" json:"id"`
-	User       User   `json:"-" gorm:"ForeignKey:UserID"`
-	UserID     string `json:"-"`
-	Identifier string `json:"id"`
-	Hours      int
+	ID     string `gorm:"primary_key" json:"id"`
+	User   User   `json:"-" gorm:"ForeignKey:UserID"`
+	UserID string `json:"-"`
+	Hours  int
 }
 
 type Debit struct {
@@ -66,33 +65,15 @@ func (repo *userBalanceRepo) GetUserBalance(user User) (UserBalance, error) {
 		return UserBalance{}, err
 	}
 
-	userCredits := Credits{}
-	err = db.Where("user_id = ?", user.ID).First(&userCredits).Error
+	userCredits := []Credit{}
+	err = db.Where("user_id = ?", user.ID).Find(&userCredits).Error
 	if err != nil {
-		//if missing add it
-		userCredits = Credits{
-			User:       user,
-			Identifier: subscriptionInfo.Identifier,
-			Hours:      0,
-		}
-		err = db.Create(&userCredits).Error
-		if err != nil {
-			return UserBalance{}, err
-		}
+		return UserBalance{}, err
 	}
-	userDebits := Debits{}
-	err = db.Where("user_id = ?", user.ID).First(&userDebits).Error
+	userDebits := []Debit{}
+	err = db.Where("user_id = ?", user.ID).Find(&userDebits).Error
 	if err != nil {
-		//if missing add it
-		userDebits = Debits{
-			User:       user,
-			Identifier: subscriptionInfo.Identifier,
-			Hours:      0,
-		}
-		err = db.Create(&userDebits).Error
-		if err != nil {
-			return UserBalance{}, err
-		}
+		return UserBalance{}, err
 	}
 
 	userBalance := UserBalance{
@@ -111,7 +92,7 @@ func (repo *userBalanceRepo) AvailableCredit(user User) (int, error) {
 		return 0, err
 	}
 
-	available := balance.Subscription.Hours + (balance.Credits.Hours - balance.Debits.Hours)
+	available := balance.Subscription.Hours + (totalCredit(balance.Credits) - totalDebit(balance.Debits))
 	return available, nil
 }
 
@@ -122,16 +103,16 @@ func (repo *userBalanceRepo) PurchasedCredit(user User) (int, error) {
 		return 0, err
 	}
 
-	return balance.Credits.Hours, nil
+	return totalCredit(balance.Credits), nil
 }
 
 func (repo *userBalanceRepo) AddCredit(user User, credit int) error {
-	balance, err := repo.GetUserBalance(user)
-	if err != nil {
-		return err
+	newCredit := Credit{
+		User:   user,
+		UserID: user.ID,
+		Hours:  credit,
 	}
-	balance.Credits.Hours = balance.Credits.Hours + credit
-	err = repo.db.Save(&balance.Credits).Error
+	err = repo.db.Save(&newCredit).Error
 	if err != nil {
 		return err
 	}
@@ -158,4 +139,20 @@ func (repo *userBalanceRepo) CurrentSubscription(user User) (SubscriptionInfo, e
 
 func (repo *userBalanceRepo) UpdatePlan(user User, plan string) (SubscriptionInfo, error) {
 	return SubscriptionDataSource(repo.db).UpdatePlan(user, plan)
+}
+
+func totalCredit(credits []Credit) int {
+	sum := 0
+	for _, credit := range credits {
+		sum += credit.Hours
+	}
+	return sum
+}
+
+func totalDebit(debits []Debit) int {
+	sum := 0
+	for _, debit := range debits {
+		sum += debit.Hours
+	}
+	return sum
 }
