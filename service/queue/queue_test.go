@@ -3,7 +3,6 @@
 package queue
 
 import (
-	"container/heap"
 	"log"
 	"os"
 	"sync"
@@ -39,44 +38,8 @@ func TestDBQueue(t *testing.T) {
 		runner:       runner,
 		concurrent:   2,
 		service:      QueueService{db: connectDB()},
-		waitInterval: time.Second * 1,
+		pollInterval: time.Second * 1,
 	}
-	for _, job := range jobs {
-		queue.Push(job)
-	}
-	go queue.Start()
-	for {
-		time.Sleep(time.Second * 1)
-		if len(runner.dispatched) >= 5 {
-			queue.Halt()
-			break
-		}
-	}
-
-	for _, job := range jobs {
-		if _, ok := runner.dispatched[job.ID]; !ok {
-			t.Errorf("Job %s not dispatched", job.ID)
-		}
-	}
-}
-
-func TestPriorityQueue(t *testing.T) {
-	var queue = priorityQueue(jobs)
-	heap.Init(&queue)
-	expected := []int{
-		5, 4, 3, 2, 1,
-	}
-	for i := 0; i < len(expected); i++ {
-		job := heap.Pop(&queue).(Job)
-		if job.Weight != expected[i] {
-			t.Errorf("Expected %d found %d", expected[i], job.Weight)
-		}
-	}
-}
-
-func TestMemoryQueue(t *testing.T) {
-	runner := &fakeRunner{}
-	var queue = NewWithMemoryStore(runner, 2, "deployment")
 	for _, job := range jobs {
 		queue.Push(job)
 	}
@@ -103,7 +66,6 @@ type fakeRunner struct {
 
 func (f *fakeRunner) Run(job Job) {
 	log.Println("starting", job.ID)
-	time.Sleep(time.Second * 2)
 
 	f.Lock()
 	defer f.Unlock()

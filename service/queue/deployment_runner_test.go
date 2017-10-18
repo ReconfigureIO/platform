@@ -26,14 +26,14 @@ func startDeploymentQueue() (Queue, []Job) {
 		Hostname:     "test.reconfigure.io",
 		DB:           db,
 		Service:      &fakeDepService{db: db},
-		waitInterval: time.Second * 1,
+		pollInterval: time.Second * 1,
 	}
 	deploymentQueue := &dbQueue{
 		jobType:      "deployment",
 		runner:       runner,
 		concurrent:   2,
 		service:      QueueService{db: db},
-		waitInterval: time.Second * 1,
+		pollInterval: time.Second * 1,
 	}
 
 	go deploymentQueue.Start()
@@ -88,7 +88,6 @@ type fakeDepService struct {
 }
 
 func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment, callbackUrl string) (string, error) {
-	time.Sleep(time.Second * 1)
 	f.Lock()
 	f.count++
 	f.Unlock()

@@ -16,7 +16,7 @@ type DeploymentRunner struct {
 	Hostname     string
 	Service      deployment.Service
 	DB           *gorm.DB
-	waitInterval time.Duration
+	pollInterval time.Duration
 }
 
 var _ JobRunner = DeploymentRunner{}
@@ -68,7 +68,7 @@ func (d DeploymentRunner) Run(j Job) {
 			break
 		}
 
-		interval := d.waitInterval
+		interval := d.pollInterval
 		if interval == 0 {
 			interval = time.Second * 60
 		}

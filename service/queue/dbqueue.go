@@ -16,7 +16,7 @@ type dbQueue struct {
 	runner       JobRunner
 	concurrent   int
 	service      QueueService
-	waitInterval time.Duration
+	pollInterval time.Duration
 
 	halt chan struct{}
 	once sync.Once
@@ -29,7 +29,7 @@ func NewWithDBStore(db *gorm.DB, runner JobRunner, concurrent int, jobType strin
 		runner:       runner,
 		concurrent:   concurrent,
 		service:      QueueService{db: db},
-		waitInterval: time.Second * 60,
+		pollInterval: time.Second * 60,
 	}
 }
 
@@ -41,7 +41,7 @@ func (d *dbQueue) Start() {
 	d.resetStuckJobs()
 
 	d.halt = make(chan struct{})
-	ticker := time.NewTicker(d.waitInterval)
+	ticker := time.NewTicker(d.pollInterval)
 
 loop:
 	for {
@@ -58,7 +58,7 @@ loop:
 			if toRun > 0 {
 				jobs, err := d.service.Fetch(d.jobType, toRun)
 				if err != nil {
-					log.Println(err)
+					log.Error(err)
 					continue
 				}
 
