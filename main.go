@@ -96,7 +96,6 @@ func main() {
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
 		}
-		conf.Host = "https://api.reconfigure.io"
 	default:
 		corsConfig.AllowOrigins = []string{
 			"http://app-staging.reconfigure.io",
@@ -104,7 +103,6 @@ func main() {
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
 		}
-		conf.Host = "https://staging-api.reconfigure.io"
 	}
 
 	r.Use(cors.New(corsConfig))
@@ -116,8 +114,10 @@ func main() {
 	// queue
 	var deploymentQueue queue.Queue
 	if conf.Reco.FeatureDepQueue {
+		log.Info("deployment queue enabled. starting...")
 		deploymentQueue = startDeploymentQueue(*conf, db)
 		api.DepQueue(deploymentQueue)
+		log.Info("deployment queue started.")
 	}
 
 	// Listen and Server in 0.0.0.0:$PORT
