@@ -28,7 +28,7 @@ func (d DeploymentRunner) Run(j Job) {
 	deployment := models.Deployment{}
 	err := d.DB.First(&deployment, "id = ?", depID).Error
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
@@ -36,20 +36,20 @@ func (d DeploymentRunner) Run(j Job) {
 
 	instanceID, err := d.Service.RunDeployment(context.Background(), deployment, callbackURL)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
 	err = d.DB.Model(&deployment).Update("InstanceID", instanceID).Error
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
 	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: models.StatusQueued}
 	err = d.DB.Model(&deployment).Association("Events").Append(newEvent).Error
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 		return
 	}
 
