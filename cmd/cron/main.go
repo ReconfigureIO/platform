@@ -155,7 +155,7 @@ func checkHours() {
 
 func updateDebits() {
 	log.Printf("updating user debits")
-	err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db))
+	err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db), time.Now())
 	if err != nil {
 		exitWithErr(err)
 	}
