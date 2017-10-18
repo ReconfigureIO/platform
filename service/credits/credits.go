@@ -1,7 +1,6 @@
 package credits
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -29,8 +28,8 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, 
 		invoices := stripe.GetUserInvoices(midnight, previousMidnight, user)
 		//find ranges on invoice(s)
 		for _, invoice := range invoices {
-			invoiceStart := time.Unix(invoice.Lines.Data.Period.Start, 0)
-			invoiceEnd := time.Unix(invoice.Lines.Data.Period.End, 0)
+			invoiceStart := time.Unix(invoice.Lines.Values[0].Period.Start, 0)
+			invoiceEnd := time.Unix(invoice.Lines.Values[0].Period.End, 0)
 			//create debits for invoice period(s)
 			subscriptionInfo, err := ds.CurrentSubscription(user)
 			if err != nil {
