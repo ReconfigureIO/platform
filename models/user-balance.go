@@ -112,7 +112,7 @@ func (repo *userBalanceRepo) AddCredit(user User, credit int) error {
 		UserID: user.ID,
 		Hours:  credit,
 	}
-	err = repo.db.Save(&newCredit).Error
+	err := repo.db.Save(&newCredit).Error
 	if err != nil {
 		return err
 	}
