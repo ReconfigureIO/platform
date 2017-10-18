@@ -94,6 +94,7 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 	f.Unlock()
 
 	log.Println("starting deployment", dep.ID)
+	instanceID := "fakeDeployment" + dep.ID
 
 	go func() {
 		// ensure deployment is queued before completing it
@@ -110,6 +111,10 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 			}
 
 			if len(dep1.Events) == 1 && dep1.Events[0].Status == models.StatusQueued {
+				// validate instance id
+				if dep1.InstanceID != instanceID {
+					log.Fatalf("Expected InstanceID %v, found %v", instanceID, dep1.InstanceID)
+				}
 				break
 			}
 		}
@@ -122,7 +127,7 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 		log.Println("finished deployment", dep.ID)
 	}()
 
-	return "fakeDeployment" + dep.ID, nil
+	return instanceID, nil
 }
 func (f *fakeDepService) StopDeployment(ctx context.Context, deployment models.Deployment) error {
 	return nil
