@@ -34,7 +34,13 @@ var jobs = []Job{
 
 func TestDBQueue(t *testing.T) {
 	runner := &fakeRunner{}
-	var queue = NewWithDBStore(connectDB(), runner, 2, "deployment")
+	var queue = &dbQueue{
+		jobType:      "deployment",
+		runner:       runner,
+		concurrent:   2,
+		service:      QueueService{db: connectDB()},
+		waitInterval: time.Second * 1,
+	}
 	for _, job := range jobs {
 		queue.Push(job)
 	}
