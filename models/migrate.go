@@ -18,4 +18,5 @@ func MigrateAll(db *gorm.DB) {
 	db.AutoMigrate(&Graph{})
 	db.AutoMigrate(&Credit{})
 	db.AutoMigrate(&Debit{})
+	db.AutoMigrate(&QueueEntry{})
 }

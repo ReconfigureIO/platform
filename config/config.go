@@ -16,6 +16,7 @@ type Config struct {
 	StripeKey   string     `env:"STRIPE_KEY"`
 	Port        string     `env:"PORT"`
 	Reco        RecoConfig `env:"RECO"`
+	Host        string     `env:"RECO_HOST_NAME"`
 }
 
 type RecoConfig struct {
@@ -23,6 +24,7 @@ type RecoConfig struct {
 	PlatformMigrate         bool   `env:"RECO_PLATFORM_MIGRATE"`
 	LogzioToken             string `env:"LOGZIO_TOKEN"`
 	FeatureIntercom         bool   `env:"RECO_FEATURE_INTERCOM"`
+	FeatureDepQueue         bool   `env:"RECO_FEATURE_DEP_QUEUE"`
 	FeatureUseSpotInstances bool   `env:"RECO_FEATURE_USE_SPOT_INSTANCES"`
 	AWS                     aws.ServiceConfig
 	Deploy                  deployment.ServiceConfig

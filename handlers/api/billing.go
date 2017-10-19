@@ -40,7 +40,7 @@ func (b Billing) Get(c *gin.Context) {
 	}
 	cust, err := customer.Get(user.StripeToken, nil)
 	if err != nil {
-		sugar.InternalError(c, err)
+		sugar.StripeError(c, err)
 		return
 	}
 	sugar.SuccessResponse(c, 200, models.DefaultSource(cust))
@@ -69,7 +69,7 @@ func (b Billing) Replace(c *gin.Context) {
 	}
 
 	if err != nil {
-		sugar.InternalError(c, err)
+		sugar.StripeError(c, err)
 		return
 	}
 
