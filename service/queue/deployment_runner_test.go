@@ -26,14 +26,14 @@ func startDeploymentQueue() (Queue, []Job) {
 		Hostname:     "test.reconfigure.io",
 		DB:           db,
 		Service:      &fakeDepService{db: db},
-		waitInterval: time.Second * 1,
+		pollInterval: time.Second * 1,
 	}
 	deploymentQueue := &dbQueue{
 		jobType:      "deployment",
 		runner:       runner,
 		concurrent:   2,
 		service:      QueueService{db: db},
-		waitInterval: time.Second * 1,
+		pollInterval: time.Second * 1,
 	}
 
 	go deploymentQueue.Start()
@@ -88,12 +88,12 @@ type fakeDepService struct {
 }
 
 func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment, callbackUrl string) (string, error) {
-	time.Sleep(time.Second * 1)
 	f.Lock()
 	f.count++
 	f.Unlock()
 
 	log.Println("starting deployment", dep.ID)
+	instanceID := "fakeDeployment" + dep.ID
 
 	go func() {
 		// ensure deployment is queued before completing it
@@ -110,6 +110,10 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 			}
 
 			if len(dep1.Events) == 1 && dep1.Events[0].Status == models.StatusQueued {
+				// validate instance id
+				if dep1.InstanceID != instanceID {
+					log.Fatalf("Expected InstanceID %v, found %v", instanceID, dep1.InstanceID)
+				}
 				break
 			}
 		}
@@ -122,7 +126,7 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 		log.Println("finished deployment", dep.ID)
 	}()
 
-	return "fakeDeployment" + dep.ID, nil
+	return instanceID, nil
 }
 func (f *fakeDepService) StopDeployment(ctx context.Context, deployment models.Deployment) error {
 	return nil
