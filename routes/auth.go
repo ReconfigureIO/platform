@@ -21,6 +21,7 @@ func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads) {
 
 		signup := auth.SignupUser{DB: db, GH: gh, Leads: leads}
 		authRoutes.GET("/signin", signup.ResignIn)
+		authRoutes.GET("/new-account", signup.SignUpNoToken)
 		authRoutes.GET("/signup/:token", signup.SignUp)
 		authRoutes.GET("/signup/", signup.NoToken)
 		authRoutes.GET("/callback", signup.Callback)
