@@ -4,6 +4,7 @@ package queue
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/dchest/uniuri"
 	"github.com/jinzhu/gorm"
 )
 
@@ -45,11 +47,13 @@ func genDeploymentsJobs(db *gorm.DB, n int) ([]Job, error) {
 	for i := 0; i < n; i++ {
 		dep := models.Deployment{
 			Build: models.Build{
+				ID: fmt.Sprintf("fake_build_%d", i),
 				Project: models.Project{
 					UserID: "user1",
 				},
 			},
 			Command: "test",
+			Token:   uniuri.NewLen(64),
 		}
 		if err := db.Create(&dep).Error; err != nil {
 			return jobs, err
@@ -93,7 +97,15 @@ func (f *fakeDepService) RunDeployment(_ context.Context, dep models.Deployment,
 	f.Unlock()
 
 	log.Println("starting deployment", dep.ID)
+	log.Println(callbackUrl)
 	instanceID := "fakeDeployment" + dep.ID
+
+	if dep.Build.ID == "" {
+		log.Fatal("Build ID should not be empty")
+	}
+	if dep.Build.ID != dep.BuildID {
+		log.Fatal("Build ID should match")
+	}
 
 	go func() {
 		// ensure deployment is queued before completing it
