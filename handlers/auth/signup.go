@@ -83,6 +83,7 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 // Create a new token for this context and
 func (s *SignupUser) SignUpNoToken(c *gin.Context) {
 	invite := models.NewInviteToken()
+	invite.IntercomId = c.Query("lead_id")
 	err := s.DB.Create(&invite).Error
 	if err != nil {
 		sugar.InternalError(c, err)
