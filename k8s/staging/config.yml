@@ -10,6 +10,7 @@ data:
  DATABASE_URL: ssm:///reconfigureio/platform/staging/db
  SECRET_KEY_BASE: foobar
  STRIPE_KEY: ssm:///reconfigureio/platform/staging/stripe
+ LOGZIO_TOKEN: ssm:///reconfigureio/platform/production/logzio_token
  PORT: "80"
  RECO_ENV: staging
  RECO_PLATFORM_MIGRATE: "false"
