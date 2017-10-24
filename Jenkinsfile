@@ -32,6 +32,7 @@ pipeline {
         stage('pre-clean') {
             steps {
                 sh 'docker-compose run --rm web-base make clean'
+                sh 'docker-compose down'
                 sh 'docker network prune --force'
             }
         }
