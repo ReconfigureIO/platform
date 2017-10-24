@@ -87,15 +87,6 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	// check number of queued deployments owned by user.
-	if ad, err := deploymentQueue.CountUserJobsInStatus(user, "queued"); err != nil {
-		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
-		return
-	} else if ad >= numQueuedDeployments {
-		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded queued deployment max of %d", numQueuedDeployments))
-		return
-	}
-
 	newDep := models.Deployment{
 		Build:        build,
 		BuildID:      post.BuildID,
@@ -104,19 +95,37 @@ func (d Deployment) Create(c *gin.Context) {
 		SpotInstance: d.UseSpotInstances,
 	}
 
-	err = db.Create(&newDep).Error
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
 	// use deployment queue if enabled
 	if deploymentQueue != nil {
+		// check number of queued deployments owned by user.
+		if ad, err := deploymentQueue.CountUserJobsInStatus(user, "queued"); err != nil {
+			sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
+			return
+		} else if ad >= numQueuedDeployments {
+			sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded queued deployment max of %d", numQueuedDeployments))
+			return
+		}
+
+		err = db.Create(&newDep).Error
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
 		deploymentQueue.Push(queue.Job{
 			ID:     newDep.ID,
 			Weight: 2, // TODO prioritize paying customers
 		})
 	} else {
+		dds := models.DeploymentDataSource(db)
+		if ad, err := dds.ActiveDeployments(user.ID); err != nil {
+			sugar.InternalError(c, err)
+			return
+		} else if len(ad) >= numQueuedDeployments {
+			sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numQueuedDeployments))
+			return
+		}
+
 		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
 		instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
