@@ -21,9 +21,11 @@ services:
       - RECO_FEATURE_DEPLOY=1
       - RECO_ENV=development
       - STRIPE_KEY=sk_test_NvEpeLnLAV15b9TWJzZKLkvW
-      - RECO_DEPLOY_AMI=ami-8e6a4df5
       - RECO_HOST_NAME=local.reconfigure.io
       - RECO_FEATURE_DEP_QUEUE=1
+      - RECO_DEPLOY_AMI=ami-8e6a4df5
+      - RECO_DEPLOY_SUBNET=subnet-ef8096b5
+      - RECO_DEPLOY_SG=sg-7fbfbe0c
   test:
     extends: web-base
     depends_on:

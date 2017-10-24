@@ -55,10 +55,14 @@ type ServiceConfig struct {
 	SecurityGroup string `env:"RECO_DEPLOY_SG" envDefault:"sg-7fbfbe0c"`
 }
 
-func New(conf ServiceConfig) Service {
+func newService(conf ServiceConfig) *service {
 	s := service{Conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
 	return &s
+}
+
+func New(conf ServiceConfig) Service {
+	return newService(conf)
 }
 
 // DeploymentRepo handles deployment details.
@@ -105,23 +109,23 @@ func (d Deployment) String() (string, error) {
 	return buff.String(), err
 }
 
-func (s *service) runSpotInstance(ctx context.Context, deployment models.Deployment, callbackUrl string, encodedConfig string) (string, error) {
+func (s *service) runSpotInstance(ctx context.Context, encodedConfig string, dryRun bool) (string, error) {
 	ec2Session := ec2.New(s.session)
 
 	launch := ec2.RequestSpotLaunchSpecification{
-		ImageId:          aws.String(s.Conf.AMI),
-		InstanceType:     aws.String("f1.2xlarge"),
-		SubnetId:         aws.String(s.Conf.Subnet),
-		SecurityGroupIds: []*string{aws.String(s.Conf.SecurityGroup)},
-		UserData:         aws.String(encodedConfig),
+		ImageId:      aws.String(s.Conf.AMI),
+		InstanceType: aws.String("f1.2xlarge"),
+		UserData:     aws.String(encodedConfig),
 		Placement: &ec2.SpotPlacement{
 			AvailabilityZone: aws.String("us-east-1d"),
 		},
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
 			&ec2.InstanceNetworkInterfaceSpecification{
+				DeviceIndex:              aws.Int64(0),
 				AssociatePublicIpAddress: aws.Bool(true),
 				DeleteOnTermination:      aws.Bool(true),
 				SubnetId:                 aws.String(s.Conf.Subnet),
+				Groups:                   []*string{aws.String(s.Conf.SecurityGroup)},
 			},
 		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
@@ -130,6 +134,7 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	}
 
 	cfg := ec2.RequestSpotInstancesInput{
+		DryRun:              aws.Bool(dryRun),
 		InstanceCount:       aws.Int64(1),
 		LaunchSpecification: &launch,
 		SpotPrice:           aws.String("0.60"),
@@ -146,23 +151,24 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	return InstanceId, nil
 }
 
-func (s *service) runInstance(ctx context.Context, deployment models.Deployment, callbackUrl string, encodedConfig string) (string, error) {
+func (s *service) runInstance(ctx context.Context, encodedConfig string, dryRun bool) (string, error) {
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.RunInstancesInput{
+		DryRun:  aws.Bool(dryRun),
 		ImageId: aws.String(s.Conf.AMI),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
 		MinCount:                          aws.Int64(1),
-		SubnetId:                          aws.String(s.Conf.Subnet),
-		SecurityGroupIds:                  []*string{aws.String(s.Conf.SecurityGroup)},
 		UserData:                          aws.String(encodedConfig),
 		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
 			&ec2.InstanceNetworkInterfaceSpecification{
+				DeviceIndex:              aws.Int64(0),
 				AssociatePublicIpAddress: aws.Bool(true),
 				DeleteOnTermination:      aws.Bool(true),
 				SubnetId:                 aws.String(s.Conf.Subnet),
+				Groups:                   []*string{aws.String(s.Conf.SecurityGroup)},
 			},
 		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
@@ -187,11 +193,11 @@ func (s *service) RunDeployment(ctx context.Context, deployment models.Deploymen
 	}
 
 	if deployment.SpotInstance {
-		instanceId, err := s.runSpotInstance(ctx, deployment, callbackUrl, encodedConfig)
+		instanceId, err := s.runSpotInstance(ctx, encodedConfig, false)
 		return instanceId, err
 	}
 
-	instanceId, err := s.runInstance(ctx, deployment, callbackUrl, encodedConfig)
+	instanceId, err := s.runInstance(ctx, encodedConfig, false)
 	return instanceId, err
 }
 
