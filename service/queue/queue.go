@@ -17,6 +17,8 @@ type Queue interface {
 	// Halt should only be called after the Queue has been
 	// started. i.e. Start has been previously called.
 	Halt()
+	// CountUserJobsInstatus counts the amount of user jobs
+	// in a status.
 	CountUserJobsInStatus(user models.User, status string) (int, error)
 }
 
