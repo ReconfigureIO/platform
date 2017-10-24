@@ -126,6 +126,12 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 
+		err = db.Create(&newDep).Error
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
 		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
 		instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
