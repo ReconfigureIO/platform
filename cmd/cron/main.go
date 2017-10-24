@@ -40,6 +40,7 @@ func setup(*cobra.Command, []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	stripe.Key = conf.StripeKey
 
 	err = config.SetupLogging(version, conf)
 	if err != nil {
@@ -60,12 +61,6 @@ func setup(*cobra.Command, []string) {
 
 // add commands to root command
 func main() {
-	conf, err := config.ParseEnvConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stripe.Key = conf.StripeKey
-
 	RootCmd.AddCommand(commands...)
 
 	if err := RootCmd.Execute(); err != nil {
