@@ -98,7 +98,7 @@ func (d Deployment) Create(c *gin.Context) {
 	// use deployment queue if enabled
 	if deploymentQueue != nil {
 		// check number of queued deployments owned by user.
-		if ad, err := deploymentQueue.CountUserJobsInStatus(user, "queued"); err != nil {
+		if ad, err := deploymentQueue.CountUserJobsInStatus(user, models.StatusQueued); err != nil {
 			sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
 			return
 		} else if ad >= numQueuedDeployments {
