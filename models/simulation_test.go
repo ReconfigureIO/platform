@@ -1,4 +1,4 @@
-// +simulation integration
+// +build integration
 
 package models
 
