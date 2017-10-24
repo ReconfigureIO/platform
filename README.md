@@ -7,6 +7,14 @@ The backend of Reconfigure.io
 2. run `docker-compose up` in the top level directory.
 3. `curl http://localhost:8080/ping`
 
+## Signing Up (without a Token)
+
+1. Visit `https://api.reconfigure.io/oauth/new-account`
+2. Login with Github
+3. Use the generated token with our tooling
+4. If you need to view this token again visit https://api.reconfigureio/oauth/signin
+5. Optional `redirect_url` query param to get redirected to specific url after login.
+
 ## Creating an invite token
 
 ```

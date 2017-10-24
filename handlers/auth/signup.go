@@ -80,6 +80,25 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 	c.Redirect(http.StatusFound, url)
 }
 
+// Create a new token for this context and
+func (s *SignupUser) SignUpNoToken(c *gin.Context) {
+	invite := models.NewInviteToken()
+	invite.IntercomId = c.Query("lead_id")
+	err := s.DB.Create(&invite).Error
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	session := sessions.Default(c)
+	session.Set(strInviteToken, invite.Token)
+	checkRedirURL(c, session)
+	session.Save()
+
+	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
+	c.Redirect(http.StatusFound, url)
+}
+
 // user tried to sign up without an invite token
 func (s *SignupUser) NoToken(c *gin.Context) {
 	sugar.ErrResponse(c, 400, "invite token required to sign up to Reconfigure.io")

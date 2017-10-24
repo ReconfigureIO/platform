@@ -33,11 +33,19 @@ var jobs = []Job{
 
 func TestDBQueue(t *testing.T) {
 	runner := &fakeRunner{}
-	var queue = NewWithDBStore(connectDB(), runner, 2, "deployment")
+	var queue = &dbQueue{
+		jobType:      "deployment",
+		runner:       runner,
+		concurrent:   2,
+		service:      QueueService{db: connectDB()},
+		pollInterval: time.Second * 1,
+	}
+
 	for _, job := range jobs {
 		queue.Push(job)
 	}
 	go queue.Start()
+
 	for i := 0; i < 10; i++ {
 		time.Sleep(time.Second * 1)
 		if len(runner.dispatched) >= 5 {
@@ -60,7 +68,6 @@ type fakeRunner struct {
 
 func (f *fakeRunner) Run(job Job) {
 	log.Println("starting", job.ID)
-	time.Sleep(time.Second * 2)
 
 	f.Lock()
 	defer f.Unlock()
