@@ -26,7 +26,7 @@ func (d DeploymentRunner) Run(j Job) {
 	depID := j.ID
 
 	deployment := models.Deployment{}
-	err := d.DB.First(&deployment, "id = ?", depID).Error
+	err := d.DB.Preload("Build").First(&deployment, "id = ?", depID).Error
 	if err != nil {
 		log.Error(err)
 		return
