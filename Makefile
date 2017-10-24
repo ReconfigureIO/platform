@@ -71,17 +71,31 @@ clean:
 
 image: all
 	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} dist-image
-	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG}-worker dist-worker
 
 push-image:
 	$$(aws ecr get-login --region us-east-1)
 	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}-worker
+
+migrate-production:
+	kubectl patch -o yaml -f k8s/migrate_production.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
+	./ci/wait_for.sh job migrate-production
+	kubectl logs job/migrate-production
+	kubectl delete job migrate-production
 
 deploy-production:
-	cp EB/web/env-production.yaml EB/web/env.yaml
-	cp EB/worker/env-production.yaml EB/worker/env.yaml
-	cd EB && eb deploy --modules worker web --env-group-suffix production
+	kubectl rollout pause deployment production-platform-web
+	kubectl rollout pause deployment production-platform-cron
+
+	kubectl apply -f k8s/production/
+
+	kubectl set image -f k8s/production/api.yml api=${DOCKER_IMAGE}:${DOCKER_TAG}
+	kubectl set image -f k8s/production/cron.yml cron=${DOCKER_IMAGE}:${DOCKER_TAG}
+
+	kubectl rollout resume deployment production-platform-web
+	kubectl rollout resume deployment production-platform-cron
+
+	kubectl rollout status deployment production-platform-web
+	kubectl rollout status deployment production-platform-cron
 
 migrate-staging:
 	kubectl patch -o yaml -f k8s/migrate_staging.yml --local=true --type=json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"${DOCKER_IMAGE}:${DOCKER_TAG}"}]' | kubectl create -f -
@@ -103,3 +117,6 @@ deploy-staging:
 
 	kubectl rollout status deployment staging-platform-web
 	kubectl rollout status deployment staging-platform-cron
+
+compose-test:
+	(docker-compose rm -f -s db || 0) && docker-compose run --rm test bash -c "go test -v ${ARGS}"

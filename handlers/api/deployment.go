@@ -9,6 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -89,7 +90,7 @@ func (d Deployment) Create(c *gin.Context) {
 	// check for number of concurrently running deployments.
 	dds := models.DeploymentDataSource(db)
 	if ad, err := dds.ActiveDeployments(user.ID); err != nil {
-		sugar.ErrResponse(c, http.StatusInternalServerError, "Error retrieving deployment information")
+		sugar.InternalError(c, err)
 		return
 	} else if len(ad) >= numConcurrentDeployments {
 		sugar.ErrResponse(c, http.StatusServiceUnavailable, fmt.Sprintf("Exceeded concurrent deployment max of %d", numConcurrentDeployments))
@@ -110,28 +111,37 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+	// use deployment queue if enabled
+	if deploymentQueue != nil {
+		deploymentQueue.Push(queue.Job{
+			ID:     newDep.ID,
+			Weight: 2, // TODO prioritize paying customers
+		})
+	} else {
+		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-	instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
+		instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
+		err = db.Model(&newDep).Update("InstanceID", instanceID).Error
+
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
+
+		newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
+		err = db.Model(&newDep).Association("Events").Append(newEvent).Error
+
+		if err != nil {
+			sugar.InternalError(c, err)
+			return
+		}
 	}
 
-	err = db.Model(&newDep).Update("InstanceID", instanceID).Error
-
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
-
-	newEvent := models.DeploymentEvent{Timestamp: time.Now(), Status: "QUEUED"}
-	err = db.Model(&newDep).Association("Events").Append(newEvent).Error
-
-	if err != nil {
-		sugar.InternalError(c, err)
-		return
-	}
 	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
 	sugar.SuccessResponse(c, 201, newDep)

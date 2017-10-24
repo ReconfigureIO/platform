@@ -1,30 +1,23 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: staging-platform-web
+  name: production-platform-cron
 spec:
   replicas: 1
   template:
     metadata:
       labels:
         app: reconfigureio-api
-        environment: staging
       annotations:
         iam.amazonaws.com/role: arn:aws:iam::398048034572:role/api-web-server
     spec:
       containers:
-      - name: api
+      - name: cron
         image: 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api:latest
-        ports:
-        - containerPort: 80
         command: ["ssm-env"]
-        args: ["/main"]
-        livenessProbe:
-          httpGet:
-            path: /ping
-            port: 80
-          initialDelaySeconds: 3
-          periodSeconds: 3
+        args:
+          - /cron
+          - cron
         envFrom:
           - configMapRef:
-              name: staging-config
+              name: production-config

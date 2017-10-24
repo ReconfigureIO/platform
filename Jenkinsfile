@@ -32,6 +32,7 @@ pipeline {
         stage('pre-clean') {
             steps {
                 sh 'docker-compose run --rm web-base make clean'
+                sh 'docker network prune --force'
             }
         }
 
@@ -66,8 +67,7 @@ pipeline {
                 expression { env.BRANCH_NAME in ["master"] }
             }
             steps {
-                sh 'make push-image migrate-staging deploy-staging'
-                sh 'make DOCKER_TAG=latest image push-image deploy-production'
+                sh 'make push-image migrate-staging deploy-staging migrate-production deploy-production'
             }
         }
     }

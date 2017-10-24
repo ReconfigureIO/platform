@@ -12,9 +12,11 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	awsservice "github.com/ReconfigureIO/platform/service/aws"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	//log "github.com/sirupsen/logrus"
 )
 
 type ContainerConfig struct {
@@ -45,10 +47,12 @@ type service struct {
 }
 
 type ServiceConfig struct {
-	LogGroup string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
-	Image    string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
-	AMI      string `env:"RECO_DEPLOY_AMI"`
-	Bucket   string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
+	LogGroup      string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
+	Image         string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
+	AMI           string `env:"RECO_DEPLOY_AMI"`
+	Bucket        string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
+	Subnet        string `env:"RECO_DEPLOY_SUBNET" envDefault:"subnet-fa2a9c9e"`
+	SecurityGroup string `env:"RECO_DEPLOY_SG" envDefault:"sg-7fbfbe0c"`
 }
 
 func New(conf ServiceConfig) Service {
@@ -105,9 +109,14 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 	ec2Session := ec2.New(s.session)
 
 	launch := ec2.RequestSpotLaunchSpecification{
-		ImageId:      aws.String(s.Conf.AMI),
-		InstanceType: aws.String("f1.2xlarge"),
-		UserData:     aws.String(encodedConfig),
+		ImageId:          aws.String(s.Conf.AMI),
+		InstanceType:     aws.String("f1.2xlarge"),
+		SubnetId:         aws.String(s.Conf.Subnet),
+		SecurityGroupIds: []*string{aws.String(s.Conf.SecurityGroup)},
+		UserData:         aws.String(encodedConfig),
+		Placement: &ec2.SpotPlacement{
+			AvailabilityZone: aws.String("us-east-1d"),
+		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
 		},
@@ -139,6 +148,8 @@ func (s *service) runInstance(ctx context.Context, deployment models.Deployment,
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
 		MinCount:                          aws.Int64(1),
+		SubnetId:                          aws.String(s.Conf.Subnet),
+		SecurityGroupIds:                  []*string{aws.String(s.Conf.SecurityGroup)},
 		UserData:                          aws.String(encodedConfig),
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
@@ -267,27 +278,99 @@ func (s *service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 
 }
 
+func isNotFound(err error) bool {
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case "InvalidSpotInstanceRequestID.NotFound":
+				return true
+			case "InvalidInstanceID.Malformed":
+				return true
+			default:
+				return false
+			}
+		}
+	}
+	return false
+}
+
 func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
 	ret := make(map[string]string)
 
 	var instanceids []*string
+	var spotInstanceIDs []*string
 	for _, deployment := range deployments {
-		instanceids = append(instanceids, &deployment.InstanceID)
+		if deployment.SpotInstance {
+			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+		} else {
+			instanceids = append(instanceids, &deployment.InstanceID)
+		}
+
 	}
 	ec2Session := ec2.New(s.session)
 
-	cfg := ec2.DescribeInstancesInput{
-		InstanceIds: instanceids,
+	if len(instanceids) > 0 {
+		//regular instances
+		cfg := ec2.DescribeInstancesInput{
+			InstanceIds: instanceids,
+		}
+
+		results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
+		if err != nil {
+			if !isNotFound(err) {
+				return ret, err
+			}
+		}
+
+		for _, reservation := range results.Reservations {
+			for _, instance := range reservation.Instances {
+				ret[*instance.InstanceId] = *instance.State.Name
+			}
+		}
 	}
 
-	results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
-	if err != nil {
-		return ret, err
-	}
+	if len(spotInstanceIDs) > 0 {
+		//spot instance
+		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
+			SpotInstanceRequestIds: spotInstanceIDs,
+		}
 
-	for _, reservation := range results.Reservations {
-		for _, instance := range reservation.Instances {
-			ret[*instance.InstanceId] = *instance.State.Name
+		spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
+		if err != nil {
+			if isNotFound(err) {
+				return ret, nil
+			}
+			return ret, err
+		}
+
+		// A map for the spotinstance ec2 instances
+		spotInstanceMap := make(map[string]string)
+		spotInstanceIds := []*string{}
+
+		for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
+			instanceId := (*string)(spotInstanceRequest.InstanceId)
+			if instanceId != nil {
+				spotInstanceIds = append(spotInstanceIds, instanceId)
+				spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
+				spotInstanceMap[*instanceId] = *spotId
+			}
+		}
+
+		spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
+			InstanceIds: spotInstanceIds,
+		})
+
+		if err != nil {
+			return ret, err
+		}
+
+		for _, reservation := range spotInstanceResults.Reservations {
+			for _, instance := range reservation.Instances {
+				spotId, ok := spotInstanceMap[*instance.InstanceId]
+				if ok {
+					ret[spotId] = *instance.State.Name
+				}
+			}
 		}
 	}
 
