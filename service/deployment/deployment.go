@@ -117,6 +117,13 @@ func (s *service) runSpotInstance(ctx context.Context, deployment models.Deploym
 		Placement: &ec2.SpotPlacement{
 			AvailabilityZone: aws.String("us-east-1d"),
 		},
+		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
+			&ec2.InstanceNetworkInterfaceSpecification{
+				AssociatePublicIpAddress: aws.Bool(true),
+				DeleteOnTermination:      aws.Bool(true),
+				SubnetId:                 aws.String(s.Conf.Subnet),
+			},
+		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
 		},
@@ -151,6 +158,13 @@ func (s *service) runInstance(ctx context.Context, deployment models.Deployment,
 		SubnetId:                          aws.String(s.Conf.Subnet),
 		SecurityGroupIds:                  []*string{aws.String(s.Conf.SecurityGroup)},
 		UserData:                          aws.String(encodedConfig),
+		NetworkInterfaces: []*ec2.InstanceNetworkInterfaceSpecification{
+			&ec2.InstanceNetworkInterfaceSpecification{
+				AssociatePublicIpAddress: aws.Bool(true),
+				DeleteOnTermination:      aws.Bool(true),
+				SubnetId:                 aws.String(s.Conf.Subnet),
+			},
+		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
 			Arn: aws.String("arn:aws:iam::398048034572:instance-profile/deployment-worker"),
 		},
