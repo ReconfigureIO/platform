@@ -62,12 +62,21 @@ pipeline {
             }
         }
 
-        stage ('deploy') {
+        stage ('deploy-staging') {
             when {
                 expression { env.BRANCH_NAME in ["master"] }
             }
             steps {
-                sh 'make push-image migrate-staging deploy-staging migrate-production deploy-production'
+                sh 'make push-image migrate-staging deploy-staging'
+            }
+        }
+
+        stage ('deploy-production') {
+            when {
+                expression { env.BRANCH_NAME in ["production"] }
+            }
+            steps {
+                sh 'make push-image migrate-production deploy-production'
             }
         }
     }
