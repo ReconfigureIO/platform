@@ -187,6 +187,7 @@ func (s *SignupUser) Callback(c *gin.Context) {
 		err = s.Leads.Invited(invite, user)
 		if err != nil {
 			sugar.NotFoundOrError(c, err)
+			return
 		}
 	}
 
