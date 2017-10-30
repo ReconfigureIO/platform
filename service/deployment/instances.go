@@ -11,6 +11,8 @@ import (
 
 var (
 	incompleteStatuses = []string{
+		models.StatusQueued,
+		models.StatusStarted,
 		models.StatusTerminating,
 		models.StatusCompleted,
 		models.StatusErrored,
