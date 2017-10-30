@@ -8,6 +8,8 @@ type QueueEntry struct {
 	ID           string `gorm:"primary_key"`
 	Type         string `gorm:"default:'deployment'"`
 	TypeID       string `gorm:"not_null"`
+	User         User   `json:"-" gorm:"ForeignKey:UserID"`
+	UserID       string `json:"-"`
 	Weight       int
 	Status       string
 	CreatedAt    time.Time

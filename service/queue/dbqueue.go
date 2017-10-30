@@ -34,7 +34,12 @@ func NewWithDBStore(db *gorm.DB, runner JobRunner, concurrent int, jobType strin
 }
 
 func (d *dbQueue) Push(job Job) {
-	d.service.Push(d.jobType, job.ID, job.Weight)
+	d.service.Push(d.jobType, job)
+}
+
+func (d *dbQueue) CountUserJobsInStatus(user models.User, status string) (int, error) {
+	count, err := d.service.CountUserJobsInStatus(d.jobType, user, status)
+	return count, err
 }
 
 func (d *dbQueue) Start() {

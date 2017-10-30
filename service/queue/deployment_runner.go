@@ -32,6 +32,30 @@ func (d DeploymentRunner) Run(j Job) {
 		return
 	}
 
+	//Can user still afford to run deployment?
+	subscriptionDS := models.SubscriptionDataSource(d.DB)
+	// Get the user's subscription info for this billing period.
+	subscriptionInfo, err := subscriptionDS.CurrentSubscription(j.User)
+	if err != nil {
+		log.Errorf("Error while retrieving subscription info for user: %s", j.User.ID)
+		log.Errorf("Error: %s", err)
+		return
+	}
+
+	deploymentsDS := models.DeploymentDataSource(d.DB)
+	// Get the user's used hours for this billing period
+	usedHours, err := models.DeploymentHoursBtw(deploymentsDS, j.User.ID, subscriptionInfo.StartTime, time.Now())
+	if err != nil {
+		log.Errorf("Error while retrieving deployment hours used by user: %s", j.User.ID)
+		log.Errorf("Error: %s", err)
+		return
+	}
+
+	if usedHours >= subscriptionInfo.Hours {
+		log.Errorf("User %s does not have enough hours remaining to deploy %s", j.User.ID, deployment.ID)
+		return
+	}
+
 	callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", d.Hostname, deployment.ID, deployment.Token)
 
 	instanceID, err := d.Service.RunDeployment(context.Background(), deployment, callbackURL)
@@ -83,11 +107,11 @@ func (d DeploymentRunner) Stop(j Job) {
 	deployment := models.Deployment{}
 	err := d.DB.First(&deployment, "id = ?", depID).Error
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 
 	err = d.Service.StopDeployment(context.Background(), deployment)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 }

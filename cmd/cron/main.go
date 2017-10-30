@@ -21,17 +21,8 @@ import (
 )
 
 var (
-	deploy = deployment.New(deployment.ServiceConfig{
-		LogGroup: "josh-test-sdaccel",
-		Image:    "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/platform/deployment:latest",
-		AMI:      "ami-850c7293",
-	})
-	awsService = aws.New(aws.ServiceConfig{
-		LogGroup:      "/aws/batch/job",
-		Bucket:        "reconfigureio-builds",
-		Queue:         "build-jobs",
-		JobDefinition: "sdaccel-builder-build",
-	})
+	deploy     deployment.Service
+	awsService aws.Service
 
 	db *gorm.DB
 
@@ -49,11 +40,15 @@ func setup(*cobra.Command, []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	stripe.Key = conf.StripeKey
 
 	err = config.SetupLogging(version, conf)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	deploy = deployment.New(conf.Reco.Deploy)
+	awsService = aws.New(conf.Reco.AWS)
 
 	db = config.SetupDB(conf)
 	api.DB(db)
@@ -66,12 +61,6 @@ func setup(*cobra.Command, []string) {
 
 // add commands to root command
 func main() {
-	conf, err := config.ParseEnvConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	stripe.Key = conf.StripeKey
-
 	RootCmd.AddCommand(commands...)
 
 	if err := RootCmd.Execute(); err != nil {

@@ -13,11 +13,13 @@ type QueueService struct {
 }
 
 // Push pushes a job into the queue.
-func (q *QueueService) Push(jobType string, jobID string, weight int) error {
+func (q *QueueService) Push(jobType string, job Job) error {
 	entry := models.QueueEntry{
 		Type:      jobType,
-		TypeID:    jobID,
-		Weight:    weight,
+		TypeID:    job.ID,
+		User:      job.User,
+		UserID:    job.User.ID,
+		Weight:    job.Weight,
 		Status:    models.StatusQueued,
 		CreatedAt: time.Now(),
 	}
@@ -36,6 +38,17 @@ func (q *QueueService) Count(jobType, status string) (int, error) {
 	var count int
 	err := q.db.Model(&models.QueueEntry{}).
 		Where("status = ? AND type = ?", status, jobType).
+		Count(&count).Error
+	return count, err
+}
+
+// Count counts the amount of jobs with status.
+func (q *QueueService) CountUserJobsInStatus(jobType string, user models.User, status string) (int, error) {
+	var count int
+	err := q.db.Model(&models.QueueEntry{}).
+		Where("status = ?", status).
+		Where("type = ?", jobType).
+		Where("user_id = ?", user.ID).
 		Count(&count).Error
 	return count, err
 }
