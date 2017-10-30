@@ -11,6 +11,8 @@ import (
 
 var (
 	incompleteStatuses = []string{
+		models.StatusQueued,
+		models.StatusStarted,
 		models.StatusTerminating,
 		models.StatusCompleted,
 		models.StatusErrored,
@@ -53,7 +55,10 @@ func (instances *instances) AddDeploymentEvent(ctx context.Context, dep models.D
 // Find all deployments that are not terminated, and update them
 func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	terminatingdeployments, err := instances.Deployments.GetWithStatus(incompleteStatuses, 100)
-	log.Printf("Looking up %d deployments", len(terminatingdeployments))
+
+	log.WithFields(log.Fields{
+		"count": len(terminatingdeployments),
+	}).Info("Looking up deployments")
 
 	if len(terminatingdeployments) == 0 {
 		return nil
@@ -65,9 +70,8 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("statuses of %v", statuses)
-
 	terminating := 0
+
 	//for each deployment, if instance is terminated, send event
 	for _, deployment := range terminatingdeployments {
 		status, found := statuses[deployment.InstanceID]
@@ -96,7 +100,10 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		}
 	}
 
-	log.Printf("terminated %d deployments", terminating)
+	log.WithFields(log.Fields{
+		"count": terminating,
+	}).Info("Terminated deployments")
+
 	return nil
 
 }
