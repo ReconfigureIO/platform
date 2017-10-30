@@ -140,7 +140,10 @@ func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deplo
 	rows.Close()
 
 	var deps []Deployment
-	err = db.Preload("Events").Where("id in (?)", ids).Find(&deps).Error
+	err = db.Preload("Events", func(db *gorm.DB) *gorm.DB {
+		return db.Order("timestamp ASC")
+	}).Where("id in (?)", ids).Find(&deps).Error
+
 	if err != nil {
 		return nil, err
 	}

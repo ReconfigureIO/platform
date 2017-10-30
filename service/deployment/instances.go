@@ -10,9 +10,15 @@ import (
 )
 
 var (
-	incompleteStatuses = []string{
+	runningStatus = []string{
 		models.StatusQueued,
 		models.StatusStarted,
+		models.StatusTerminating,
+		models.StatusCompleted,
+		models.StatusErrored,
+	}
+
+	incompleteStatuses = []string{
 		models.StatusTerminating,
 		models.StatusCompleted,
 		models.StatusErrored,
@@ -52,20 +58,29 @@ func (instances *instances) AddDeploymentEvent(ctx context.Context, dep models.D
 	return err
 }
 
+func inSlice(slice []string, val string) bool {
+	for _, v := range slice {
+		if val == v {
+			return true
+		}
+	}
+	return false
+}
+
 // Find all deployments that are not terminated, and update them
 func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
-	terminatingdeployments, err := instances.Deployments.GetWithStatus(incompleteStatuses, 100)
+	runningdeployments, err := instances.Deployments.GetWithStatus(runningStatus, 100)
 
 	log.WithFields(log.Fields{
-		"count": len(terminatingdeployments),
+		"count": len(runningdeployments),
 	}).Info("Looking up deployments")
 
-	if len(terminatingdeployments) == 0 {
+	if len(runningdeployments) == 0 {
 		return nil
 	}
 
 	//get the status of the associated EC2 instances
-	statuses, err := instances.Deploy.DescribeInstanceStatus(ctx, terminatingdeployments)
+	statuses, err := instances.Deploy.DescribeInstanceStatus(ctx, runningdeployments)
 	if err != nil {
 		return err
 	}
@@ -73,8 +88,9 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	terminating := 0
 
 	//for each deployment, if instance is terminated, send event
-	for _, deployment := range terminatingdeployments {
+	for _, deployment := range runningdeployments {
 		status, found := statuses[deployment.InstanceID]
+		depStatus := deployment.Status()
 
 		// if it's not found, it was terminated a long time ago, otherwise update
 		if !found || status == ec2.InstanceStateNameTerminated {
@@ -90,7 +106,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 				return err
 			}
 			terminating++
-		} else if status != ec2.InstanceStateNameShuttingDown {
+		} else if status != ec2.InstanceStateNameShuttingDown && inSlice(incompleteStatuses, depStatus) {
 			// otherwise, if an instance isn't shutting down, something went wrong.
 			// let's ask it to shut down in order to reconcile
 			err = instances.Deploy.StopDeployment(ctx, deployment)
