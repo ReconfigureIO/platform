@@ -13,8 +13,8 @@ data:
  RECO_PLATFORM_MIGRATE: "false"
  RECO_AWS_LOG_GROUP: "/aws/batch/job"
  RECO_AWS_BUCKET: reconfigureio-builds
- RECO_AWS_QUEUE: staging-build-jobs
- RECO_AWS_JOB: sdaccel-builder-build-staging
+ RECO_AWS_QUEUE: build-jobs
+ RECO_AWS_JOB: sdaccel-builder-build
  RECO_DEPLOY_LOG_GROUP: "/reconfigureio/deployments"
  GIN_MODE: release
  RECO_ENV: production
