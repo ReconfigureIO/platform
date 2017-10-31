@@ -124,7 +124,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 
 }
 
-// Find all deployments that do not have an IPv4 address, find their IPs
+// For all deployments that do not have an IPv4 address, find their IPs
 func (instances *instances) FindIPs(ctx context.Context) error {
 	deploymentsWithoutIPs, err := instances.Deployments.GetWithoutIP()
 
@@ -142,40 +142,25 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 		return err
 	}
 
-	terminating := 0
+	updated := 0
 
-	//for each deployment, if instance is terminated, send event
-	for _, deployment := range runningdeployments {
-		status, found := statuses[deployment.InstanceID]
-		depStatus := deployment.Status()
+	//for each deployment, if we have an IP, set IP
+	for _, deployment := range deploymentsWithoutIPs {
+		ip, found := instanceIPs[deployment.InstanceID]
 
-		// if it's not found, it was terminated a long time ago, otherwise update
-		if !found || status == ec2.InstanceStateNameTerminated {
-			event := models.DeploymentEvent{
-				Timestamp: time.Now(),
-				Status:    models.StatusTerminated,
-				Message:   models.StatusTerminated,
-				Code:      0,
-			}
-
-			err = instances.AddDeploymentEvent(ctx, deployment, event)
-			if err != nil {
-				return err
-			}
-			terminating++
-		} else if status != ec2.InstanceStateNameShuttingDown && inSlice(incompleteStatuses, depStatus) {
-			// otherwise, if an instance isn't shutting down, something went wrong.
-			// let's ask it to shut down in order to reconcile
-			err = instances.Deploy.StopDeployment(ctx, deployment)
-			if err != nil {
-				return err
-			}
+		// if it's not found, did it finish a long time ago?
+		if found {
+			db.Model(&deployment).Update("ip_address", ip)
+			updated++
+		} else if !found && deployment.HasFinished() {
+			db.Model(&deployment).Update("ip_address", "expired")
+			updated++
 		}
 	}
 
 	log.WithFields(log.Fields{
-		"count": terminating,
-	}).Info("Terminated deployments")
+		"count": updated,
+	}).Info("Found IPs for deployments")
 
 	return nil
 
