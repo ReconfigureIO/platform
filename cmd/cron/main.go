@@ -123,6 +123,18 @@ func terminateDeployments() {
 	}
 }
 
+func findDeploymentIPs() {
+	log.Printf("finding the IPs of deployments")
+	d := models.DeploymentDataSource(db)
+	ctx := context.Background()
+
+	err := deployment.NewInstances(d, deploy).FindIPs(ctx)
+
+	if err != nil {
+		exitWithErr(err)
+	}
+}
+
 func generatedAFIs() {
 	log.Printf("checking afis")
 	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))

@@ -175,6 +175,22 @@ func (repo *deploymentRepo) GetWithStatusForUser(userID string, statuses []strin
 	return deps, nil
 }
 
+func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
+	db := repo.db
+
+	// Find deployments where ip_address field is null
+	var deps []Deployment
+	err = db.Preload("Events", func(db *gorm.DB) *gorm.DB {
+		return db.Order("timestamp ASC")
+	}).Where("ip_address = ?", string{}).Find(&deps).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return deps, nil
+}
+
 func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {
 	t := 0
 

@@ -123,3 +123,60 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	return nil
 
 }
+
+// Find all deployments that do not have an IPv4 address, find their IPs
+func (instances *instances) FindIPs(ctx context.Context) error {
+	deploymentsWithoutIPs, err := instances.Deployments.GetWithoutIP()
+
+	log.WithFields(log.Fields{
+		"count": len(deploymentsWithoutIPs),
+	}).Info("Getting IPs of Deployments")
+
+	if len(deploymentsWithoutIPs) == 0 {
+		return nil
+	}
+
+	//AWS Describe the associated EC2 instances to get their IPv4 addresses
+	instanceIPs, err := instances.Deploy.DescribeInstanceIPs(ctx, deploymentsWithoutIPs)
+	if err != nil {
+		return err
+	}
+
+	terminating := 0
+
+	//for each deployment, if instance is terminated, send event
+	for _, deployment := range runningdeployments {
+		status, found := statuses[deployment.InstanceID]
+		depStatus := deployment.Status()
+
+		// if it's not found, it was terminated a long time ago, otherwise update
+		if !found || status == ec2.InstanceStateNameTerminated {
+			event := models.DeploymentEvent{
+				Timestamp: time.Now(),
+				Status:    models.StatusTerminated,
+				Message:   models.StatusTerminated,
+				Code:      0,
+			}
+
+			err = instances.AddDeploymentEvent(ctx, deployment, event)
+			if err != nil {
+				return err
+			}
+			terminating++
+		} else if status != ec2.InstanceStateNameShuttingDown && inSlice(incompleteStatuses, depStatus) {
+			// otherwise, if an instance isn't shutting down, something went wrong.
+			// let's ask it to shut down in order to reconcile
+			err = instances.Deploy.StopDeployment(ctx, deployment)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"count": terminating,
+	}).Info("Terminated deployments")
+
+	return nil
+
+}
