@@ -33,18 +33,21 @@ func TestUpdateDebits(t *testing.T) {
 			Terminated: timeNow.AddDate(0, 0, -4),
 		}
 
-		joshCredits := models.Credits{
+		joshCredit := models.Credit{
 			Hours: 1000,
+			User:  user,
 		}
 
-		joshDebits := models.Debits{
-			Hours: 0,
+		joshDebit := models.Debit{
+			Hours:     0,
+			User:      user,
+			InvoiceID: "foobar",
 		}
 
 		joshBalance := models.UserBalance{
 			Subscription: subscriptionInfo,
-			Credits:      joshCredits,
-			Debits:       joshDebits,
+			Credits:      []models.Credit{joshCredit},
+			Debits:       []models.Debit{joshDebit},
 		}
 
 		mockCtrl := gomock.NewController(t)
@@ -55,12 +58,12 @@ func TestUpdateDebits(t *testing.T) {
 
 		ds.EXPECT().ActiveUsers().Return([]models.User{user}, nil)
 		ds.EXPECT().CurrentSubscription(user).Return(subscriptionInfo, nil)
-		ds.EXPECT().AddDebit(user, 23).Return(nil)
+		ds.EXPECT().AddDebit(user, 23, "foobar").Return(nil)
 		//get list of deployments along with their start and end times
 		deployments.EXPECT().DeploymentHours(subscriptionInfo.UserID, subscriptionInfo.StartTime, subscriptionInfo.EndTime).Return([]models.DeploymentHours{deploymentHours}, nil)
 		ds.EXPECT().GetUserBalance(user).Return(joshBalance, nil)
 
-		err := UpdateDebits(ds, deployments)
+		err := UpdateDebits(ds, deployments, timeNow)
 		if err != nil {
 			t.Error(err)
 			return

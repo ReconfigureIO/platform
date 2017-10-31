@@ -54,7 +54,7 @@ func TestCheckUserHours(t *testing.T) {
 
 }
 
-func TestUpdateDebits() {
+func TestUpdateDebits(t *testing.T) {
 	// expected functionality
 
 	// take two times
