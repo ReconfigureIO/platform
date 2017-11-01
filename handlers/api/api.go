@@ -26,6 +26,8 @@ var (
 	deploy deployment.Service
 
 	deploymentQueue queue.Queue
+
+	publicProjectID string
 )
 
 // DB sets the database to use for the API.
@@ -37,6 +39,8 @@ func Configure(conf config.Config) {
 	awsSession = aws.New(conf.Reco.AWS)
 
 	deploy = deployment.New(conf.Reco.Deploy)
+
+	publicProjectID = conf.Reco.PublicProjectID
 }
 
 // DepQueue sets the deployment queue.

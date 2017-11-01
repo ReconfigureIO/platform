@@ -13,19 +13,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-var publicProjects = []string{
-	"reco-examples",
-}
-
-func isPublicProject(name string) bool {
-	for _, p := range publicProjects {
-		if p == name {
-			return true
-		}
-	}
-	return false
-}
-
 // Build handles requests for builds.
 type Build struct {
 	Events events.EventService
@@ -81,8 +68,8 @@ func (b Build) List(c *gin.Context) {
 	builds := []models.Build{}
 	var err error
 
-	if isPublicProject(project) {
-		builds, err = b.publicBuilds(project)
+	if project == "public" {
+		builds, err = b.publicBuilds()
 	} else {
 		builds, err = b.userBuilds(c, project)
 	}
@@ -106,19 +93,15 @@ func (b Build) userBuilds(c *gin.Context, project string) (builds []models.Build
 	return
 }
 
-func (b Build) publicBuilds(projectName string) (builds []models.Build, err error) {
-	var project models.Project
-	err = db.Model(&project).First(&project, "COALESCE(user_id, '') = '' AND name = ?", projectName).Error
-	if err != nil {
-		return
-	}
-	if project.ID == "" {
-		err = errors.New("invalid project")
+func (b Build) publicBuilds() (builds []models.Build, err error) {
+	projectID := publicProjectID
+	if projectID == "" {
+		err = errors.New("global project configuration missing")
 		return
 	}
 	joined := db.Joins("join projects on projects.id = builds.project_id")
 	q := b.Preload(joined).
-		Where(&models.Build{ProjectID: project.ID})
+		Where(&models.Build{ProjectID: projectID})
 
 	err = q.Find(&builds).Error
 	return
