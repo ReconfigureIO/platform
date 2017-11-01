@@ -3,13 +3,16 @@ package api
 import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // Project handles project requests.
-type Project struct{}
+type Project struct {
+	Events events.EventService
+}
 
 // PostProject is post request for new project.
 type PostProject struct {
@@ -50,6 +53,9 @@ func (p Project) Create(c *gin.Context) {
 	if err := db.Create(&newProject).Error; err != nil {
 		sugar.ErrResponse(c, 500, err)
 	}
+
+	sugar.EnqueueEvent(p.Events, c, "Created Project", map[string]interface{}{"id": newProject.ID, "name": newProject.Name})
+
 	sugar.SuccessResponse(c, 201, newProject)
 }
 
