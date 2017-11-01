@@ -78,6 +78,7 @@ type Service interface {
 	// DescribeInstanceStatus gets the statuses of the instances associated with
 	// a list of deployments
 	DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error)
+	DescribeInstanceIPs(ctx context.Context, deployments []models.Deployment) (map[string]string, error)
 	// GetServiceConfig outputs the configuration of the service
 	GetServiceConfig() ServiceConfig
 }

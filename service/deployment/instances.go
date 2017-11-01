@@ -28,6 +28,7 @@ var (
 type Instances interface {
 	UpdateInstanceStatus(context.Context) error
 	AddDeploymentEvent(context.Context, models.Deployment, models.DeploymentEvent) error
+	FindIPs(context.Context) error
 }
 
 type instances struct {
@@ -150,11 +151,15 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 
 		// if it's not found, did it finish a long time ago?
 		if found {
-			db.Model(&deployment).Update("ip_address", ip)
-			updated++
+			err := instances.Deployments.SetIP(deployment, ip)
+			if err != nil {
+				log.Error(err)
+			}
 		} else if !found && deployment.HasFinished() {
-			db.Model(&deployment).Update("ip_address", "expired")
-			updated++
+			err := instances.Deployments.SetIP(deployment, "too old")
+			if err != nil {
+				log.Error(err)
+			}
 		}
 	}
 

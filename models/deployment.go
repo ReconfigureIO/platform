@@ -27,6 +27,9 @@ type DeploymentRepo interface {
 	ActiveDeployments(userID string) ([]DeploymentHours, error)
 
 	AddEvent(Deployment, DeploymentEvent) error
+	SetIP(Deployment, string) error
+
+	GetWithoutIP() ([]Deployment, error)
 }
 
 type DeploymentHours struct {
@@ -124,6 +127,11 @@ func (repo *deploymentRepo) AddEvent(dep Deployment, event DeploymentEvent) erro
 	return err
 }
 
+func (repo *deploymentRepo) SetIP(dep Deployment, ip string) error {
+	err := repo.db.Model(&dep).Update("ip_address", ip).Error
+	return err
+}
+
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
 	db := repo.db
 	rows, err := db.Raw(sqlDeploymentStatus, statuses, limit).Rows()
@@ -180,9 +188,9 @@ func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
 
 	// Find deployments where ip_address field is null
 	var deps []Deployment
-	err = db.Preload("Events", func(db *gorm.DB) *gorm.DB {
+	err := db.Preload("Events", func(db *gorm.DB) *gorm.DB {
 		return db.Order("timestamp ASC")
-	}).Where("ip_address = ?", string{}).Find(&deps).Error
+	}).Where("ip_address = ?", "").Find(&deps).Error
 
 	if err != nil {
 		return nil, err
