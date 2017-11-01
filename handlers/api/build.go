@@ -13,6 +13,19 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+var publicProjects = []string{
+	"reco-examples",
+}
+
+func isPublicProject(id string) bool {
+	for _, p := range publicProjects {
+		if p == id {
+			return true
+		}
+	}
+	return false
+}
+
 // Build handles requests for builds.
 type Build struct {
 	Events events.EventService
@@ -66,13 +79,13 @@ func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
 	builds := []models.Build{}
-	q := b.Query(c)
+	var err error
 
-	if project != "" {
-		q = q.Where(&models.Build{ProjectID: project})
+	if isPublicProject(project) {
+		builds, err = b.publicBuilds(project)
+	} else {
+		builds, err = b.userBuilds(c, project)
 	}
-
-	err := q.Find(&builds).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
@@ -80,6 +93,35 @@ func (b Build) List(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, builds)
+}
+
+func (b Build) userBuilds(c *gin.Context, project string) (builds []models.Build, err error) {
+	q := b.Query(c)
+
+	if project != "" {
+		q = q.Where(&models.Build{ProjectID: project})
+	}
+
+	err = q.Find(&builds).Error
+	return
+}
+
+func (b Build) publicBuilds(projectName string) (builds []models.Build, err error) {
+	var project models.Project
+	err = db.Model(&project).First(&project, "COALESCE(user_id, '') = '' AND name = ?", projectName).Error
+	if err != nil {
+		return
+	}
+	if project.ID == "" {
+		err = errors.New("invalid project")
+		return
+	}
+	joined := db.Joins("join projects on projects.id = builds.project_id")
+	q := b.Preload(joined).
+		Where(&models.Build{ProjectID: project.ID})
+
+	err = q.Find(&builds).Error
+	return
 }
 
 // Report fetches a build's report.
