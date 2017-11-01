@@ -17,9 +17,9 @@ var publicProjects = []string{
 	"reco-examples",
 }
 
-func isPublicProject(id string) bool {
+func isPublicProject(name string) bool {
 	for _, p := range publicProjects {
-		if p == id {
+		if p == name {
 			return true
 		}
 	}
