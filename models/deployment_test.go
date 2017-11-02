@@ -96,8 +96,7 @@ func TestDeploymentGetWithoutIP(t *testing.T) {
 		d := deploymentRepo{db}
 
 		dep := Deployment{
-			Command:   "test",
-			IPAddress: "",
+			Command: "test",
 			Events: []DeploymentEvent{
 				DeploymentEvent{
 					Timestamp: time.Unix(20, 0),
@@ -109,7 +108,11 @@ func TestDeploymentGetWithoutIP(t *testing.T) {
 				},
 			},
 		}
-		db.Create(&dep)
+		err := db.Create(&dep).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
 
 		deps, err := d.GetWithoutIP()
 		if err != nil {

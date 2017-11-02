@@ -131,7 +131,7 @@ on j.id = started.deployment_id
         where j.id = e1.deployment_id and e1.status = 'STARTED'
         limit 1
     )
-left outer join deployment_events terminated
+left join deployment_events terminated
 on j.id = terminated.deployment_id
     and terminated.id = (
         select e2.id
@@ -139,7 +139,8 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where j.ip_address = NULL and started ISNOT NULL and terminated IS NULL
+
+where COALESCE(ip_address, '') = '' and started IS NOT NULL and terminated IS NULL
 `
 )
 
@@ -215,9 +216,12 @@ func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
 
 	ids := []string{}
 	for rows.Next() {
-		var id string
-		rows.Scan(&id)
-		ids = append(ids, id)
+		var dep DeploymentHours
+		err = db.ScanRows(rows, &dep)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, dep.Id)
 	}
 	rows.Close()
 
