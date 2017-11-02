@@ -102,6 +102,7 @@ func cronCmd() {
 	schedule(5*time.Minute, generatedAFIs)
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
+	schedule(time.Minute, findDeploymentIPs)
 
 	worker.Start()
 	log.Printf("starting workers")
