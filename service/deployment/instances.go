@@ -148,17 +148,11 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 	//for each deployment, if we have an IP, set IP
 	for _, deployment := range deploymentsWithoutIPs {
 		ip, found := instanceIPs[deployment.InstanceID]
-
-		// if it's not found, did it finish a long time ago?
 		if found {
 			err := instances.Deployments.SetIP(deployment, ip)
 			if err != nil {
 				log.Error(err)
-			}
-		} else if !found && deployment.HasFinished() {
-			err := instances.Deployments.SetIP(deployment, "too old")
-			if err != nil {
-				log.Error(err)
+				updated++
 			}
 		}
 	}
