@@ -35,6 +35,15 @@ func (b Build) Query(c *gin.Context) *gorm.DB {
 	return b.Preload(joined)
 }
 
+// QueryWhere is like Query but accepts custom where clause.
+func (b Build) QueryWhere(where ...interface{}) *gorm.DB {
+	joined := db.Joins("join projects on projects.id = builds.project_id")
+	if len(where) > 0 {
+		joined = joined.Where(where[0], where[1:]...)
+	}
+	return b.Preload(joined)
+}
+
 // ByID gets the first build by ID, 404 if it doesn't exist.
 func (b Build) ByID(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
@@ -99,8 +108,8 @@ func (b Build) publicBuilds() (builds []models.Build, err error) {
 		err = errors.New("global project configuration missing")
 		return
 	}
-	joined := db.Joins("join projects on projects.id = builds.project_id")
-	q := b.Preload(joined).
+
+	q := b.QueryWhere("projects.id=?", projectID).
 		Where(&models.Build{ProjectID: projectID})
 
 	err = q.Find(&builds).Error
