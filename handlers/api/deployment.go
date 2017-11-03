@@ -70,8 +70,7 @@ func (d Deployment) Create(c *gin.Context) {
 	// Ensure that the project exists, and the user has permissions for it
 	build := models.Build{}
 	user := middleware.GetUser(c)
-	projectID := publicProjectID
-	err := Build{}.QueryWhere("projects.id=? OR projects.user_id=?", projectID, user.ID).
+	err := Build{}.QueryWhere("projects.id=? OR projects.user_id=?", publicProjectID, user.ID).
 		First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)

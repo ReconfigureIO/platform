@@ -103,14 +103,13 @@ func (b Build) userBuilds(c *gin.Context, project string) (builds []models.Build
 }
 
 func (b Build) publicBuilds() (builds []models.Build, err error) {
-	projectID := publicProjectID
-	if projectID == "" {
+	if publicProjectID == "" {
 		err = errors.New("global project configuration missing")
 		return
 	}
 
-	q := b.QueryWhere("projects.id=?", projectID).
-		Where(&models.Build{ProjectID: projectID})
+	q := b.QueryWhere("projects.id=?", publicProjectID).
+		Where(&models.Build{ProjectID: publicProjectID})
 
 	err = q.Find(&builds).Error
 	return
