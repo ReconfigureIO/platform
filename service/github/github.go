@@ -28,7 +28,7 @@ func New(db *gorm.DB) *Service {
 	oauthConf := &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		Scopes:       []string{"user"},
+		Scopes:       []string{"read:user", "user:email"},
 		Endpoint:     ghoauth.Endpoint,
 	}
 	return &Service{OauthConf: oauthConf, db: db}
