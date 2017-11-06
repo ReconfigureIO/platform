@@ -21,7 +21,7 @@ fpga-load-local-image -S 0 -I "$AGFI"
 docker run -v "$PWD/.reco-work/sdaccel/dist/:/mnt/dist" \
         --privileged \
         -e XCL_BINDIR="/mnt/xclbin" \
-        -p 127.0.0.1:80:80 \
+        -p 0.0.0.0:80:80 \
         -e XILINX_SDX=/opt/Xilinx/SDx/2017.1.op \
         -v /opt/Xilinx:/opt/Xilinx \
         --log-driver=awslogs --log-opt awslogs-region=us-east-1 --log-opt awslogs-group="$LOG_GROUP" --log-opt awslogs-stream="$LOG_PREFIX" \
