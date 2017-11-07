@@ -27,3 +27,5 @@ data:
  RECO_FEATURE_USE_SPOT_INSTANCES: "true"
  RECO_FEATURE_DEP_QUEUE: "true"
  RECO_HOST_NAME: "staging-api.reconfigure.io"
+ RECO_PUBLIC_PROJECT_ID: "a95550bf-bffa-42df-b100-872501940c5c"
+
