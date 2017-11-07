@@ -26,6 +26,8 @@ services:
       - RECO_DEPLOY_AMI=ami-8e6a4df5
       - RECO_DEPLOY_SUBNET=subnet-b0ca3aed
       - RECO_DEPLOY_SG=sg-b03e38c2
+      - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
+
   test:
     extends: web-base
     depends_on:

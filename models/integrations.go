@@ -3,7 +3,7 @@
 package models
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/jinzhu/gorm"
@@ -16,8 +16,7 @@ func init() {
 	gormConnDets := os.Getenv("DATABASE_URL")
 	db, err := gorm.Open("postgres", gormConnDets)
 	if err != nil {
-		fmt.Println(err)
-		panic("failed to connect database")
+		log.Fatalf("failed to connect database. Error: %v", err)
 	}
 	MigrateAll(db)
 	_db = db
