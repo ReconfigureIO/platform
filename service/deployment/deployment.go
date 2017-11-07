@@ -78,6 +78,7 @@ type Service interface {
 	// DescribeInstanceStatus gets the statuses of the instances associated with
 	// a list of deployments
 	DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error)
+	DescribeInstanceIPs(ctx context.Context, deployments []models.Deployment) (map[string]string, error)
 	// GetServiceConfig outputs the configuration of the service
 	GetServiceConfig() ServiceConfig
 }
@@ -389,6 +390,89 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 				spotId, ok := spotInstanceMap[*instance.InstanceId]
 				if ok {
 					ret[spotId] = *instance.State.Name
+				}
+			}
+		}
+	}
+
+	return ret, nil
+}
+
+func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	var instanceids []*string
+	var spotInstanceIDs []*string
+	for _, deployment := range deployments {
+		if deployment.SpotInstance {
+			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+		} else {
+			instanceids = append(instanceids, &deployment.InstanceID)
+		}
+
+	}
+	ec2Session := ec2.New(s.session)
+
+	if len(instanceids) > 0 {
+		//regular instances
+		cfg := ec2.DescribeInstancesInput{
+			InstanceIds: instanceids,
+		}
+
+		results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
+		if err != nil {
+			if !isNotFound(err) {
+				return ret, err
+			}
+		}
+
+		for _, reservation := range results.Reservations {
+			for _, instance := range reservation.Instances {
+				ret[*instance.InstanceId] = *instance.PublicIpAddress
+			}
+		}
+	}
+
+	if len(spotInstanceIDs) > 0 {
+		//spot instance
+		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
+			SpotInstanceRequestIds: spotInstanceIDs,
+		}
+
+		spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
+		if err != nil {
+			if isNotFound(err) {
+				return ret, nil
+			}
+			return ret, err
+		}
+
+		// A map for the spotinstance ec2 instances
+		spotInstanceMap := make(map[string]string)
+		spotInstanceIds := []*string{}
+
+		for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
+			instanceId := (*string)(spotInstanceRequest.InstanceId)
+			if instanceId != nil {
+				spotInstanceIds = append(spotInstanceIds, instanceId)
+				spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
+				spotInstanceMap[*instanceId] = *spotId
+			}
+		}
+
+		spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
+			InstanceIds: spotInstanceIds,
+		})
+
+		if err != nil {
+			return ret, err
+		}
+
+		for _, reservation := range spotInstanceResults.Reservations {
+			for _, instance := range reservation.Instances {
+				spotId, ok := spotInstanceMap[*instance.InstanceId]
+				if ok {
+					ret[spotId] = *instance.PublicIpAddress
 				}
 			}
 		}

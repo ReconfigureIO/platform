@@ -89,6 +89,32 @@ func TestUpdateInstanceStatusTerminateRunning(t *testing.T) {
 	}
 }
 
+func TestFindIPs(t *testing.T) {
+	ctx := context.Background()
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	deployments := []models.Deployment{
+		models.Deployment{InstanceID: "foo"},
+	}
+	ip := "192.168.1.1"
+	ips := map[string]string{"foo": ip}
+
+	deploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
+	deploymentService := NewMockService(mockCtrl)
+
+	// We don't care about the limit here
+	deploymentRepo.EXPECT().GetWithoutIP().Return(deployments, nil)
+	deploymentService.EXPECT().DescribeInstanceIPs(ctx, deployments).Return(ips, nil)
+	deploymentRepo.EXPECT().SetIP(deployments[0], ip).Return(nil)
+
+	err := NewInstances(deploymentRepo, deploymentService).FindIPs(ctx)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestUpdateInstanceShouldNotTerminateQueued(t *testing.T) {
 	ctx := context.Background()
 
