@@ -159,6 +159,35 @@ func TestDeploymentHoursBtw(t *testing.T) {
 	})
 }
 
+func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: "foobar",
+				},
+			},
+			Command: "test",
+			Events:  []DeploymentEvent{},
+		}
+
+		db.Create(&dep)
+
+		var zero time.Time
+		now := time.Now()
+		hours, err := DeploymentHoursBtw(&d, dep.Build.Project.UserID, zero, now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 0 {
+			t.Errorf("Expected %v found %v", 0, hours)
+		}
+	})
+}
+
 // genDeployment generates a mock deployment.
 // if d > 0, the mock deployment will be in TERMINATED
 // status and have a duration of d.
