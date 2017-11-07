@@ -144,12 +144,14 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
+	memory := int64(32000)
 
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
+			Memory: &memory,
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
