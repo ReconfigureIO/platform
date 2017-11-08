@@ -69,14 +69,15 @@ func (d Deployment) Create(c *gin.Context) {
 
 	// Ensure that the project exists, and the user has permissions for it
 	build := models.Build{}
-	err := Build{}.Query(c).First(&build, "builds.id = ?", post.BuildID).Error
+	user := middleware.GetUser(c)
+	err := Build{}.QueryWhere("projects.id=? OR projects.user_id=?", publicProjectID, user.ID).
+		First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
 	}
 
 	// Ensure there is enough instance hours
-	user := middleware.GetUser(c)
 	billingService := Billing{}
 	billingHours := billingService.FetchBillingHours(user.ID)
 	// considering the complexity in calculating instance hours,

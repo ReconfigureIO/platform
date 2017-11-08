@@ -103,6 +103,7 @@ func cronCmd() {
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
 	schedule(time.Hour, updateDebits)
+	schedule(time.Minute, findDeploymentIPs)
 
 	worker.Start()
 	log.Printf("starting workers")
@@ -118,6 +119,18 @@ func terminateDeployments() {
 	ctx := context.Background()
 
 	err := deployment.NewInstances(d, deploy).UpdateInstanceStatus(ctx)
+
+	if err != nil {
+		exitWithErr(err)
+	}
+}
+
+func findDeploymentIPs() {
+	log.Printf("finding the IPs of deployments")
+	d := models.DeploymentDataSource(db)
+	ctx := context.Background()
+
+	err := deployment.NewInstances(d, deploy).FindIPs(ctx)
 
 	if err != nil {
 		exitWithErr(err)

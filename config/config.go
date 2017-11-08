@@ -21,6 +21,7 @@ type Config struct {
 
 type RecoConfig struct {
 	Env                     string `env:"RECO_ENV"`
+	PublicProjectID         string `env:"RECO_PUBLIC_PROJECT_ID"`
 	PlatformMigrate         bool   `env:"RECO_PLATFORM_MIGRATE"`
 	LogzioToken             string `env:"LOGZIO_TOKEN"`
 	FeatureIntercom         bool   `env:"RECO_FEATURE_INTERCOM"`

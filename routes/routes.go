@@ -59,7 +59,9 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		buildRoute.GET("/:id/reports", build.Report)
 	}
 
-	project := api.Project{}
+	project := api.Project{
+		Events: events,
+	}
 	projectRoute := apiRoutes.Group("/projects")
 	{
 		projectRoute.GET("", project.List)
