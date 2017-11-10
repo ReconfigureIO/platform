@@ -91,6 +91,53 @@ func TestDeploymentGetWithStatus(t *testing.T) {
 	})
 }
 
+func TestDeploymentGetWithoutIP(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Timestamp: time.Unix(20, 0),
+					Status:    "STARTED",
+				},
+				DeploymentEvent{
+					Timestamp: time.Unix(0, 0),
+					Status:    "QUEUED",
+				},
+			},
+		}
+		err := db.Create(&dep).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		deps, err := d.GetWithoutIP()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
+			return
+		}
+
+		if !reflect.DeepEqual(deps[0].IPAddress, "") {
+			t.Fatalf("\nExpected dep to have Null IP: %+v\nGot:      %+v\n", "COMPLETED", deps[0].IPAddress)
+			return
+		}
+	})
+}
+
 func TestDeploymentHoursBtw(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}

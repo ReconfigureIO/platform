@@ -27,6 +27,9 @@ type DeploymentRepo interface {
 	ActiveDeployments(userID string) ([]DeploymentHours, error)
 
 	AddEvent(Deployment, DeploymentEvent) error
+	SetIP(Deployment, string) error
+
+	GetWithoutIP() ([]Deployment, error)
 }
 
 type DeploymentHours struct {
@@ -116,11 +119,39 @@ on j.id = terminated.deployment_id
     )
 where projects.user_id = ? and terminated IS NULL
 `
+
+	sqlDeploymentsWithoutIPs = `
+select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+from deployments j
+left join deployment_events started
+on j.id = started.deployment_id
+    and started.id = (
+        select e1.id
+        from deployment_events e1
+        where j.id = e1.deployment_id and e1.status = 'STARTED'
+        limit 1
+    )
+left join deployment_events terminated
+on j.id = terminated.deployment_id
+    and terminated.id = (
+        select e2.id
+        from deployment_events e2
+        where j.id = e2.deployment_id and e2.status = 'TERMINATED'
+        limit 1
+    )
+
+where COALESCE(ip_address, '') = '' and started IS NOT NULL and terminated IS NULL
+`
 )
 
 func (repo *deploymentRepo) AddEvent(dep Deployment, event DeploymentEvent) error {
 	event.DeploymentID = dep.ID
 	err := repo.db.Create(&event).Error
+	return err
+}
+
+func (repo *deploymentRepo) SetIP(dep Deployment, ip string) error {
+	err := repo.db.Model(&dep).Update("ip_address", ip).Error
 	return err
 }
 
@@ -173,6 +204,35 @@ func (repo *deploymentRepo) GetWithStatusForUser(userID string, statuses []strin
 	}
 
 	return deps, nil
+}
+
+func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
+	db := repo.db
+
+	rows, err := db.Raw(sqlDeploymentsWithoutIPs).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for rows.Next() {
+		var dep DeploymentHours
+		err = db.ScanRows(rows, &dep)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, dep.Id)
+	}
+	rows.Close()
+
+	var deps []Deployment
+	err = db.Preload("Events").Where("id in (?)", ids).Find(&deps).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return deps, nil
+
 }
 
 func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {

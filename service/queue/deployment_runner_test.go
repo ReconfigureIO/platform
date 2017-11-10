@@ -150,6 +150,9 @@ func (f *fakeDepService) GetDeploymentStream(ctx context.Context, deployment mod
 func (f *fakeDepService) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
 	return nil, nil
 }
+func (f *fakeDepService) DescribeInstanceIPs(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
+	return nil, nil
+}
 func (f *fakeDepService) GetServiceConfig() deployment.ServiceConfig {
 	return deployment.ServiceConfig{}
 }
