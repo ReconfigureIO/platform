@@ -74,7 +74,7 @@ WHERE (projects.user_id = ? and e.status in (?))
 `
 
 	sqlDeploymentHours = `
-select j.id as id, started.timestamp as started, coalesce(terminated.timestamp, now()) as terminated
+select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
 join builds on builds.id = j.build_id
 join projects on builds.project_id = projects.id

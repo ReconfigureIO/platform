@@ -142,7 +142,46 @@ func TestDeploymentHoursBtw(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
 
-		dep := genDeployment("Foo", time.Hour+5*time.Minute)
+		userID := "user1"
+		var zero time.Time
+		now := time.Now()
+
+		deps := []Deployment{
+			genDeployment(userID, zero, time.Hour),               // 1 hour
+			genDeployment(userID, zero, 0),                       // 0 hours
+			genDeployment(userID, zero, 0),                       // 0 hours
+			genDeployment(userID, zero, time.Hour*2),             // 2 hours
+			genDeployment(userID, zero, time.Hour+5*time.Minute), // 1 hour 5 minutes
+		} // total 4 hours 5 minutes, rounds to 5 hours
+
+		for i := range deps {
+			db.Create(&(deps[i]))
+		}
+
+		hours, err := DeploymentHoursBtw(&d, userID, zero, now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 5 {
+			t.Errorf("Expected %v found %v", 5, hours)
+		}
+	})
+}
+
+func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: "foobar",
+				},
+			},
+			Command: "test",
+			Events:  []DeploymentEvent{},
+		}
 
 		db.Create(&dep)
 
@@ -153,8 +192,8 @@ func TestDeploymentHoursBtw(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if hours != 2 {
-			t.Errorf("Expected %v found %v", 2, hours)
+		if hours != 0 {
+			t.Errorf("Expected %v found %v", 0, hours)
 		}
 	})
 }
@@ -162,8 +201,7 @@ func TestDeploymentHoursBtw(t *testing.T) {
 // genDeployment generates a mock deployment.
 // if d > 0, the mock deployment will be in TERMINATED
 // status and have a duration of d.
-func genDeployment(userID string, d time.Duration) Deployment {
-	var start = (time.Unix(0, 0)).Add(time.Hour)
+func genDeployment(userID string, start time.Time, d time.Duration) Deployment {
 	dep := Deployment{
 		Build: Build{
 			Project: Project{
@@ -190,14 +228,14 @@ func genDeployment(userID string, d time.Duration) Deployment {
 func TestDeploymentActiveDeployments(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
-
+		var zero time.Time
 		userID := "user1"
 
 		deps := []Deployment{
-			genDeployment(userID, time.Hour),
-			genDeployment(userID, 0),
-			genDeployment(userID, 0),
-			genDeployment(userID, time.Hour*2),
+			genDeployment(userID, zero, time.Hour),
+			genDeployment(userID, zero, 0),
+			genDeployment(userID, zero, 0),
+			genDeployment(userID, zero, time.Hour*2),
 		}
 
 		for i := range deps {
