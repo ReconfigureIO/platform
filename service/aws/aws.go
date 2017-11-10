@@ -143,13 +143,16 @@ func (s *service) s3Url(key string) string {
 func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
+	debugArtifactUrl := s.s3Url(build.DebugUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
+	memory := int64(32000)
 
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
+			Memory: &memory,
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
@@ -166,6 +169,10 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 				{
 					Name:  aws.String("CALLBACK_URL"),
 					Value: aws.String(callbackURL),
+				},
+				{
+					Name:  aws.String("DEBUG_URL"),
+					Value: aws.String(debugArtifactUrl),
 				},
 				{
 					Name:  aws.String("DEVICE"),
