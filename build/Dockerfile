@@ -4,3 +4,4 @@ RUN curl https://glide.sh/get | sh
 RUN go get -v github.com/pilu/fresh
 RUN go get -u github.com/golang/lint/golint
 RUN go get -u go get -u github.com/kisielk/errcheck
+RUN go get -u go get -u honnef.co/go/tools/cmd/megacheck

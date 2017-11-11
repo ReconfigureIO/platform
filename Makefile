@@ -31,10 +31,13 @@ vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
 
 lint:
-	go list ./... | grep -v /vendor/ | xargs -L1 golint
+	go list ./... | grep -v /vendor/ | xargs golint
 
 errcheck:
-	go list ./... | grep -v /vendor/ | xargs -L1 errcheck
+	go list ./... | grep -v /vendor/ | xargs errcheck
+
+megacheck:
+	go list ./... | grep -v /vendor/ | xargs megacheck
 
 dependencies:
 	glide install
