@@ -31,13 +31,7 @@ vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
 
 lint:
-	go list ./... | grep -v /vendor/ | xargs golint
-
-errcheck:
-	go list ./... | grep -v /vendor/ | xargs errcheck
-
-megacheck:
-	go list ./... | grep -v /vendor/ | xargs megacheck
+	gometalinter ./... --vendor --enable="gofmt" --deadline=60s -t --disable="gotype"
 
 dependencies:
 	glide install
