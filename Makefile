@@ -14,7 +14,7 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests lint errcheck
+.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests lint fmt
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -32,6 +32,9 @@ vet:
 
 lint:
 	gometalinter ./... --vendor --enable="gofmt" --deadline=60s -t --disable="gotype"
+
+fmt:
+	find . -not -path "./vendor/*"  -not -path "./.glide/*" -name "*.go" | xargs gofmt -s -w
 
 dependencies:
 	glide install
