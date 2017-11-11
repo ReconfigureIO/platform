@@ -30,6 +30,12 @@ all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
 vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
 
+lint:
+	go list ./... | grep -v /vendor/ | xargs -L1 golint
+
+errcheck:
+	go list ./... | grep -v /vendor/ | xargs -L1 errcheck
+
 dependencies:
 	glide install
 
