@@ -94,6 +94,7 @@ func (d Deployment) Create(c *gin.Context) {
 		Command:      post.Command,
 		Token:        uniuri.NewLen(64),
 		SpotInstance: d.UseSpotInstances,
+		UserID:       user.ID,
 	}
 
 	// use deployment queue if enabled
