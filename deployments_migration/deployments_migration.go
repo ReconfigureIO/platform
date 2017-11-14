@@ -12,6 +12,8 @@ import (
 	"gopkg.in/gormigrate.v1"
 )
 
+var _db *gorm.DB
+
 // MigrateSchema performs database migration.
 func MigrateSchema() {
 	gormConnDets := os.Getenv("DATABASE_URL")
@@ -20,8 +22,11 @@ func MigrateSchema() {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
-	MigrateAll(db)
-	AddUserIDToDeployments(db)
+	_db = db
+	RunTransaction(func(db *gorm.DB) {
+		MigrateAll(db)
+		AddUserIDToDeployments(db)
+	})
 }
 
 func MigrateAll(db *gorm.DB) {
@@ -241,4 +246,10 @@ func AddUserIDToDeployments(db *gorm.DB) {
 		log.Fatalf("Could not migrate: %v", err)
 	}
 	log.Printf("Migration did run successfully")
+}
+
+func RunTransaction(ops func(db *gorm.DB)) {
+	tx := _db.Begin()
+	ops(tx)
+	tx.Rollback()
 }
