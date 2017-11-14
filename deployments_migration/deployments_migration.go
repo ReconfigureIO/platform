@@ -1,11 +1,14 @@
-package migration
+package deployments_migration
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres" // postgres driver
+	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gormigrate.v1"
 )
 
@@ -34,6 +37,13 @@ func MigrateAll(db *gorm.DB) {
 	db.AutoMigrate(&BuildReport{})
 	db.AutoMigrate(&Graph{})
 	db.AutoMigrate(&QueueEntry{})
+}
+
+// uuidHook hooks new uuid as primary key for models before creation.
+type uuidHook struct{}
+
+func (u uuidHook) BeforeCreate(scope *gorm.Scope) error {
+	return scope.SetColumn("id", uuid.NewV4().String())
 }
 
 // InviteToken model.
@@ -227,7 +237,7 @@ func AddUserIDToDeployments(db *gorm.DB) {
 		},
 	})
 
-	if err = m.Migrate(); err != nil {
+	if err := m.Migrate(); err != nil {
 		log.Fatalf("Could not migrate: %v", err)
 	}
 	log.Printf("Migration did run successfully")

@@ -4,8 +4,9 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/config"
+	"github.com/ReconfigureIO/platform/deployments_migration"
 	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/migration"
+	//"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -71,7 +72,8 @@ func main() {
 	// check migration
 	if conf.Reco.PlatformMigrate {
 		log.Info("performing migration...")
-		migration.MigrateSchema()
+		//migration.MigrateSchema()
+		deployments_migration.MigrateSchema()
 	}
 
 	leads := leads.New(conf.Reco.Intercom, db)
