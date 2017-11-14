@@ -192,8 +192,8 @@ const (
 UPDATE deployments
 SET
 user_id = users.id
-FROM users
-WHERE users.id = deployments.build.project.user_id
+FROM builds, projects, users
+WHERE deployments.build_id = builds.id AND builds.project_id = projects.id AND projects.user_id = users.id
 `
 )
 
