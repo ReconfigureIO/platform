@@ -26,20 +26,12 @@ type Deployment struct {
 	UseSpotInstances bool
 }
 
-// Preload is common preload functionality.
-func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Build").Preload("Build.Project").
-		Preload("Events", func(db *gorm.DB) *gorm.DB {
-			return db.Order("timestamp ASC")
-		})
-}
-
-// Query fetches deployment for user and project.
-func (d Deployment) Query(c *gin.Context) *gorm.DB {
+// Query fetches deployments for user.
+func (d Deployment) Query(c *gin.Context) ([]Deployment, error) {
 	user := middleware.GetUser(c)
-	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("deployments.user_id=?", user.ID)
-	return d.Preload(joined)
+	dds := models.DeploymentDataSource(db)
+	deployments, err := dds.GetWithUser(user.ID)
+	return deployments, err
 }
 
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
@@ -49,13 +41,18 @@ func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 
+	deployments, err := d.Query(c)
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return dep, err
 	}
-	return dep, nil
+	for i := range deployments {
+		if deployments[i].ID == id {
+			return deployments[i], nil
+		}
+	}
+	return dep, err
 }
 
 // Create creates a new deployment
@@ -168,25 +165,28 @@ func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
 	project := c.DefaultQuery("project", "")
 	deployments := []models.Deployment{}
-	q := d.Query(c)
-
-	if project != "" {
-		q = q.Where("builds.project_id=?", project)
-	}
-
-	if build != "" {
-		q = q.Where(&models.Deployment{BuildID: build})
-	}
-
-	err := q.Find(&deployments).Error
-
-	// TODO: List deployments in queue too
-	if err != nil && err != gorm.ErrRecordNotFound {
+	deployments, err := d.Query(c)
+	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
 
-	sugar.SuccessResponse(c, 200, deployments)
+	if project == "" && build == "" {
+		sugar.SuccessResponse(c, 200, deployments)
+	}
+
+	deploymentsMatchingFilters := []Deployment{}
+	for i := range deployments {
+		if deployments[i].Build.Project.ID == project && deployments[i].Build.ID == build {
+			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
+		} else if deployments[i].Build.Project.ID == project {
+			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
+		} else if deployments[i].Build.ID == build {
+			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
+		}
+	}
+
+	sugar.SuccessResponse(c, 200, deploymentsMatchingFilters)
 }
 
 // Get fetches a deployment.
@@ -287,7 +287,13 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	q := d.Preload(db)
-	err := q.First(&dep, "deployments.id = ?", id).Error
-	return dep, err
+	deployments, err := d.Query(c)
+	if err != nil {
+		return dep, err
+	}
+	for i := range deployments {
+		if deployments[i].ID == id {
+			return deployments[i], nil
+		}
+	}
 }
