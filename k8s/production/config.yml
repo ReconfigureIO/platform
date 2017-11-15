@@ -10,7 +10,7 @@ data:
  DATABASE_URL: ssm:///reconfigureio/platform/production/db
  STRIPE_KEY: ssm:///reconfigureio/platform/production/stripe
  LOGZIO_TOKEN: ssm:///reconfigureio/platform/production/logzio_token
- RECO_PLATFORM_MIGRATE: "true"
+ RECO_PLATFORM_MIGRATE: "false"
  RECO_AWS_LOG_GROUP: "/aws/batch/job"
  RECO_AWS_BUCKET: reconfigureio-builds
  RECO_AWS_QUEUE: build-jobs
