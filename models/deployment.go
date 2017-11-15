@@ -159,7 +159,7 @@ func (repo *deploymentRepo) SetIP(dep Deployment, ip string) error {
 
 func (repo *deploymentRepo) GetWithUser(userID string) ([]Deployment, error) {
 	deployments := []Deployment{}
-	err := repo.db.Preload("Build").Preload("Build.Project").
+	err := repo.db.Preload("Build").Preload("Build.Project").Preload("Build.Project.User").
 		Preload("Events", func(db *gorm.DB) *gorm.DB {
 			return db.Order("timestamp ASC")
 		}).

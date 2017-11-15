@@ -173,7 +173,7 @@ func TestDeploymentGetWithUserPreloading(t *testing.T) {
 		}
 		db.Create(&dep)
 
-		deps, err := d.GetWithUser("notfoobar")
+		deps, err := d.GetWithUser("foobar")
 		if err != nil {
 			t.Error(err)
 			return
