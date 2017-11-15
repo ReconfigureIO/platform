@@ -148,14 +148,8 @@ func TestDeploymentGetWithUserNotOtherUsers(t *testing.T) {
 			ids = append(ids, returnedDep.ID)
 		}
 
-		expected := []string{dep.ID}
-		if !reflect.DeepEqual(expected, ids) {
-			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
-			return
-		}
-
-		if !reflect.DeepEqual(deps[0].UserID, "notfoobar") {
-			t.Fatalf("\nExpected dep to have user: %+v\nGot:      %+v\n", "notfoobar", deps[0].UserID)
+		if len(ids) != 0 {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", 0, len(ids))
 			return
 		}
 	})

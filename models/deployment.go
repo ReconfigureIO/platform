@@ -16,6 +16,8 @@ type DeploymentRepo interface {
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
 
+	GetWithUser(userID string) ([]Deployment, error)
+
 	// Return a list of all deployment for a user, with the statuses specified
 	GetWithStatusForUser(string, []string) ([]Deployment, error)
 
@@ -153,6 +155,16 @@ func (repo *deploymentRepo) AddEvent(dep Deployment, event DeploymentEvent) erro
 func (repo *deploymentRepo) SetIP(dep Deployment, ip string) error {
 	err := repo.db.Model(&dep).Update("ip_address", ip).Error
 	return err
+}
+
+func (repo *deploymentRepo) GetWithUser(userID string) ([]Deployment, error) {
+	deployments := []Deployment{}
+	err := repo.db.Preload("Build").Preload("Build.Project").
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		}).
+		Where("user_id=?", userID).Find(&deployments).Error
+	return deployments, err
 }
 
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
