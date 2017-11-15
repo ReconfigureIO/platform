@@ -13,7 +13,6 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -27,7 +26,7 @@ type Deployment struct {
 }
 
 // Query fetches deployments for user.
-func (d Deployment) Query(c *gin.Context) ([]Deployment, error) {
+func (d Deployment) Query(c *gin.Context) ([]models.Deployment, error) {
 	user := middleware.GetUser(c)
 	dds := models.DeploymentDataSource(db)
 	deployments, err := dds.GetWithUser(user.ID)
@@ -175,7 +174,7 @@ func (d Deployment) List(c *gin.Context) {
 		sugar.SuccessResponse(c, 200, deployments)
 	}
 
-	deploymentsMatchingFilters := []Deployment{}
+	deploymentsMatchingFilters := []models.Deployment{}
 	for i := range deployments {
 		if deployments[i].Build.Project.ID == project && deployments[i].Build.ID == build {
 			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
@@ -296,4 +295,5 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 			return deployments[i], nil
 		}
 	}
+	return dep, nil
 }
