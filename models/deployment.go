@@ -63,8 +63,6 @@ LIMIT ?
 
 	sqlDeploymentStatusForUser = `SELECT j.id
 FROM deployments j
-JOIN builds on builds.id = j.build_id
-JOIN projects on builds.project_id = projects.id
 LEFT join deployment_events e
 ON j.id = e.deployment_id
 	AND e.timestamp = (
@@ -72,14 +70,12 @@ ON j.id = e.deployment_id
 		FROM deployment_events e1
 		WHERE j.id = e1.deployment_id
 	)
-WHERE (projects.user_id = ? and e.status in (?))
+WHERE (user_id = ? and e.status in (?))
 `
 
 	sqlDeploymentHours = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
-join builds on builds.id = j.build_id
-join projects on builds.project_id = projects.id
 left join deployment_events started
 on j.id = started.deployment_id
     and started.id = (
@@ -96,13 +92,11 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
+where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
 `
 	sqlDeploymentInstances = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
-join builds on builds.id = j.build_id
-join projects on builds.project_id = projects.id
 left join deployment_events started
 on j.id = started.deployment_id
     and started.id = (
@@ -119,7 +113,7 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where projects.user_id = ? and terminated IS NULL
+where user_id = ? and terminated IS NULL
 `
 
 	sqlDeploymentsWithoutIPs = `

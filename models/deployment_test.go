@@ -26,6 +26,7 @@ func TestDeploymentGetWithStatusForUser(t *testing.T) {
 					Status: "COMPLETED",
 				},
 			},
+			UserID: "Foo",
 		}
 		db.Create(&dep)
 
@@ -321,6 +322,7 @@ func genDeployment(userID string, start time.Time, d time.Duration) Deployment {
 				Timestamp: start,
 			},
 		},
+		UserID: userID,
 	}
 	if d > 0 {
 		dep.Events = append(dep.Events, DeploymentEvent{
