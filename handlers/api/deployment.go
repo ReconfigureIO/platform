@@ -38,7 +38,7 @@ func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := middleware.GetUser(c)
 	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID)
+		Where("deployments.user_id=?", user.ID)
 	return d.Preload(joined)
 }
 
