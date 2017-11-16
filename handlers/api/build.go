@@ -74,15 +74,15 @@ func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 // List lists all builds.
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
+	public := c.DefaultQuery("public", "")
 	builds := []models.Build{}
 	var err error
 
-	if project == "public" {
+	if public == "true" {
 		builds, err = b.publicBuilds()
 	} else {
 		builds, err = b.userBuilds(c, project)
 	}
-
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return
