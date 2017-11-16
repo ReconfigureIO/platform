@@ -16,6 +16,12 @@ type DeploymentRepo interface {
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
 
+	GetWithUser(string) ([]Deployment, error)
+
+	//used to build complex queries
+	Query(string) *gorm.DB
+	Preload() *gorm.DB
+
 	// Return a list of all deployment for a user, with the statuses specified
 	GetWithStatusForUser(string, []string) ([]Deployment, error)
 
@@ -61,8 +67,6 @@ LIMIT ?
 
 	sqlDeploymentStatusForUser = `SELECT j.id
 FROM deployments j
-JOIN builds on builds.id = j.build_id
-JOIN projects on builds.project_id = projects.id
 LEFT join deployment_events e
 ON j.id = e.deployment_id
 	AND e.timestamp = (
@@ -70,14 +74,12 @@ ON j.id = e.deployment_id
 		FROM deployment_events e1
 		WHERE j.id = e1.deployment_id
 	)
-WHERE (projects.user_id = ? and e.status in (?))
+WHERE (user_id = ? and e.status in (?))
 `
 
 	sqlDeploymentHours = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
-join builds on builds.id = j.build_id
-join projects on builds.project_id = projects.id
 left join deployment_events started
 on j.id = started.deployment_id
     and started.id = (
@@ -94,13 +96,11 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where (projects.user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
+where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ?)
 `
 	sqlDeploymentInstances = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
-join builds on builds.id = j.build_id
-join projects on builds.project_id = projects.id
 left join deployment_events started
 on j.id = started.deployment_id
     and started.id = (
@@ -117,7 +117,7 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where projects.user_id = ? and terminated IS NULL
+where user_id = ? and terminated IS NULL
 `
 
 	sqlDeploymentsWithoutIPs = `
@@ -153,6 +153,35 @@ func (repo *deploymentRepo) AddEvent(dep Deployment, event DeploymentEvent) erro
 func (repo *deploymentRepo) SetIP(dep Deployment, ip string) error {
 	err := repo.db.Model(&dep).Update("ip_address", ip).Error
 	return err
+}
+
+func (repo *deploymentRepo) GetWithUser(userID string) ([]Deployment, error) {
+	deployments := []Deployment{}
+	err := repo.db.Preload("Build").Preload("Build.Project").Preload("Build.Project.User").
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		}).
+		Where("user_id=?", userID).Find(&deployments).Error
+	return deployments, err
+}
+
+func (repo *deploymentRepo) Preload() *gorm.DB {
+	return repo.db.Preload("Build").
+		Preload("Build.Project").
+		Preload("Build.Project.User").
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
+// this allows other functions to build up complex queries
+func (repo *deploymentRepo) Query(userID string) *gorm.DB {
+	preloaded := repo.Preload()
+	joined := preloaded.
+		Joins("left join builds on builds.id = deployments.build_id").
+		Joins("left join projects on projects.id = builds.project_id").
+		Where("deployments.user_id=?", userID)
+	return joined
 }
 
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {
