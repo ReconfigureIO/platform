@@ -163,8 +163,13 @@ func (d Deployment) Create(c *gin.Context) {
 func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
 	project := c.DefaultQuery("project", "")
+	public := c.DefaultQuery("public", "")
 	deployments := []models.Deployment{}
 	q := d.Query(c)
+
+	if public == "true" && publicProjectID != "" {
+		q = q.Where("builds.project_id=?", publicProjectID)
+	}
 
 	if project != "" {
 		q = q.Where("builds.project_id=?", project)
