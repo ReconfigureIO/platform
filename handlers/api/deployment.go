@@ -13,6 +13,7 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -25,12 +26,16 @@ type Deployment struct {
 	UseSpotInstances bool
 }
 
+func (d Deployment) Preload() *gorm.DB {
+	dds := models.DeploymentDataSource(db)
+	return dds.Preload()
+}
+
 // Query fetches deployments for user.
-func (d Deployment) Query(c *gin.Context) ([]models.Deployment, error) {
+func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := middleware.GetUser(c)
 	dds := models.DeploymentDataSource(db)
-	deployments, err := dds.GetWithUser(user.ID)
-	return deployments, err
+	return dds.Query(user.ID)
 }
 
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
@@ -41,17 +46,12 @@ func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 		return dep, errNotFound
 	}
 
-	deployments, err := d.Query(c)
+	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return dep, err
 	}
-	for i := range deployments {
-		if deployments[i].ID == id {
-			return deployments[i], nil
-		}
-	}
-	return dep, err
+	return dep, nil
 }
 
 // Create creates a new deployment
@@ -164,28 +164,24 @@ func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
 	project := c.DefaultQuery("project", "")
 	deployments := []models.Deployment{}
-	deployments, err := d.Query(c)
-	if err != nil {
+	q := d.Query(c)
+
+	if project != "" {
+		q = q.Where("builds.project_id=?", project)
+	}
+
+	if build != "" {
+		q = q.Where(&models.Deployment{BuildID: build})
+	}
+
+	err := q.Find(&deployments).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return
 	}
 
-	if project == "" && build == "" {
-		sugar.SuccessResponse(c, 200, deployments)
-	}
-
-	deploymentsMatchingFilters := []models.Deployment{}
-	for i := range deployments {
-		if deployments[i].Build.Project.ID == project && deployments[i].Build.ID == build {
-			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
-		} else if deployments[i].Build.Project.ID == project {
-			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
-		} else if deployments[i].Build.ID == build {
-			deploymentsMatchingFilters = append(deploymentsMatchingFilters, deployments[i])
-		}
-	}
-
-	sugar.SuccessResponse(c, 200, deploymentsMatchingFilters)
+	sugar.SuccessResponse(c, 200, deployments)
 }
 
 // Get fetches a deployment.
@@ -286,14 +282,7 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	deployments, err := d.Query(c)
-	if err != nil {
-		return dep, err
-	}
-	for i := range deployments {
-		if deployments[i].ID == id {
-			return deployments[i], nil
-		}
-	}
-	return dep, nil
+	q := d.Preload()
+	err := q.First(&dep, "deployments.id = ?", id).Error
+	return dep, err
 }

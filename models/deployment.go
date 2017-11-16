@@ -16,7 +16,11 @@ type DeploymentRepo interface {
 	// limited to that number
 	GetWithStatus([]string, int) ([]Deployment, error)
 
-	GetWithUser(userID string) ([]Deployment, error)
+	GetWithUser(string) ([]Deployment, error)
+
+	//used to build complex queries
+	Query(string) *gorm.DB
+	Preload() *gorm.DB
 
 	// Return a list of all deployment for a user, with the statuses specified
 	GetWithStatusForUser(string, []string) ([]Deployment, error)
@@ -159,6 +163,25 @@ func (repo *deploymentRepo) GetWithUser(userID string) ([]Deployment, error) {
 		}).
 		Where("user_id=?", userID).Find(&deployments).Error
 	return deployments, err
+}
+
+func (repo *deploymentRepo) Preload() *gorm.DB {
+	return repo.db.Preload("Build").
+		Preload("Build.Project").
+		Preload("Build.Project.User").
+		Preload("Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
+// this allows other functions to build up complex queries
+func (repo *deploymentRepo) Query(userID string) *gorm.DB {
+	preloaded := repo.Preload()
+	joined := preloaded.
+		Joins("left join builds on builds.id = deployments.build_id").
+		Joins("left join projects on projects.id = builds.project_id").
+		Where("deployments.user_id=?", userID)
+	return joined
 }
 
 func (repo *deploymentRepo) GetWithStatus(statuses []string, limit int) ([]Deployment, error) {

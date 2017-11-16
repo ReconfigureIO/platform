@@ -198,6 +198,156 @@ func TestDeploymentGetWithUserPreloading(t *testing.T) {
 	})
 }
 
+func TestDeploymentQuery(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Command: "test",
+			Events:  []DeploymentEvent{},
+			UserID:  "foobar",
+		}
+		db.Create(&dep)
+
+		deps := []Deployment{}
+		err := d.Query(dep.UserID).Find(&deps).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
+			return
+		}
+
+		if !reflect.DeepEqual(deps[0].UserID, dep.UserID) {
+			t.Fatalf("\nExpected dep to have user: %+v\nGot:      %+v\n", dep.UserID, deps[0].UserID)
+			return
+		}
+	})
+}
+
+func TestDeploymentQueryNotOtherUsers(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Command: "test",
+			Events:  []DeploymentEvent{},
+			UserID:  "foobar",
+		}
+		db.Create(&dep)
+
+		deps := []Deployment{}
+		err := d.Query("notfoobar").Find(&deps).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		if len(ids) != 0 {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", 0, len(ids))
+			return
+		}
+	})
+}
+
+func TestDeploymentQueryPreloading(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Command: "test",
+			Events:  []DeploymentEvent{},
+			UserID:  "foobar",
+			Build: Build{
+				Project: Project{
+					User: User{
+						Name: "Foo Bar",
+					},
+				},
+			},
+		}
+		db.Create(&dep)
+		deps := []Deployment{}
+		err := d.Query("foobar").Find(&deps).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
+			return
+		}
+
+		if !reflect.DeepEqual(deps[0].Build.Project.User.Name, dep.Build.Project.User.Name) {
+			t.Fatalf("\nExpected dep to have user: %+v\nGot:      %+v\n", dep.Build.Project.User.Name, deps[0].Build.Project.User.Name)
+			return
+		}
+	})
+}
+
+func TestDeploymentPreload(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Command: "test",
+			Events:  []DeploymentEvent{},
+			UserID:  "foobar",
+			Build: Build{
+				Project: Project{
+					User: User{
+						Name: "Foo Bar",
+					},
+				},
+			},
+		}
+		db.Create(&dep)
+		deps := []Deployment{}
+		err := d.Preload().Find(&deps).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []string{}
+		for _, returnedDep := range deps {
+			ids = append(ids, returnedDep.ID)
+		}
+
+		expected := []string{dep.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
+			return
+		}
+
+		if !reflect.DeepEqual(deps[0].Build.Project.User.Name, dep.Build.Project.User.Name) {
+			t.Fatalf("\nExpected dep to have user: %+v\nGot:      %+v\n", dep.Build.Project.User.Name, deps[0].Build.Project.User.Name)
+			return
+		}
+	})
+}
+
 func TestDeploymentGetWithoutIP(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
