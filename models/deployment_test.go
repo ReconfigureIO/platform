@@ -476,7 +476,7 @@ func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
 					},
 				},
 			},
-		} // total 3 hours
+		} // total 2 hours
 
 		for i := range deps {
 			db.Create(&(deps[i]))
@@ -492,7 +492,7 @@ func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
 			return
 		}
 		if hours != 1 {
-			t.Errorf("Expected %v found %v", 3, hours)
+			t.Errorf("Expected %v found %v", 2, hours)
 		}
 	})
 }
