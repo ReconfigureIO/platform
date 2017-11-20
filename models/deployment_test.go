@@ -455,6 +455,40 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 	})
 }
 
+func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+
+		dep := Deployment{
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: timeParser("2017-11-13T15:53:36.554449Z"),
+				},
+				DeploymentEvent{
+					Status:    "TERMINATED",
+					Timestamp: timeParser("2017-11-13T16:06:49.249005Z"),
+				},
+			},
+		} // total 1 hour
+
+		db.Create(&dep)
+
+		utcLocation, _ := time.LoadLocation("UTC")
+		firstOfMonth := time.Date(2017, 11, 1, 0, 0, 0, 0, utcLocation)
+		lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+
+		hours, err := DeploymentHoursBtw(&d, dep.Build.Project.UserID, firstOfMonth, lastOfMonth)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 1 {
+			t.Errorf("Expected %v found %v", 1, hours)
+		}
+	})
+}
+
 // genDeployment generates a mock deployment.
 // if d > 0, the mock deployment will be in TERMINATED
 // status and have a duration of d.
@@ -521,4 +555,9 @@ func TestTimeToSQLStr(t *testing.T) {
 	if ms := timeToSQLStr(monthEnd(utcTime)); ms != expected {
 		t.Errorf("Expected %v found %v", expected, ms)
 	}
+}
+
+func timeParser(stringTime string) time.Time {
+	parsedTime, _ := time.Parse(time.RFC3339, stringTime)
+	return parsedTime
 }
