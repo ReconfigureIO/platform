@@ -491,7 +491,7 @@ func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if hours != 1 {
+		if hours != 2 {
 			t.Errorf("Expected %v found %v", 2, hours)
 		}
 	})
