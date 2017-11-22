@@ -12,6 +12,61 @@ import (
 
 var migrations = []*gormigrate.Migration{
 	{
+		ID: "1",
+		Migrate: func(tx *gorm.DB) error {
+			err := tx.AutoMigrate(&InviteToken{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&User{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&Project{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&Simulation{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&Build{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&BatchJob{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&BatchJobEvent{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&Deployment{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&DeploymentEvent{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&BuildReport{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&Graph{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.AutoMigrate(&QueueEntry{}).Error
+			return err
+		},
+		Rollback: func(tx *gorm.DB) error {
+			log.Printf("Could not initialise tables")
+			return nil
+		},
+	},
+	{
 		ID: "201711131234",
 		Migrate: func(tx *gorm.DB) error {
 			err := tx.Exec(sqlFillDeploymentUserID).Error
@@ -22,7 +77,7 @@ var migrations = []*gormigrate.Migration{
 			return err
 		},
 		Rollback: func(tx *gorm.DB) error {
-			log.Printf("migration rollback triggered")
+			log.Printf("deployment.user_id migration rollback triggered")
 			return nil
 		},
 	},
@@ -63,28 +118,6 @@ func MigrateAll(db *gorm.DB) {
 		UseTransaction: true,
 	}
 	m := gormigrate.New(db, &options, migrations)
-
-	m.InitSchema(func(tx *gorm.DB) error {
-		err := tx.AutoMigrate(
-			&InviteToken{},
-			&User{},
-			&Project{},
-			&Simulation{},
-			&Build{},
-			&BatchJob{},
-			&BatchJobEvent{},
-			&Deployment{},
-			&DeploymentEvent{},
-			&BuildReport{},
-			&Graph{},
-			&QueueEntry{},
-		).Error
-		if err != nil {
-			log.Print("Could not initialise tables")
-			return err
-		}
-		return nil
-	})
 
 	if err := m.Migrate(); err != nil {
 		log.Fatalf("Could not migrate: %v", err)
