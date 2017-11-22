@@ -455,6 +455,48 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 	})
 }
 
+func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		userID := "user1"
+
+		deps := []Deployment{
+			genDeploymentWithTimestamps(userID, timeParser("2017-11-13T15:53:36.554449Z"), timeParser("2017-11-13T16:06:49.249005Z")),
+			genDeploymentWithTimestamps(userID, timeParser("2017-11-06T12:19:54.604407Z"), timeParser("2017-11-06T12:21:35.229967Z")),
+			Deployment{
+				UserID: userID,
+				Events: []DeploymentEvent{
+					DeploymentEvent{
+						Status:    "QUEUED",
+						Timestamp: timeParser("2017-11-13T15:42:31.516901Z"),
+					},
+					DeploymentEvent{
+						Status:    "TERMINATED",
+						Timestamp: timeParser("2017-11-13T15:43:28.309Z"),
+					},
+				},
+			},
+		} // total 2 hours
+
+		for i := range deps {
+			db.Create(&(deps[i]))
+		}
+
+		utcLocation, _ := time.LoadLocation("UTC")
+		firstOfMonth := time.Date(2017, 11, 1, 0, 0, 0, 0, utcLocation)
+		lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+
+		hours, err := DeploymentHoursBtw(&d, userID, firstOfMonth, lastOfMonth)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 2 {
+			t.Errorf("Expected %v found %v", 2, hours)
+		}
+	})
+}
+
 // genDeployment generates a mock deployment.
 // if d > 0, the mock deployment will be in TERMINATED
 // status and have a duration of d.
@@ -479,6 +521,29 @@ func genDeployment(userID string, start time.Time, d time.Duration) Deployment {
 			Status:    "TERMINATED",
 			Timestamp: start.Add(d),
 		})
+	}
+	return dep
+}
+
+func genDeploymentWithTimestamps(userID string, start time.Time, end time.Time) Deployment {
+	dep := Deployment{
+		Build: Build{
+			Project: Project{
+				UserID: userID,
+			},
+		},
+		Command: "test",
+		Events: []DeploymentEvent{
+			DeploymentEvent{
+				Status:    "STARTED",
+				Timestamp: start,
+			},
+			DeploymentEvent{
+				Status:    "TERMINATED",
+				Timestamp: end,
+			},
+		},
+		UserID: userID,
 	}
 	return dep
 }
@@ -521,4 +586,9 @@ func TestTimeToSQLStr(t *testing.T) {
 	if ms := timeToSQLStr(monthEnd(utcTime)); ms != expected {
 		t.Errorf("Expected %v found %v", expected, ms)
 	}
+}
+
+func timeParser(stringTime string) time.Time {
+	parsedTime, _ := time.Parse(time.RFC3339, stringTime)
+	return parsedTime
 }
