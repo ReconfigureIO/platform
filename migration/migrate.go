@@ -65,27 +65,27 @@ var migrations = []*gormigrate.Migration{
 			return nil
 		},
 	},
-	// {
-	// 	ID: "201711131228",
-	// 	Migrate: func(tx *gorm.DB) error {
-	// 		err := tx.AutoMigrate(&Deployment{}).Error
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		err = tx.Raw(sqlDeploymentStatusForUser).Error
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		type Deployment struct {
-	// 			UserID string `gorm:"NOT_NULL"`
-	// 		}
-	// 		err = tx.AutoMigrate(&Deployment{}).Error
-	// 		return err
-	// 	},
-	// 	Rollback: func(tx *gorm.DB) error {
-	// 		return tx.Table("deployments").DropColumn("user_id").Error
-	// 	},
-	// },
+	{
+		ID: "201711131228",
+		Migrate: func(tx *gorm.DB) error {
+			err := tx.AutoMigrate(&Deployment{}).Error
+			if err != nil {
+				return err
+			}
+			err = tx.Raw(sqlDeploymentStatusForUser).Error
+			if err != nil {
+				return err
+			}
+			type Deployment struct {
+				UserID string `gorm:"NOT_NULL"`
+			}
+			err = tx.AutoMigrate(&Deployment{}).Error
+			return err
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Table("deployments").DropColumn("user_id").Error
+		},
+	},
 }
 
 const (
