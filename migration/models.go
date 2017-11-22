@@ -73,7 +73,7 @@ type Deployment struct {
 	Command      string            `json:"command"`
 	Token        string            `json:"-"`
 	InstanceID   string            `json:"-"`
-	UserID       string            `json:"-"`
+	UserID       string            `json:"-" sql:"NOT NULL"`
 	IPAddress    string            `json:"ip_address"`
 	SpotInstance bool              `json:"-" sql:"NOT NULL;DEFAULT:false"`
 	Events       []DeploymentEvent `json:"events" gorm:"ForeignKey:DeploymentID"`
