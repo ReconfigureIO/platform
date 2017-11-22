@@ -3,7 +3,6 @@ package sugar
 import (
 	"time"
 
-	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 )
