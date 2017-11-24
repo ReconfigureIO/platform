@@ -28,6 +28,7 @@ var (
 type Instances interface {
 	UpdateInstanceStatus(context.Context) error
 	AddDeploymentEvent(context.Context, models.Deployment, models.DeploymentEvent) error
+	FindIPs(context.Context) error
 }
 
 type instances struct {
@@ -119,6 +120,46 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	log.WithFields(log.Fields{
 		"count": terminating,
 	}).Info("Terminated deployments")
+
+	return nil
+
+}
+
+// For all deployments that do not have an IPv4 address, find their IPs
+func (instances *instances) FindIPs(ctx context.Context) error {
+	deploymentsWithoutIPs, err := instances.Deployments.GetWithoutIP()
+
+	log.WithFields(log.Fields{
+		"count": len(deploymentsWithoutIPs),
+	}).Info("Getting IPs of Deployments")
+
+	if len(deploymentsWithoutIPs) == 0 {
+		return nil
+	}
+
+	//AWS Describe the associated EC2 instances to get their IPv4 addresses
+	instanceIPs, err := instances.Deploy.DescribeInstanceIPs(ctx, deploymentsWithoutIPs)
+	if err != nil {
+		return err
+	}
+
+	updated := 0
+
+	//for each deployment, if we have an IP, set IP
+	for _, deployment := range deploymentsWithoutIPs {
+		ip, found := instanceIPs[deployment.InstanceID]
+		if found {
+			err := instances.Deployments.SetIP(deployment, ip)
+			if err != nil {
+				log.Error(err)
+				updated++
+			}
+		}
+	}
+
+	log.WithFields(log.Fields{
+		"count": updated,
+	}).Info("Found IPs for deployments")
 
 	return nil
 

@@ -35,6 +35,15 @@ func (b Build) Query(c *gin.Context) *gorm.DB {
 	return b.Preload(joined)
 }
 
+// QueryWhere is like Query but accepts custom where clause.
+func (b Build) QueryWhere(where ...interface{}) *gorm.DB {
+	joined := db.Joins("join projects on projects.id = builds.project_id")
+	if len(where) > 0 {
+		joined = joined.Where(where[0], where[1:]...)
+	}
+	return b.Preload(joined)
+}
+
 // ByID gets the first build by ID, 404 if it doesn't exist.
 func (b Build) ByID(c *gin.Context) (models.Build, error) {
 	build := models.Build{}
@@ -43,6 +52,11 @@ func (b Build) ByID(c *gin.Context) (models.Build, error) {
 		return build, errNotFound
 	}
 	err := b.Query(c).First(&build, "builds.id = ?", id).Error
+	// Not found? Might be a public build ID
+	if err == gorm.ErrRecordNotFound {
+		err = b.QueryWhere("projects.id=?", publicProjectID).
+			Where(&models.Build{ProjectID: publicProjectID}).First(&build, "builds.id = ?", id).Error
+	}
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -65,21 +79,45 @@ func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 // List lists all builds.
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
+	public := c.DefaultQuery("public", "")
 	builds := []models.Build{}
-	q := b.Query(c)
+	var err error
 
-	if project != "" {
-		q = q.Where(&models.Build{ProjectID: project})
+	if public == "true" {
+		builds, err = b.publicBuilds()
+	} else {
+		builds, err = b.userBuilds(c, project)
 	}
-
-	err := q.Find(&builds).Error
-
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return
 	}
 
 	sugar.SuccessResponse(c, 200, builds)
+}
+
+func (b Build) userBuilds(c *gin.Context, project string) (builds []models.Build, err error) {
+	q := b.Query(c)
+
+	if project != "" {
+		q = q.Where(&models.Build{ProjectID: project})
+	}
+
+	err = q.Find(&builds).Error
+	return
+}
+
+func (b Build) publicBuilds() (builds []models.Build, err error) {
+	if publicProjectID == "" {
+		err = errors.New("global project configuration missing")
+		return
+	}
+
+	q := b.QueryWhere("projects.id=?", publicProjectID).
+		Where(&models.Build{ProjectID: publicProjectID})
+
+	err = q.Find(&builds).Error
+	return
 }
 
 // Report fetches a build's report.

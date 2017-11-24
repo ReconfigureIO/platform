@@ -88,6 +88,12 @@ func (build Build) ArtifactUrl() string {
 	return fmt.Sprintf("builds/%s/artifacts.zip", build.ID)
 }
 
+// The place the debug artifacts including reports, logs, etc
+// Should be a zip file
+func (build Build) DebugUrl() string {
+	return fmt.Sprintf("builds/%s/debug.zip", build.ID)
+}
+
 // The place build reports will be uploaded to
 func (build Build) ReportUrl() string {
 	return fmt.Sprintf("builds/%s/reports", build.ID)
