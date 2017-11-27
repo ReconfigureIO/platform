@@ -40,11 +40,13 @@ func TestDBQueue(t *testing.T) {
 		service:      QueueService{db: connectDB()},
 		pollInterval: time.Second * 1,
 	}
+
 	for _, job := range jobs {
 		queue.Push(job)
 	}
 	go queue.Start()
-	for {
+
+	for i := 0; i < 10; i++ {
 		time.Sleep(time.Second * 1)
 		if len(runner.dispatched) >= 5 {
 			queue.Halt()
