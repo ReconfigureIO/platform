@@ -52,6 +52,11 @@ func (b Build) ByID(c *gin.Context) (models.Build, error) {
 		return build, errNotFound
 	}
 	err := b.Query(c).First(&build, "builds.id = ?", id).Error
+	// Not found? Might be a public build ID
+	if err == gorm.ErrRecordNotFound {
+		err = b.QueryWhere("projects.id=?", publicProjectID).
+			Where(&models.Build{ProjectID: publicProjectID}).First(&build, "builds.id = ?", id).Error
+	}
 
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -74,15 +79,15 @@ func (b Build) unauthOne(c *gin.Context) (models.Build, error) {
 // List lists all builds.
 func (b Build) List(c *gin.Context) {
 	project := c.DefaultQuery("project", "")
+	public := c.DefaultQuery("public", "")
 	builds := []models.Build{}
 	var err error
 
-	if project == "public" {
+	if public == "true" {
 		builds, err = b.publicBuilds()
 	} else {
 		builds, err = b.userBuilds(c, project)
 	}
-
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return

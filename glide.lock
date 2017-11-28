@@ -1,10 +1,10 @@
-hash: dbee79e1714169f6b51b1d981d6ed2977c3df17a82ea2791fcd7999759171e19
-updated: 2017-10-18T14:26:59.706310435Z
+hash: faf509e76a23697b6cc8d4acc6671c4de1a1a0b7dc89d30aff5f9a9b736de0a3
+updated: 2017-11-13T16:37:52.77195709Z
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
 - name: github.com/aws/aws-sdk-go
-  version: 044a61f1536640ce1def6088c0914f5905990202
+  version: e6c5e190452424b404ecdb81d6e3991d46b18e9d
   subpackages:
   - aws
   - aws/awserr
@@ -43,11 +43,11 @@ imports:
 - name: github.com/bshuster-repo/logruzio
   version: b0b294934396cec7a3292f694193f73cb9ddd71f
 - name: github.com/caarlos0/env
-  version: 0cf029d5748c52beb2c9d20c81880cb4bdf8f788
+  version: 9de094f90fa8a13dc162e10ae8a3b95c0c2c33e1
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
 - name: github.com/garyburd/redigo
-  version: 34a326de1fea52965fa5ad664d3fc7163dd4b0a1
+  version: 47dc60e71eed504e3ef8e77ee3c6fe720f3be57f
   subpackages:
   - internal
   - redis
@@ -56,28 +56,28 @@ imports:
 - name: github.com/gin-contrib/sse
   version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
 - name: github.com/gin-gonic/contrib
-  version: 5aa1e38d1d932e45fa5032bd1b8739e1a548e596
+  version: 8f08bc9b92a9734916abda03656c5f1b99ad10be
   subpackages:
   - ginrus
   - sessions
 - name: github.com/gin-gonic/gin
-  version: b8b68314faa067acae5b17c828127b04af51ebe2
+  version: ae9f03e6e80212e45427f811683f2a512cc8f506
   subpackages:
   - binding
   - json
   - render
 - name: github.com/go-ini/ini
-  version: 5b3e00af70a9484542169a976dcab8d03e601a17
+  version: f280b3ba517bf5fc98922624f21fb0e7a92adaec
 - name: github.com/golang/mock
-  version: 6e20fef50e74e443696bc32b693cf286b612d45b
+  version: 61503c535dc549c7ffc1ff07902345658a0f20a2
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 130e6b02ab059e7b717a096f397c5b60111cae74
+  version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: a021c14a5f1960591b0e1773a4a2ef8257ec93b8
+  version: 8c08f4fba5e05e0fd2821a5f80cf0cf643bd5314
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -101,14 +101,14 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/json-iterator/go
-  version: 6240e1e7983a85228f7fd9c3e1b6932d46ec58e2
+  version: 9fddff05f0b5cfe038f1802add248f3f0d08a015
 - name: github.com/lib/pq
-  version: 017e4c14d80628353eaee677a1aeffe47a10c0dc
+  version: 8c6ee72f3e6bcb1542298dd5f76cb74af9742cec
   subpackages:
   - hstore
   - oid
 - name: github.com/mattn/go-isatty
-  version: a5cdd64afdee435007ee3e9f6ed4684af949d568
+  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/robfig/cron
   version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
 - name: github.com/satori/go.uuid
@@ -116,9 +116,9 @@ imports:
 - name: github.com/sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/cobra
-  version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
+  version: 2da4a54c5ceefcee7ca5dd0eea1e18a3b6366489
 - name: github.com/spf13/pflag
-  version: 1f33b80956cde38911d1f23d764deb8d77a649ce
+  version: 4c012f6dcd9546820e378d0bdda4d8fc772cdfea
 - name: github.com/stripe/stripe-go
   version: 0c814851c79a7b735642fa6c4d204ae8ea9e401b
   subpackages:
@@ -129,30 +129,30 @@ imports:
   - orderitem
   - sub
 - name: github.com/ugorji/go
-  version: f26fc641ec9d52a2161443cf9bb9fd53b9062a22
+  version: 69968d74aefca74ab12359e8e24e057fb7d88222
   subpackages:
   - codec
 - name: golang.org/x/crypto
-  version: ed5229da99e3a6df35c756cd64b6982d19505d86
+  version: 6a293f2d4b14b8e6d3f0539e383f6d0d30fce3fd
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
-  version: 1087133bc4af3073e18add999345c6ae75918503
+  version: a337091b0525af65de94df2eb7e98bd9962dcbe2
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: bb50c06baba3d0c76f9d125c0719093e315b5b44
+  version: 9ff8ebcc8e241d46f52ecc5bff0e5a2f2dbef402
   subpackages:
   - github
   - internal
 - name: golang.org/x/sys
-  version: 8dbc5d05d6edcc104950cc299a1ce6641235bc86
+  version: 1e2299c37cc91a509f1b12369872d27be0ce98a6
   subpackages:
   - unix
   - windows
 - name: google.golang.org/appengine
-  version: a2e0dc829727a4f957a7428b1f322805cfc1f362
+  version: 9d8544a6b2c7df9cff240fcf92d7b2f59bc13416
   subpackages:
   - internal
   - internal/base
@@ -163,8 +163,10 @@ imports:
   - urlfetch
 - name: gopkg.in/go-playground/validator.v8
   version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
+- name: gopkg.in/gormigrate.v1
+  version: 21b0b93e8253d575d9185974835423f98d30158d
 - name: gopkg.in/intercom/intercom-go.v2
-  version: c87784a9e6410a82144da870f64509e30052e9a5
+  version: 368cf036d785a40493e9eda06153109916e6526b
   subpackages:
   - interfaces
 - name: gopkg.in/validator.v2

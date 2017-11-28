@@ -26,20 +26,16 @@ type Deployment struct {
 	UseSpotInstances bool
 }
 
-// Preload is common preload functionality.
-func (d Deployment) Preload(db *gorm.DB) *gorm.DB {
-	return db.Preload("Build").Preload("Build.Project").
-		Preload("Events", func(db *gorm.DB) *gorm.DB {
-			return db.Order("timestamp ASC")
-		})
+func (d Deployment) Preload() *gorm.DB {
+	dds := models.DeploymentDataSource(db)
+	return dds.Preload()
 }
 
-// Query fetches deployment for user and project.
+// Query fetches deployments for user.
 func (d Deployment) Query(c *gin.Context) *gorm.DB {
 	user := middleware.GetUser(c)
-	joined := db.Joins("left join builds on builds.id = deployments.build_id").Joins("left join projects on projects.id = builds.project_id").
-		Where("projects.user_id=?", user.ID)
-	return d.Preload(joined)
+	dds := models.DeploymentDataSource(db)
+	return dds.Query(user.ID)
 }
 
 // ByID gets the first deployment by ID, 404 if it doesn't exist.
@@ -49,8 +45,8 @@ func (d Deployment) ByID(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 
+	err := d.Query(c).First(&dep, "deployments.id = ?", id).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return dep, err
@@ -94,6 +90,7 @@ func (d Deployment) Create(c *gin.Context) {
 		Command:      post.Command,
 		Token:        uniuri.NewLen(64),
 		SpotInstance: d.UseSpotInstances,
+		UserID:       user.ID,
 	}
 
 	// use deployment queue if enabled
@@ -166,8 +163,13 @@ func (d Deployment) Create(c *gin.Context) {
 func (d Deployment) List(c *gin.Context) {
 	build := c.DefaultQuery("build", "")
 	project := c.DefaultQuery("project", "")
+	public := c.DefaultQuery("public", "")
 	deployments := []models.Deployment{}
 	q := d.Query(c)
+
+	if public == "true" && publicProjectID != "" {
+		q = q.Where("builds.project_id=?", publicProjectID)
+	}
 
 	if project != "" {
 		q = q.Where("builds.project_id=?", project)
@@ -179,7 +181,6 @@ func (d Deployment) List(c *gin.Context) {
 
 	err := q.Find(&deployments).Error
 
-	// TODO: List deployments in queue too
 	if err != nil && err != gorm.ErrRecordNotFound {
 		sugar.InternalError(c, err)
 		return
@@ -208,7 +209,7 @@ func (d Deployment) Logs(c *gin.Context) {
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
 	user, loggedIn := middleware.CheckUser(c)
-	if loggedIn && dep.Build.Project.UserID == user.ID {
+	if loggedIn && dep.UserID == user.ID {
 		return true
 	}
 	token, exists := c.GetQuery("token")
@@ -286,7 +287,7 @@ func (d Deployment) unauthOne(c *gin.Context) (models.Deployment, error) {
 	if !bindID(c, &id) {
 		return dep, errNotFound
 	}
-	q := d.Preload(db)
+	q := d.Preload()
 	err := q.First(&dep, "deployments.id = ?", id).Error
 	return dep, err
 }

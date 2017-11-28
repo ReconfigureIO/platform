@@ -21,11 +21,12 @@ data:
  RECO_DEPLOY_IMAGE: "reconfigureio/docker-aws-fpga-runtime:latest"
  RECO_FEATURE_INTERCOM: "1"
  PORT: '80'
- RECO_DEPLOY_AMI: ami-8e6a4df5
+ RECO_DEPLOY_AMI: ami-43338239
  RECO_DEPLOY_BUCKET: "reconfigureio-builds"
- RECO_DEPLOY_SUBNET: subnet-ef8096b5
- RECO_DEPLOY_SG: sg-7fbfbe0c
+ RECO_DEPLOY_SUBNET: subnet-b0ca3aed
+ RECO_DEPLOY_SG: sg-b03e38c2
  RECO_INTERCOM_ACCESS_TOKEN: ssm:///reconfigureio/platform/production/intercom_token
  RECO_FEATURE_USE_SPOT_INSTANCES: "true"
  RECO_FEATURE_DEP_QUEUE: "true"
  RECO_HOST_NAME: "api.reconfigure.io"
+ RECO_PUBLIC_PROJECT_ID: "49dc31e9-05e4-42c3-8460-8335ae6b6e65"
