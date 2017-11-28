@@ -92,7 +92,9 @@ func TestActiveBuilds(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		buildData := buildRepo{db}
 
-		user := User{}
+		user := User{
+			ID: "foobar",
+		}
 
 		builds := []Build{
 			genBuild(user.ID, time.Hour),

@@ -5,6 +5,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -42,7 +43,7 @@ LIMIT ?
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from builds j
 join projects on projects.id = j.project_id
-join batch_jobs on batch_jobs.id = j.batch_job_id
+left join batch_jobs on batch_jobs.id = j.batch_job_id
 left join batch_job_events started
 on batch_jobs.id = started.batch_job_id
     and started.id = (
@@ -93,18 +94,33 @@ func (repo *buildRepo) ActiveBuilds(user User) ([]Build, error) {
 		return nil, err
 	}
 
-	builds := []Build{}
+	ids := []string{}
 	for rows.Next() {
-		var build Build
-		err = db.ScanRows(rows, &build)
+		var bst BuildStartedTerminated
+		err = db.ScanRows(rows, &bst)
 		if err != nil {
-			return nil, err
+			return []Build{}, err
 		}
-		builds = append(builds, build)
+		ids = append(ids, bst.Id)
 	}
 	rows.Close()
 
+	var builds []Build
+	err = db.Preload("BatchJob").Preload("BatchJob.Events").Where("id in (?)", ids).Find(&builds).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return builds, nil
+
+}
+
+//scanrows needs an exact match to tie a row to an object.
+//this object has an ID, started, terminated time
+type BuildStartedTerminated struct {
+	Id         string
+	Started    time.Time
+	Terminated time.Time
 }
 
 // Build model.
