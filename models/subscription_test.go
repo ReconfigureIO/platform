@@ -75,8 +75,8 @@ func TestShouldNotPanicWithEmptyUser(t *testing.T) {
 		subs.customerCache[u.ID] = stripe.Customer{}
 
 		_, err := subs.UpdatePlan(u, PlanSingleUser)
-		if err != nil {
-			t.Fatal(err)
+		if err == nil {
+			t.Fatal("expected error but succeeded")
 		}
 
 	})

@@ -66,7 +66,7 @@ type subscriptionRepo struct {
 // DefaultSource doesn't actually include the card info, so search the
 // sources on the customer for the card info
 func DefaultSource(cust *stripe.Customer) *stripe.Card {
-	if cust == nil {
+	if cust == nil || cust.ID == "" {
 		return nil
 	}
 
