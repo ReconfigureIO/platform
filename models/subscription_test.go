@@ -71,8 +71,6 @@ func TestShouldNotPanicWithEmptyUser(t *testing.T) {
 			StripeToken: "cus_AgZQTeZbnY6AE4",
 		}
 
-		// add empty stripe.customer to customer cache
-
 		subs := repo(db)
 		subs.customerCache[u.ID] = stripe.Customer{}
 
