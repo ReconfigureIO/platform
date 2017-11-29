@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	stripe "github.com/stripe/stripe-go"
 )
 
@@ -13,7 +14,6 @@ type Config struct {
 	ProgramName string     `env:"RECO_NAME"`
 	DbUrl       string     `env:"DATABASE_URL"`
 	SecretKey   string     `env:"SECRET_KEY_BASE"`
-	StripeKey   string     `env:"STRIPE_KEY"`
 	Port        string     `env:"PORT"`
 	Reco        RecoConfig `env:"RECO"`
 	Host        string     `env:"RECO_HOST_NAME"`
@@ -30,6 +30,7 @@ type RecoConfig struct {
 	AWS                     aws.ServiceConfig
 	Deploy                  deployment.ServiceConfig
 	Intercom                events.IntercomConfig
+	Stripe                  stripe.ServiceConfig
 }
 
 func ParseEnvConfig() (*Config, error) {
@@ -60,7 +61,10 @@ func ParseEnvConfig() (*Config, error) {
 		return nil, err
 	}
 
-	stripe.Key = conf.StripeKey
+	err = env.Parse(&conf.Reco.Stripe)
+	if err != nil {
+		return nil, err
+	}
 
 	return &conf, nil
 }

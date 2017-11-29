@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/credits"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	stripe "github.com/stripe/stripe-go"
@@ -13,7 +14,18 @@ import (
 )
 
 // Billing handles requests for billing.
-type Billing struct{}
+type Billing struct {
+	Stripe stripe.Service
+	Events events.EventService
+}
+
+// NewBilling creates a new Billing.
+func NewBilling(events events.EventService) Simulation {
+	return Billing{
+		Aws:    stripeClient,
+		Events: events,
+	}
+}
 
 type BillingInterface interface {
 	Get(c *gin.Context)
@@ -102,7 +114,7 @@ func (b Billing) AddCredits(c *gin.Context) {
 	}
 	user := middleware.GetUser(c)
 	userBalanceRepo := models.UserBalanceDataSource(db)
-	err = credits.AddCredits(post.Quantity, userBalanceRepo, user)
+	err = credits.AddCredits(b.Stripe, post.Quantity, userBalanceRepo, user)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
