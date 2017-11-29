@@ -40,7 +40,9 @@ func TestActiveSimulations(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		simulationData := simulationRepo{db}
 
-		user := User{}
+		user := User{
+			ID: "foobar",
+		}
 
 		simulations := []Simulation{
 			genSimulation(user.ID, time.Hour),

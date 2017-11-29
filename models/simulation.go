@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -18,21 +20,21 @@ const (
 	SQL_ACTIVE_SIMULATIONS = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from simulations j
-join projects on simulations.project_id = projects.id
-join batchjobs on simulations.batchjob_id = batchjobs.id
-left join batchjob_events started
-on batchjobs.id = started.batchjob_id
+join projects on projects.id = j.project_id
+left join batch_jobs on batch_jobs.id = j.batch_job_id
+left join batch_job_events started
+on batch_jobs.id = started.batch_job_id
     and started.id = (
         select e1.id
-        from batchjob_events e1
-        where j.id = e1.batchjob_id and e1.status = 'STARTED'
+        from batch_job_events e1
+        where j.batch_job_id = e1.batch_job_id and e1.status = 'STARTED'
     )
-left outer join batchjob_events terminated
-on batchjobs.id = terminated.batchjob_id
+left outer join batch_job_events terminated
+on batch_jobs.id = terminated.batch_job_id
     and terminated.id = (
         select e2.id
-        from batchjob_events e2
-        where batchjobs.id = e2.batchjob_id and e2.status = 'TERMINATED'
+        from batch_job_events e2
+        where j.batch_job_id = e2.batch_job_id and e2.status = 'TERMINATED'
     )
 where projects.user_id = ? and terminated IS NULL
 `
@@ -76,16 +78,30 @@ func (repo *simulationRepo) ActiveSimulations(user User) ([]Simulation, error) {
 		return nil, err
 	}
 
-	sims := []Simulation{}
+	ids := []string{}
 	for rows.Next() {
-		var sim Simulation
-		err = db.ScanRows(rows, &sim)
+		var sst SimStartedTerminated
+		err = db.ScanRows(rows, &sst)
 		if err != nil {
-			return nil, err
+			return []Simulation{}, err
 		}
-		sims = append(sims, sim)
+		ids = append(ids, sst.Id)
 	}
 	rows.Close()
 
+	var sims []Simulation
+	err = db.Preload("BatchJob").Preload("BatchJob.Events").Where("id in (?)", ids).Find(&sims).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return sims, nil
+}
+
+//scanrows needs an exact match to tie a row to an object.
+//this object has an ID, started, terminated time
+type SimStartedTerminated struct {
+	Id         string
+	Started    time.Time
+	Terminated time.Time
 }
