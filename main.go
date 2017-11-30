@@ -95,6 +95,7 @@ func main() {
 			"https://app.reconfigure.io",
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
+			"https://reconfigure.io",
 		}
 	default:
 		corsConfig.AllowOrigins = []string{
