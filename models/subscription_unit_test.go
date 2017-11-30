@@ -20,3 +20,15 @@ func TestDefaultSourceBlankUser(t *testing.T) {
 		t.Errorf("Expected nil card, got %+v", card)
 	}
 }
+
+func TestDefaultSourceBlankCC(t *testing.T) {
+	// this customer has no stripe.DefaultSource
+	customer := stripe.Customer{
+		ID:            "foobar",
+		DefaultSource: &stripe.PaymentSource{},
+	}
+	card := DefaultSource(&customer)
+	if card != nil {
+		t.Errorf("Expected nil card, got %+v", card)
+	}
+}
