@@ -102,6 +102,7 @@ func main() {
 			"https://app-staging.reconfigure.io",
 			"http://local.reconfigure.io",
 			"http://local.reconfigure.io:4200",
+			"https://reconfigure.ayup.io",
 		}
 	}
 
