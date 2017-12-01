@@ -153,6 +153,9 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 	}
+	if build.ProjectID == publicProjectID {
+		sugar.EnqueueEvent(d.Events, c, "User used public build feature", user.ID, map[string]interface{}{})
+	}
 
 	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", user.ID, map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
