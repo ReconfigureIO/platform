@@ -212,7 +212,7 @@ func (d Deployment) Logs(c *gin.Context) {
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
 	user, loggedIn := middleware.CheckUser(c)
-	if loggedIn && dep.Build.Project.UserID == user.ID {
+	if loggedIn && dep.UserID == user.ID {
 		return true
 	}
 	token, exists := c.GetQuery("token")
