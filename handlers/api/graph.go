@@ -112,7 +112,7 @@ func (g Graph) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	sugar.EnqueueEvent(g.Events, c, "Posted Graph", map[string]interface{}{"graph_id": newGraph.ID, "project_name": newGraph.Project.Name})
+	sugar.EnqueueEvent(g.Events, c, "Posted Graph", project.UserID, map[string]interface{}{"graph_id": newGraph.ID, "project_name": newGraph.Project.Name})
 	sugar.SuccessResponse(c, 201, newGraph)
 }
 
@@ -222,7 +222,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 	}
 
 	eventMessage := "Graph entered state:" + event.Status
-	sugar.EnqueueEvent(g.Events, c, eventMessage, map[string]interface{}{"graph_id": graph.ID, "project_name": graph.Project.Name, "message": event.Message})
+	sugar.EnqueueEvent(g.Events, c, eventMessage, graph.Project.UserID, map[string]interface{}{"graph_id": graph.ID, "project_name": graph.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
 
