@@ -113,8 +113,7 @@ func (b Build) publicBuilds() (builds []models.Build, err error) {
 		return
 	}
 
-	q := b.QueryWhere("projects.id=?", publicProjectID).
-		Where(&models.Build{ProjectID: publicProjectID})
+	q := b.QueryWhere("projects.id=?", publicProjectID)
 
 	err = q.Find(&builds).Error
 	return
