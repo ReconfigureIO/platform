@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -63,10 +64,11 @@ type subscriptionRepo struct {
 	cache         map[string]SubscriptionInfo
 }
 
+//cust.Sources == nil || cust.Sources.Values == nil
 // DefaultSource doesn't actually include the card info, so search the
 // sources on the customer for the card info
 func DefaultSource(cust *stripe.Customer) *stripe.Card {
-	if cust == nil || cust.ID == "" {
+	if !validate(cust) {
 		return nil
 	}
 
@@ -197,4 +199,17 @@ func (s *subscriptionRepo) UpdatePlan(user User, plan string) (sub SubscriptionI
 	}
 	subInfo, err = fromSub(user, *newSub)
 	return subInfo, err
+}
+
+func validate(cust *stripe.Customer) bool {
+	if cust == nil || reflect.DeepEqual(cust, stripe.Customer{}) {
+		return false
+	}
+	if cust.DefaultSource == nil || reflect.DeepEqual(cust.DefaultSource, stripe.PaymentSource{}) {
+		return false
+	}
+	if cust.Sources == nil || reflect.DeepEqual(cust.Sources, stripe.SourceList{}) {
+		return false
+	}
+	return true
 }
