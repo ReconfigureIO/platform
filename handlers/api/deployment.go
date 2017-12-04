@@ -153,8 +153,11 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 	}
+	if build.ProjectID == publicProjectID {
+		sugar.EnqueueEvent(d.Events, c, "User used public build feature", user.ID, map[string]interface{}{})
+	}
 
-	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
+	sugar.EnqueueEvent(d.Events, c, "Posted Deployment", user.ID, map[string]interface{}{"deployment_id": newDep.ID, "build_id": newDep.BuildID})
 
 	sugar.SuccessResponse(c, 201, newDep)
 }
@@ -254,7 +257,7 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	}
 
 	eventMessage := "Deployment entered state:" + event.Status
-	sugar.EnqueueEvent(d.Events, c, eventMessage, map[string]interface{}{"deployment_id": dep.ID, "project_name": dep.Build.Project.Name, "message": event.Message})
+	sugar.EnqueueEvent(d.Events, c, eventMessage, dep.UserID, map[string]interface{}{"deployment_id": dep.ID, "project_name": dep.Build.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
 }

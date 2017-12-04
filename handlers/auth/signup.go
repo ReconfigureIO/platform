@@ -166,8 +166,11 @@ func (s *SignupUser) Callback(c *gin.Context) {
 			sugar.ErrResponse(c, 400, err)
 			return
 		}
-
-		sugar.NotFoundOrError(c, err)
+		if err == gorm.ErrRecordNotFound {
+			c.Redirect(http.StatusMovedPermanently, "https://reconfigure.io/sign-up")
+		} else {
+			sugar.InternalError(c, err)
+		}
 		return
 	}
 

@@ -169,7 +169,7 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", project.UserID, map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
@@ -270,7 +270,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 		return
 	}
 	eventMessage := "Build entered state:" + event.Status
-	sugar.EnqueueEvent(b.Events, c, eventMessage, map[string]interface{}{"build_id": build.ID, "project_name": build.Project.Name, "message": event.Message})
+	sugar.EnqueueEvent(b.Events, c, eventMessage, build.Project.UserID, map[string]interface{}{"build_id": build.ID, "project_name": build.Project.Name, "message": event.Message})
 	sugar.SuccessResponse(c, 200, newEvent)
 
 }
