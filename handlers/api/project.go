@@ -54,7 +54,7 @@ func (p Project) Create(c *gin.Context) {
 		sugar.ErrResponse(c, 500, err)
 	}
 
-	sugar.EnqueueEvent(p.Events, c, "Created Project", map[string]interface{}{"id": newProject.ID, "name": newProject.Name})
+	sugar.EnqueueEvent(p.Events, c, "Created Project", user.ID, map[string]interface{}{"id": newProject.ID, "name": newProject.Name})
 
 	sugar.SuccessResponse(c, 201, newProject)
 }
