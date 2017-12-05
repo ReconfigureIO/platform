@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/queue"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -22,6 +23,8 @@ var (
 	db *gorm.DB
 
 	awsSession aws.Service
+
+	stripeClient stripe.Service
 
 	deploy deployment.Service
 
@@ -39,6 +42,8 @@ func Configure(conf config.Config) {
 	awsSession = aws.New(conf.Reco.AWS)
 
 	deploy = deployment.New(conf.Reco.Deploy)
+
+	stripeClient = stripe.New(conf.Reco.Stripe)
 
 	publicProjectID = conf.Reco.PublicProjectID
 }

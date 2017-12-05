@@ -35,7 +35,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
-	billing := api.Billing{}
+	billing := api.NewBilling(events)
 	profile := profile.Profile{DB: db}
 	billingRoutes := apiRoutes.Group("/user")
 	{

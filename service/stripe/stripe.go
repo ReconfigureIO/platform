@@ -16,6 +16,7 @@ import (
 type Service interface {
 	GetUserInvoices(time.Time, time.Time, models.User) []stripe.Invoice
 	ChargeUser(int, string, models.User) (*stripe.Charge, error)
+	CreateCustomer(string, models.User) (*stripe.Customer, error)
 	Conf() *ServiceConfig
 }
 
