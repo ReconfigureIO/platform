@@ -3,11 +3,13 @@ package stripe
 //go:generate mockgen -source=stripe.go -package=stripe -destination=stripe_mock.go
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/charge"
+	"github.com/stripe/stripe-go/client"
 	"github.com/stripe/stripe-go/customer"
 	"github.com/stripe/stripe-go/invoice"
 )
@@ -22,7 +24,7 @@ type Service interface {
 
 type service struct {
 	conf   ServiceConfig
-	client *stripe.API
+	client *client.API
 }
 
 // ServiceConfig holds configuration for service.
@@ -33,7 +35,7 @@ type ServiceConfig struct {
 // New creates a new service with conf.
 func New(conf ServiceConfig) Service {
 	s := service{conf: conf}
-	s.client = &client.New{conf.StripeKey, nil}
+	s.client = client.New(conf.StripeKey, nil)
 	return &s
 }
 
@@ -68,6 +70,7 @@ func (s *service) CreateCustomer(token string, user models.User) (*stripe.Custom
 	}
 
 	var cust *stripe.Customer
+	var err error
 	if user.StripeToken == "" {
 		cust, err = customer.New(customerParams)
 	} else {
