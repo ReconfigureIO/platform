@@ -13,7 +13,7 @@ const (
 	hourPrice = 250
 )
 
-func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, now time.Time) error {
+func UpdateDebits(ss stripe.Service, ds models.UserBalanceRepo, deployments models.DeploymentRepo, now time.Time) error {
 	// Get all the active users
 	users, err := ds.ActiveUsers()
 	if err != nil {
@@ -25,7 +25,7 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, 
 		//find invoices from yesterday
 		midnight := now.Truncate(24 * time.Hour)
 		previousMidnight := midnight.AddDate(0, 0, -1)
-		invoices := stripe.GetUserInvoices(midnight, previousMidnight, user)
+		invoices := ss.GetUserInvoices(midnight, previousMidnight, user)
 		//find ranges on invoice(s)
 		for _, invoice := range invoices {
 			invoiceStart := time.Unix(invoice.Lines.Values[0].Period.Start, 0)
@@ -54,11 +54,11 @@ func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, 
 
 }
 
-func AddCredits(desiredCredits int, ds models.UserBalanceRepo, user models.User) error {
+func AddCredits(ss stripe.Service, desiredCredits int, ds models.UserBalanceRepo, user models.User) error {
 	totalCharge := hourPrice * desiredCredits
 	chargeDescription := "Charge for deployment time with Reconfigure.io"
 
-	_, err := stripe.ChargeUser(totalCharge, chargeDescription, user)
+	_, err := ss.ChargeUser(totalCharge, chargeDescription, user)
 	if err != nil {
 		return err
 	}
