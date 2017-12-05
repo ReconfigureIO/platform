@@ -1,10 +1,9 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
@@ -18,8 +17,8 @@ type Billing struct {
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService) Simulation {
-	return Simulation{
+func NewBilling(events events.EventService) Billing {
+	return Billing{
 		Stripe: stripeClient,
 		Events: events,
 	}

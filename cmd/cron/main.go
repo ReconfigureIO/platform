@@ -17,7 +17,6 @@ import (
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	stripe "github.com/stripe/stripe-go"
 )
 
 var (
@@ -40,7 +39,6 @@ func setup(*cobra.Command, []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	stripe.Key = conf.StripeKey
 
 	err = config.SetupLogging(version, conf)
 	if err != nil {

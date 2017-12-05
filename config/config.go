@@ -7,7 +7,6 @@ import (
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/stripe"
-	stripe "github.com/stripe/stripe-go"
 )
 
 type Config struct {
