@@ -10,6 +10,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -39,10 +40,13 @@ func TestIndexHandler(t *testing.T) {
 
 	events := events.NewIntercomEventService(icConf, 100)
 
+	stripeConf := stripe.ServiceConfig{StripeKey: ""}
+	stripeClient := stripe.New(stripeConf)
+
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil)
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil, stripeClient)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -76,6 +77,8 @@ func main() {
 
 	leads := leads.New(conf.Reco.Intercom, db)
 
+	stripeClient := stripe.New(conf.Reco.Stripe)
+
 	api.Configure(*conf)
 
 	// ping test
@@ -111,7 +114,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, stripeClient)
 
 	// queue
 	var deploymentQueue queue.Queue

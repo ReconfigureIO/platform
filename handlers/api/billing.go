@@ -17,7 +17,7 @@ type Billing struct {
 }
 
 // NewSimulation creates a new Simulation.
-func NewBilling(events events.EventService) Billing {
+func NewBilling(events events.EventService, stripeClient stripe.Service) Billing {
 	return Billing{
 		Stripe: stripeClient,
 		Events: events,
