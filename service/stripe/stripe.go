@@ -19,6 +19,9 @@ type Service interface {
 	GetUserInvoices(time.Time, time.Time, models.User) []stripe.Invoice
 	ChargeUser(int, string, models.User) (*stripe.Charge, error)
 	CreateCustomer(string, models.User) (*stripe.Customer, error)
+	CreateSubscription(string, models.User) (models.SubscriptionInfo, error)
+	CurrentSubscription(models.User) (models.SubscriptionInfo, error)
+	GetCustomer(models.User) (*stripe.Customer, error)
 	Conf() *ServiceConfig
 }
 
@@ -29,7 +32,7 @@ type service struct {
 
 // ServiceConfig holds configuration for service.
 type ServiceConfig struct {
-	StripeKey string `env:"RECO_STRIPE_KEY"`
+	StripeKey string `env:"STRIPE_KEY"`
 }
 
 // New creates a new service with conf.
