@@ -104,7 +104,7 @@ func (s *service) CreateSubscription(plan string, user models.User) (models.Subs
 }
 
 func (s *service) CurrentSubscription(user models.User) (models.SubscriptionInfo, error) {
-	cust, err := s.GetStripeCustomer(user)
+	cust, err := s.GetCustomer(user)
 	if err != nil {
 		return models.SubscriptionInfo{}, err
 	}
@@ -123,7 +123,7 @@ func (s *service) ChargeUser(amount int, description string, user models.User) (
 	return newCharge, err
 }
 
-func (s *service) GetStripeCustomer(user models.User) (*stripe.Customer, error) {
+func (s *service) GetCustomer(user models.User) (*stripe.Customer, error) {
 	stripeCustomer, err := s.client.Customers.Get(user.StripeToken, nil)
 	return stripeCustomer, err
 }
