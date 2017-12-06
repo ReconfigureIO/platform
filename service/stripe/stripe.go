@@ -4,13 +4,13 @@ package stripe
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/charge"
 	"github.com/stripe/stripe-go/client"
-	"github.com/stripe/stripe-go/customer"
 	"github.com/stripe/stripe-go/invoice"
 )
 
@@ -72,11 +72,44 @@ func (s *service) CreateCustomer(token string, user models.User) (*stripe.Custom
 	var cust *stripe.Customer
 	var err error
 	if user.StripeToken == "" {
-		cust, err = customer.New(customerParams)
+		cust, err = s.client.Customers.New(customerParams)
 	} else {
-		cust, err = customer.Update(user.StripeToken, customerParams)
+		cust, err = s.client.Customers.Update(user.StripeToken, customerParams)
 	}
 	return cust, err
+}
+
+func (s *service) CreateSubscription(plan string, user models.User) (models.SubscriptionInfo, error) {
+	subInfo, err := s.CurrentSubscription(user)
+	if err != nil {
+		return subInfo, err
+	}
+
+	var newSub *stripe.Sub
+	if subInfo.StripeID == "" {
+		newSub, err = s.client.Subs.New(&stripe.SubParams{
+			Customer: user.StripeToken,
+			Plan:     plan,
+		})
+	} else {
+		newSub, err = s.client.Subs.Update(
+			subInfo.StripeID,
+			&stripe.SubParams{
+				Plan:      plan,
+				NoProrate: true,
+			},
+		)
+	}
+	return formatSubInfo(user, *newSub)
+}
+
+func (s *service) CurrentSubscription(user models.User) (models.SubscriptionInfo, error) {
+	cust, err := s.GetStripeCustomer(user)
+	if err != nil {
+		return models.SubscriptionInfo{}, err
+	}
+	subInfo, err := formatSubInfo(user, *cust.Subs.Values[0])
+	return subInfo, err
 }
 
 func (s *service) ChargeUser(amount int, description string, user models.User) (*stripe.Charge, error) {
@@ -88,4 +121,26 @@ func (s *service) ChargeUser(amount int, description string, user models.User) (
 	}
 	newCharge, err := charge.New(chargeParams)
 	return newCharge, err
+}
+
+func (s *service) GetStripeCustomer(user models.User) (*stripe.Customer, error) {
+	stripeCustomer, err := s.client.Customers.Get(user.StripeToken, nil)
+	return stripeCustomer, err
+}
+
+func formatSubInfo(user models.User, stripeSub stripe.Sub) (models.SubscriptionInfo, error) {
+	sub := models.SubscriptionInfo{}
+	hours, err := strconv.Atoi(stripeSub.Plan.Meta["HOURS"])
+	if err != nil {
+		return sub, err
+	}
+	sub = models.SubscriptionInfo{
+		UserID:     user.ID,
+		StartTime:  time.Unix(stripeSub.PeriodStart, 0),
+		EndTime:    time.Unix(stripeSub.PeriodEnd, 0),
+		Hours:      hours,
+		StripeID:   stripeSub.ID,
+		Identifier: stripeSub.Plan.ID,
+	}
+	return sub, nil
 }
