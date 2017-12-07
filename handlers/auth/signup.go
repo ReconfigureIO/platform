@@ -197,7 +197,7 @@ func (s *SignupUser) Callback(c *gin.Context) {
 	}
 
 	// If we have a newUser, we need to create a matching Stripe customer
-	if newUser {
+	if newUser || user.StripeToken == "" {
 		_, err = s.Stripe.CreateCustomer("", user)
 		if err != nil {
 			sugar.NotFoundOrError(c, err)
