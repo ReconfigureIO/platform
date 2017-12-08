@@ -47,10 +47,10 @@ func (s SubscriptionInfo) Empty() bool {
 
 // SubscriptionDataSource returns data source for subscriptions using db.
 func SubscriptionDataSource(db *gorm.DB) SubscriptionRepo {
-	return repo(db)
+	return newSubscriptionRepo(db)
 }
 
-func repo(db *gorm.DB) *subscriptionRepo {
+func newSubscriptionRepo(db *gorm.DB) *subscriptionRepo {
 	return &subscriptionRepo{
 		db:            db,
 		customerCache: make(map[string]stripe.Customer),

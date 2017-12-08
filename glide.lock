@@ -120,9 +120,12 @@ imports:
 - name: github.com/spf13/pflag
   version: 4c012f6dcd9546820e378d0bdda4d8fc772cdfea
 - name: github.com/stripe/stripe-go
-  version: 339ff3ba4d4b26f9179e31f958d8f68c5fd07b43
+  version: 0c814851c79a7b735642fa6c4d204ae8ea9e401b
   subpackages:
+  - charge
   - customer
+  - form
+  - invoice
   - orderitem
   - sub
 - name: github.com/ugorji/go

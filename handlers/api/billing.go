@@ -5,6 +5,8 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/credits"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	stripe "github.com/stripe/stripe-go"
@@ -12,7 +14,18 @@ import (
 )
 
 // Billing handles requests for billing.
-type Billing struct{}
+type Billing struct {
+	Stripe stripe.Service
+	Events events.EventService
+}
+
+// NewBilling creates a new Billing.
+func NewBilling(events events.EventService) Simulation {
+	return Billing{
+		Aws:    stripeClient,
+		Events: events,
+	}
+}
 
 type BillingInterface interface {
 	Get(c *gin.Context)
@@ -24,6 +37,10 @@ type BillingInterface interface {
 // TokenUpdate is token update payload.
 type TokenUpdate struct {
 	Token string `json:"token"`
+}
+
+type BuyCredits struct {
+	Quantity int `json:"quantity"`
 }
 
 // Get the default card info for the customer for frontend display
@@ -89,6 +106,21 @@ func (b Billing) RemainingHours(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, remaining)
 }
 
+func (b Billing) AddCredits(c *gin.Context) {
+	post := BuyCredits{}
+	err := c.BindJSON(&post)
+	if err != nil {
+		return
+	}
+	user := middleware.GetUser(c)
+	userBalanceRepo := models.UserBalanceDataSource(db)
+	err = credits.AddCredits(b.Stripe, post.Quantity, userBalanceRepo, user)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+}
+
 // BillingHours returns information about billing hours for user.
 // Hours are rounded up. i.e. 0 == 0, 1 hour == [1-60]minutes. e.t.c.
 type BillingHours interface {
@@ -111,14 +143,14 @@ func (b Billing) FetchBillingHours(userID string) BillingHours {
 	return billingHours{
 		user:    user,
 		depRepo: models.DeploymentDataSource(db),
-		subRepo: models.SubscriptionDataSource(db),
+		subRepo: models.UserBalanceDataSource(db),
 	}
 }
 
 type billingHours struct {
 	user    models.User
 	depRepo models.DeploymentRepo
-	subRepo models.SubscriptionRepo
+	subRepo models.UserBalanceRepo
 	err     error
 }
 
@@ -126,8 +158,8 @@ func (b billingHours) Available() (int, error) {
 	if b.err != nil {
 		return 0, b.err
 	}
-	sub, err := b.subRepo.CurrentSubscription(b.user)
-	return sub.Hours, err
+	available, err := b.subRepo.AvailableCredit(b.user)
+	return available, err
 }
 
 func (b billingHours) Used() (int, error) {
@@ -153,6 +185,10 @@ func (b billingHours) Net() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	net := sub.Hours - used
+	available, err := b.subRepo.AvailableCredit(b.user)
+	if err != nil {
+		return 0, err
+	}
+	net := available - used
 	return net, nil
 }

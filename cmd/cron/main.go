@@ -102,6 +102,7 @@ func cronCmd() {
 	schedule(5*time.Minute, generatedAFIs)
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
+	schedule(time.Hour, updateDebits)
 	schedule(time.Minute, findDeploymentIPs)
 
 	worker.Start()
@@ -149,6 +150,14 @@ func generatedAFIs() {
 func checkHours() {
 	log.Printf("checking deployments")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
+	if err != nil {
+		exitWithErr(err)
+	}
+}
+
+func updateDebits() {
+	log.Printf("updating user debits")
+	err := billing_hours.UpdateDebits(models.UserBalanceDataSource(db), models.DeploymentDataSource(db), time.Now())
 	if err != nil {
 		exitWithErr(err)
 	}

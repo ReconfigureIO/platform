@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -56,4 +57,44 @@ func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentR
 		}
 	}
 	return nil
+}
+
+func UpdateDebits(ds models.UserBalanceRepo, deployments models.DeploymentRepo, now time.Time) error {
+	// Get all the active users
+	users, err := ds.ActiveUsers()
+	if err != nil {
+		return err
+	}
+	midnight := now.Truncate(24 * time.Hour)
+	midnightYesterday := midnight.AddDate(0, 0, -1)
+
+	// For each active user:
+	for _, user := range users {
+		// Get their recent invoices
+		invoices := stripe.GetUserInvoices(midnightYesterday, midnight, user)
+		if len(invoices) >= 1 {
+			subscriptionInfo, err := ds.CurrentSubscription(user)
+			if err != nil {
+				log.Printf("Error while retrieving subscription info for user %s: %s", user.ID, err)
+			}
+			for _, invoice := range invoices {
+				// get the used deployment hours during the invoice period
+				usedHours, err := models.DeploymentHoursBtw(deployments, user.ID, time.Unix(invoice.Start, 0), time.Unix(invoice.End, 0))
+				if err != nil {
+					log.Printf("Error while retrieving deployment hours for user %s: %s", user.ID, err)
+				}
+				// has the user used credits this month?
+				if usedHours > subscriptionInfo.Hours {
+					debit := usedHours - subscriptionInfo.Hours
+					err = ds.AddDebit(user, debit, invoice.ID)
+					if err != nil {
+						log.Printf("Error while adding %s hours debit to user: %s", debit, user.ID)
+						log.Printf("Error: %s", err)
+					}
+				}
+			}
+		}
+	}
+	return nil
+
 }
