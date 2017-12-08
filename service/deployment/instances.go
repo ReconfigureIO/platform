@@ -98,7 +98,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 			event := models.DeploymentEvent{
 				Timestamp: time.Now(),
 				Status:    models.StatusTerminated,
-				Message:   models.StatusTerminated,
+				Message:   "Instance has terminated",
 				Code:      0,
 			}
 
