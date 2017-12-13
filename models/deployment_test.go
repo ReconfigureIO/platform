@@ -400,22 +400,21 @@ func TestDeploymentHoursBtw(t *testing.T) {
 		d := deploymentRepo{db}
 
 		userID := "user1"
-		var zero time.Time
 		now := time.Now()
 
 		deps := []Deployment{
-			genDeployment(userID, zero, time.Hour),               // 1 hour
-			genDeployment(userID, zero, 0),                       // 0 hours
-			genDeployment(userID, zero, 0),                       // 0 hours
-			genDeployment(userID, zero, time.Hour*2),             // 2 hours
-			genDeployment(userID, zero, time.Hour+5*time.Minute), // 1 hour 5 minutes
+			genDeployment(userID, now, time.Hour),               // 1 hour
+			genDeployment(userID, now, 0),                       // 0 hours
+			genDeployment(userID, now, 0),                       // 0 hours
+			genDeployment(userID, now, time.Hour*2),             // 2 hours
+			genDeployment(userID, now, time.Hour+5*time.Minute), // 1 hour 5 minutes
 		} // total 4 hours 5 minutes, rounds to 5 hours
 
 		for i := range deps {
 			db.Create(&(deps[i]))
 		}
 
-		hours, err := DeploymentHoursBtw(&d, userID, zero, now)
+		hours, err := DeploymentHoursBtw(&d, userID, now, now.AddDate(0, 0, 1))
 		if err != nil {
 			t.Error(err)
 			return
