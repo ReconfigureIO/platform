@@ -78,7 +78,7 @@ WHERE (user_id = ? and e.status in (?))
 `
 
 	sqlDeploymentHours = `
-select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+select j.id as id, started.timestamp as started, coalesce(terminated.timestamp, now()) as terminated
 from deployments j
 left join deployment_events started
 on j.id = started.deployment_id
