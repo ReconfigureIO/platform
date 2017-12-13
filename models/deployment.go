@@ -275,6 +275,10 @@ func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time)
 		}
 
 		// Bound calculated end time to this end time
+		emptyTime := time.Time{}
+		if dep.Terminated == emptyTime {
+			dep.Terminated = time.Now()
+		}
 		e := dep.Terminated
 		if e.After(endTime) {
 			e = endTime
