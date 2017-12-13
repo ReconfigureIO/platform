@@ -266,8 +266,13 @@ func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
 
 func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {
 	t := 0
+	emptyTime := time.Time{}
 
 	for _, dep := range deps {
+		if dep.Started == emptyTime {
+			//empty start time means this dep shouldn't be considered
+			continue
+		}
 		s := dep.Started
 		// Bound calculated start time to this start time
 		if s.Before(startTime) {
@@ -275,7 +280,6 @@ func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time)
 		}
 
 		// Bound calculated end time to this end time
-		emptyTime := time.Time{}
 		if dep.Terminated == emptyTime {
 			dep.Terminated = time.Now()
 		}
