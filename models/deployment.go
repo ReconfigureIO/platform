@@ -78,7 +78,7 @@ WHERE (user_id = ? and e.status in (?))
 `
 
 	sqlDeploymentHours = `
-select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+select j.id as id, started.timestamp as started, coalesce(terminated.timestamp, now()) as terminated
 from deployments j
 left join deployment_events started
 on j.id = started.deployment_id
@@ -266,8 +266,13 @@ func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
 
 func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {
 	t := 0
+	emptyTime := time.Time{}
 
 	for _, dep := range deps {
+		if dep.Started == emptyTime {
+			//empty start time means this dep shouldn't be considered
+			continue
+		}
 		s := dep.Started
 		// Bound calculated start time to this start time
 		if s.Before(startTime) {
@@ -275,6 +280,9 @@ func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time)
 		}
 
 		// Bound calculated end time to this end time
+		if dep.Terminated == emptyTime {
+			dep.Terminated = time.Now()
+		}
 		e := dep.Terminated
 		if e.After(endTime) {
 			e = endTime
