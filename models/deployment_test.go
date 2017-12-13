@@ -3,6 +3,7 @@
 package models
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -451,6 +452,47 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 		}
 		if hours != 0 {
 			t.Errorf("Expected %v found %v", 0, hours)
+		}
+	})
+}
+
+func TestDeploymentHoursStartedNoTerminated(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		now := time.Now()
+
+		dep := Deployment{
+			UserID:  "foobar",
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Timestamp: now.AddDate(0, 0, -1),
+					Status:    "STARTED",
+				},
+				DeploymentEvent{
+					Timestamp: now.AddDate(0, 0, -2),
+					Status:    "QUEUED",
+				},
+			},
+		}
+
+		db.Create(&dep)
+
+		depHours, err := d.DeploymentHours(dep.UserID, now.AddDate(0, 0, -3), now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(depHours) <= 0 {
+			t.Error("expected more deployments")
+		}
+		for _, depHour := range depHours {
+			if depHour.Started.After(depHour.Terminated) {
+				fmt.Println("Starts at: ", depHour.Started)
+				fmt.Println("Ends at: ", depHour.Terminated)
+				t.Errorf("Deployment starts after it ends")
+
+			}
 		}
 	})
 }
