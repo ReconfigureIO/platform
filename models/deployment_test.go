@@ -497,6 +497,23 @@ func TestDeploymentHoursStartedNoTerminated(t *testing.T) {
 	})
 }
 
+func TestAggregateHoursBetween(t *testing.T) {
+	now := time.Now()
+
+	depHour := []DeploymentHours{
+		DeploymentHours{
+			Id:         "foobar",
+			Started:    now.AddDate(0, 0, -1),
+			Terminated: time.Time{},
+		},
+	}
+
+	hours := AggregateHoursBetween(depHour, now.AddDate(0, 0, -3), now)
+	if hours != 24 {
+		t.Errorf("Expected: 24, Got: %s", hours)
+	}
+}
+
 func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
