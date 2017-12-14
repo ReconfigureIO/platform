@@ -44,7 +44,7 @@ func TestFindAFI(t *testing.T) {
 	event := &models.BatchJobEvent{
 		Timestamp: timeNow,
 		Status:    models.StatusCompleted,
-		Message:   models.StatusCompleted,
+		Message:   "Image generation succeeded",
 		Code:      0,
 	}
 

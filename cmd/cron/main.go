@@ -145,7 +145,7 @@ func generatedAFIs() {
 }
 
 func checkHours() {
-	log.Printf("checking deployments")
+	log.Printf("checking for users exceeding their subscription hours")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
 	if err != nil {
 		exitWithErr(err)
