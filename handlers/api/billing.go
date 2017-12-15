@@ -1,18 +1,28 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
-	stripe "github.com/stripe/stripe-go"
 	"github.com/stripe/stripe-go/customer"
 )
 
 // Billing handles requests for billing.
-type Billing struct{}
+type Billing struct {
+	Stripe stripe.Service
+	Events events.EventService
+}
+
+// NewSimulation creates a new Simulation.
+func NewBilling(events events.EventService, stripeClient stripe.Service) Billing {
+	return Billing{
+		Stripe: stripeClient,
+		Events: events,
+	}
+}
 
 type BillingInterface interface {
 	Get(c *gin.Context)
@@ -50,18 +60,7 @@ func (b Billing) Replace(c *gin.Context) {
 	}
 	user := middleware.GetUser(c)
 
-	customerParams := &stripe.CustomerParams{
-		Desc:  fmt.Sprintf("%s (github: %d)", user.Name, user.GithubID),
-		Email: user.Email,
-	}
-	customerParams.SetSource(post.Token)
-
-	var cust *stripe.Customer
-	if user.StripeToken == "" {
-		cust, err = customer.New(customerParams)
-	} else {
-		cust, err = customer.Update(user.StripeToken, customerParams)
-	}
+	cust, err := b.Stripe.CreateCustomer(post.Token, user)
 
 	if err != nil {
 		sugar.StripeError(c, err)

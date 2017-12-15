@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/github"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
@@ -23,9 +24,10 @@ const (
 )
 
 type SignupUser struct {
-	DB    *gorm.DB
-	GH    *github.Service
-	Leads leads.Leads
+	DB     *gorm.DB
+	GH     *github.Service
+	Leads  leads.Leads
+	Stripe stripe.Service
 }
 
 func (s *SignupUser) GetAuthToken(token string) (models.InviteToken, error) {
@@ -188,6 +190,15 @@ func (s *SignupUser) Callback(c *gin.Context) {
 	// If we have a newUser, we need to mark the new user as invited
 	if newUser {
 		err = s.Leads.Invited(invite, user)
+		if err != nil {
+			sugar.NotFoundOrError(c, err)
+			return
+		}
+	}
+
+	// If we have a newUser, we need to create a matching Stripe customer
+	if newUser || user.StripeToken == "" {
+		_, err = s.Stripe.CreateCustomer("", user)
 		if err != nil {
 			sugar.NotFoundOrError(c, err)
 			return

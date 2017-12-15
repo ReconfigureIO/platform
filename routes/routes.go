@@ -8,13 +8,14 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/ReconfigureIO/platform/service/stripe"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads) *gin.Engine {
+func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads, stripeClient stripe.Service) *gin.Engine {
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -31,11 +32,11 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 	SetupAdmin(admin, db, leads)
 
 	// signup & login flow
-	SetupAuth(r, db, leads)
+	SetupAuth(r, db, leads, stripeClient)
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
-	billing := api.Billing{}
+	billing := api.NewBilling(events, stripeClient)
 	profile := profile.Profile{DB: db}
 	billingRoutes := apiRoutes.Group("/user")
 	{
