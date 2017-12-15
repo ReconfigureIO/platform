@@ -248,6 +248,11 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	_, isUser := middleware.CheckUser(c)
+	if event.Status == models.StatusTerminated && isUser {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
+	}
+
 	newEvent, err := d.AddEvent(c, dep, event)
 
 	if err != nil {
