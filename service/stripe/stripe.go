@@ -111,8 +111,11 @@ func (s *service) CurrentSubscription(user models.User) (models.SubscriptionInfo
 	if err != nil {
 		return models.SubscriptionInfo{}, err
 	}
-	subInfo, err := formatSubInfo(user, *cust.Subs.Values[0])
-	return subInfo, err
+	if len(cust.Subs.Values) >= 1 {
+		subInfo, err := formatSubInfo(user, *cust.Subs.Values[0])
+		return subInfo, err
+	}
+	return models.SubscriptionInfo{}, err
 }
 
 func (s *service) ChargeUser(amount int, description string, user models.User) (*stripe.Charge, error) {
