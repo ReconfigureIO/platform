@@ -110,7 +110,7 @@ func (s Simulation) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	sugar.EnqueueEvent(s.Events, c, "Posted Simulation", map[string]interface{}{"simulation_id": newSim.ID, "project_name": newSim.Project.Name})
+	sugar.EnqueueEvent(s.Events, c, "Posted Simulation", project.UserID, map[string]interface{}{"simulation_id": newSim.ID, "project_name": newSim.Project.Name})
 	sugar.SuccessResponse(c, 201, newSim)
 }
 
@@ -231,6 +231,11 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	_, isUser := middleware.CheckUser(c)
+	if event.Status == models.StatusTerminated && isUser {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
+	}
+
 	newEvent, err := BatchService{}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
@@ -240,7 +245,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	}
 
 	eventMessage := "Simulation entered state:" + event.Status
-	sugar.EnqueueEvent(s.Events, c, eventMessage, map[string]interface{}{"simulation_id": sim.ID, "project_name": sim.Project.Name, "message": event.Message})
+	sugar.EnqueueEvent(s.Events, c, eventMessage, sim.Project.UserID, map[string]interface{}{"simulation_id": sim.ID, "project_name": sim.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
 }

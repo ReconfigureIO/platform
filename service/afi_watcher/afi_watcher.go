@@ -58,14 +58,14 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 				event = &models.BatchJobEvent{
 					Timestamp: status.UpdatedAt,
 					Status:    models.StatusCompleted,
-					Message:   models.StatusCompleted,
+					Message:   "Image generation succeeded",
 					Code:      0,
 				}
 			case "failed":
 				event = &models.BatchJobEvent{
 					Timestamp: status.UpdatedAt,
 					Status:    models.StatusErrored,
-					Message:   models.StatusErrored,
+					Message:   "Image generation failed",
 					Code:      0,
 				}
 			default:

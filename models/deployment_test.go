@@ -3,6 +3,7 @@
 package models
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -400,22 +401,21 @@ func TestDeploymentHoursBtw(t *testing.T) {
 		d := deploymentRepo{db}
 
 		userID := "user1"
-		var zero time.Time
 		now := time.Now()
 
 		deps := []Deployment{
-			genDeployment(userID, zero, time.Hour),               // 1 hour
-			genDeployment(userID, zero, 0),                       // 0 hours
-			genDeployment(userID, zero, 0),                       // 0 hours
-			genDeployment(userID, zero, time.Hour*2),             // 2 hours
-			genDeployment(userID, zero, time.Hour+5*time.Minute), // 1 hour 5 minutes
+			genDeployment(userID, now, time.Hour),               // 1 hour
+			genDeployment(userID, now, 0),                       // 0 hours
+			genDeployment(userID, now, 0),                       // 0 hours
+			genDeployment(userID, now, time.Hour*2),             // 2 hours
+			genDeployment(userID, now, time.Hour+5*time.Minute), // 1 hour 5 minutes
 		} // total 4 hours 5 minutes, rounds to 5 hours
 
 		for i := range deps {
 			db.Create(&(deps[i]))
 		}
 
-		hours, err := DeploymentHoursBtw(&d, userID, zero, now)
+		hours, err := DeploymentHoursBtw(&d, userID, now, now.AddDate(0, 0, 1))
 		if err != nil {
 			t.Error(err)
 			return
@@ -453,6 +453,81 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 			t.Errorf("Expected %v found %v", 0, hours)
 		}
 	})
+}
+
+func TestDeploymentHoursStartedNoTerminated(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		now := time.Now()
+
+		dep := Deployment{
+			UserID:  "foobar",
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Timestamp: now.AddDate(0, 0, -1),
+					Status:    "STARTED",
+				},
+				DeploymentEvent{
+					Timestamp: now.AddDate(0, 0, -2),
+					Status:    "QUEUED",
+				},
+			},
+		}
+
+		db.Create(&dep)
+
+		depHours, err := d.DeploymentHours(dep.UserID, now.AddDate(0, 0, -3), now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if len(depHours) <= 0 {
+			t.Error("expected more deployments")
+		}
+		for _, depHour := range depHours {
+			if depHour.Started.After(depHour.Terminated) {
+				fmt.Println("Starts at: ", depHour.Started)
+				fmt.Println("Ends at: ", depHour.Terminated)
+				t.Errorf("Deployment starts after it ends")
+
+			}
+		}
+	})
+}
+
+func TestAggregateHoursBetween(t *testing.T) {
+	now := time.Now()
+
+	depHour := []DeploymentHours{
+		DeploymentHours{
+			Id:         "foobar",
+			Started:    now.AddDate(0, 0, -1),
+			Terminated: time.Time{},
+		},
+	}
+
+	hours := AggregateHoursBetween(depHour, now.AddDate(0, 0, -3), now)
+	if hours != 24 {
+		t.Errorf("Expected: 24, Got: %s", hours)
+	}
+}
+
+func TestAggregateHoursBetweenNoStarted(t *testing.T) {
+	now := time.Now()
+
+	depHour := []DeploymentHours{
+		DeploymentHours{
+			Id:         "foobar",
+			Started:    time.Time{},
+			Terminated: now.AddDate(0, 0, -1),
+		},
+	}
+
+	hours := AggregateHoursBetween(depHour, now.AddDate(0, 0, -3), now)
+	if hours != 0 {
+		t.Errorf("Expected: 0, Got: %s", hours)
+	}
 }
 
 func TestDeploymentHoursBtwWithRealTimes(t *testing.T) {

@@ -118,8 +118,7 @@ func (b Build) publicBuilds() (builds []models.Build, err error) {
 		return
 	}
 
-	q := b.QueryWhere("projects.id=?", publicProjectID).
-		Where(&models.Build{ProjectID: publicProjectID})
+	q := b.QueryWhere("projects.id=?", publicProjectID)
 
 	err = q.Find(&builds).Error
 	return
@@ -185,7 +184,7 @@ func (b Build) Create(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	sugar.EnqueueEvent(b.Events, c, "Posted Build", map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
+	sugar.EnqueueEvent(b.Events, c, "Posted Build", project.UserID, map[string]interface{}{"build_id": newBuild.ID, "project_name": newBuild.Project.Name})
 	sugar.SuccessResponse(c, 201, newBuild)
 }
 
@@ -274,6 +273,11 @@ func (b Build) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	_, isUser := middleware.CheckUser(c)
+	if event.Status == models.StatusTerminated && isUser {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
+	}
+
 	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
 
 	if event.Status == "CREATING_IMAGE" {
@@ -286,7 +290,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 		return
 	}
 	eventMessage := "Build entered state:" + event.Status
-	sugar.EnqueueEvent(b.Events, c, eventMessage, map[string]interface{}{"build_id": build.ID, "project_name": build.Project.Name, "message": event.Message})
+	sugar.EnqueueEvent(b.Events, c, eventMessage, build.Project.UserID, map[string]interface{}{"build_id": build.ID, "project_name": build.Project.Name, "message": event.Message})
 	sugar.SuccessResponse(c, 200, newEvent)
 
 }
