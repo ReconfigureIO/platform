@@ -18,6 +18,9 @@ spec:
         args:
           - /cron
           - cron
+        env:
+        - name: RECO_NAME
+          value: "Cron"
         envFrom:
           - configMapRef:
               name: staging-config

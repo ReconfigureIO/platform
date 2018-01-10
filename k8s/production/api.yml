@@ -32,6 +32,9 @@ spec:
             port: 80
           initialDelaySeconds: 3
           periodSeconds: 3
+        env:
+        - name: RECO_NAME
+          value: "API"
         envFrom:
           - configMapRef:
               name: production-config
