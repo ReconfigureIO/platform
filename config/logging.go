@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/bshuster-repo/logruzio"
+	"github.com/ReconfigureIO/logruzio"
 	"github.com/sirupsen/logrus"
 )
 
