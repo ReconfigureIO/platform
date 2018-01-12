@@ -138,7 +138,7 @@ func (s *service) runSpotInstance(ctx context.Context, encodedConfig string, dry
 		DryRun:              aws.Bool(dryRun),
 		InstanceCount:       aws.Int64(1),
 		LaunchSpecification: &launch,
-		SpotPrice:           aws.String("0.60"),
+		SpotPrice:           aws.String("1.20"),
 		Type:                aws.String("one-time"),
 	}
 
