@@ -34,7 +34,7 @@ spec:
           periodSeconds: 3
         env:
         - name: RECO_NAME
-          value: "API"
+          value: "api"
         envFrom:
           - configMapRef:
               name: production-config

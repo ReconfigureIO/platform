@@ -20,7 +20,7 @@ spec:
           - cron
         env:
         - name: RECO_NAME
-          value: "Cron"
+          value: "cron"
         envFrom:
           - configMapRef:
               name: production-config

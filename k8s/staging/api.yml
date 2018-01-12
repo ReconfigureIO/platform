@@ -27,7 +27,7 @@ spec:
           periodSeconds: 3
         env:
         - name: RECO_NAME
-          value: "API"
+          value: "api"
         envFrom:
           - configMapRef:
               name: staging-config
