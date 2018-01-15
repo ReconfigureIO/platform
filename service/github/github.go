@@ -87,7 +87,7 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, creat
 		}
 	}
 
-	err = q.Attrs(user).Assign(u).FirstOrInit(&u).Error
+	err = q.Attrs(user).FirstOrInit(&u).Error
 	if err != nil {
 		return u, err
 	}
