@@ -36,24 +36,14 @@ func TestCreateOrUpdateUser(t *testing.T) {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", u, createdUser)
 		}
 
-		//test update
-		u.Name = "bar"
-		createdUser, err = createOrUpdateUser(db, u, true)
-		if err != nil {
-			t.Error(err)
-		}
-		if createdUser.Name != u.Name {
-			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", u, createdUser)
-		}
-
 		//test no overwrite
 		u.Name = "not bar"
 		createdUser, err = createOrUpdateUser(db, u, true)
 		if err != nil {
 			t.Error(err)
 		}
-		if createdUser.Name != u.Name {
-			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", u, createdUser)
+		if createdUser.Name == u.Name {
+			t.Fatalf("User's name got overwritten unexpectedly")
 		}
 	})
 }
