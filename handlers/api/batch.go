@@ -27,13 +27,13 @@ func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatch
 	err := repo.AddEvent(*batchJob, newEvent)
 
 	if err != nil {
-		return models.BatchJobEvent{}, nil
+		return models.BatchJobEvent{}, err
 	}
 
-	if newEvent.Status == models.StatusTerminated {
+	if newEvent.Status == models.StatusTerminating {
 		err = awsSession.HaltJob(batchJob.BatchID)
 		if err != nil {
-			return models.BatchJobEvent{}, nil
+			return models.BatchJobEvent{}, err
 		}
 	}
 	return newEvent, nil
