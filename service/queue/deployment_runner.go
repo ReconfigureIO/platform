@@ -36,7 +36,13 @@ func (d DeploymentRunner) Run(j Job) {
 	}
 
 	if dep.HasStarted() {
-		log.Errorf("Trying to start deployment id %s that has already started", depID)
+		log.WithFields(log.Fields{
+			"deployment": depID,
+			"status":     dep.Status(),
+			"spot":       dep.Spot,
+			"instance":   dep.InstanceID,
+		}).Error("Trying to start deployment that has already started")
+		return
 	}
 
 	deployment := models.Deployment{}
