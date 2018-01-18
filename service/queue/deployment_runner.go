@@ -25,8 +25,22 @@ var _ JobRunner = DeploymentRunner{}
 func (d DeploymentRunner) Run(j Job) {
 	depID := j.ID
 
+	//If deployment is already running, stop and log error
+	var dep models.Deployment
+	err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
+		return db.Order("timestamp")
+	}).First(&dep, "id = ?", depID).Error
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if dep.HasStarted() {
+		log.Errorf("Trying to start deployment id %s that has already started", depID)
+	}
+
 	deployment := models.Deployment{}
-	err := d.DB.Preload("Build").First(&deployment, "id = ?", depID).Error
+	err = d.DB.Preload("Build").First(&deployment, "id = ?", depID).Error
 	if err != nil {
 		log.Error(err)
 		return
