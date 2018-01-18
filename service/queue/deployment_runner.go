@@ -39,7 +39,7 @@ func (d DeploymentRunner) Run(j Job) {
 		log.WithFields(log.Fields{
 			"deployment": depID,
 			"status":     dep.Status(),
-			"spot":       dep.Spot,
+			"spot":       dep.SpotInstance,
 			"instance":   dep.InstanceID,
 		}).Error("Trying to start deployment that has already started")
 		return
