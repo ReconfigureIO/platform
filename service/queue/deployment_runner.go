@@ -76,28 +76,6 @@ func (d DeploymentRunner) Run(j Job) {
 		log.Error(err)
 		return
 	}
-
-	// wait for deployment
-	for {
-		var dep models.Deployment
-		err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
-			return db.Order("timestamp")
-		}).First(&dep, "id = ?", depID).Error
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		if dep.HasFinished() {
-			break
-		}
-
-		interval := d.pollInterval
-		if interval == 0 {
-			interval = time.Second * 60
-		}
-		time.Sleep(interval)
-	}
 }
 
 // Stop satisifies queue.JobRunner interface.
