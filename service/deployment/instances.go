@@ -94,7 +94,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		depStatus := deployment.Status()
 
 		// if it's not found, it was terminated a long time ago, otherwise update
-		if !found || status == ec2.InstanceStateNameTerminated {
+		if status == ec2.InstanceStateNameTerminated {
 			event := models.DeploymentEvent{
 				Timestamp: time.Now(),
 				Status:    models.StatusTerminated,
@@ -113,6 +113,26 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 			err = instances.Deploy.StopDeployment(ctx, deployment)
 			if err != nil {
 				return err
+			}
+		}
+
+		if !found {
+			//terminated instances expire after 5-60 minutes
+			//spot instance requests that're terminated expire after 24 hours
+			//if not found, does the SIR say the instance terminated?
+			spotStatus, err := instances.Deploy.DescribeSpotRequestStatus(ctx, deployment)
+			if spotStatus == ec2.SpotRequestStateNameTerminated {
+				event := models.DeploymentEvent{
+					Timestamp: time.Now(),
+					Status:    models.StatusTerminated,
+					Message:   "Instance has terminated",
+					Code:      0,
+				}
+				err = instances.AddDeploymentEvent(ctx, deployment, event)
+				if err != nil {
+					return err
+				}
+				terminating++
 			}
 		}
 	}
