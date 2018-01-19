@@ -21,6 +21,8 @@ type Leads interface {
 
 	// If a user signs up with an InviteToken, convert from contact to a user
 	Invited(token models.InviteToken, user models.User) error
+
+	//syncIntercom
 }
 
 type leads struct {
@@ -160,4 +162,20 @@ func (s *leads) Invited(token models.InviteToken, user models.User) error {
 	intercom_user := intercom.User{Email: user.Email}
 	_, err := s.intercom.Contacts.Convert(&contact, &intercom_user)
 	return err
+}
+
+func (s *leads) SyncIntercomCustomer(user models.User) error {
+	//get user from DB
+	//look up user in intercom using intercom ID
+	//just check that's okay, github ID should match
+	//if match, all good, update the intercom user with
+	//the details from our user
+	ic := s.intercom
+	icUser := intercom.User{
+		UserID:     user.ID,
+		Email:      user.Email,
+		SignedUpAt: user.CreatedAt.Unix(),
+	}
+	_, err := ic.Users.Save(&icUser)
+
 }
