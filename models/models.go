@@ -54,6 +54,10 @@ type User struct {
 	CreatedAt         time.Time `json:"created_at"`
 	PhoneNumber       string    `json:"phone_number"`
 	Company           string    `json:"company"`
+	Landing           string    `json:"-"`
+	MainGoal          string    `json:"-"`
+	Employees         string    `json:"-"`
+	MarketVerticals   string    `json:"-"`
 	GithubAccessToken string    `json:"-"`
 	Token             string    `json:"-"`
 	StripeToken       string    `json:"-"`
