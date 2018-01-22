@@ -58,6 +58,7 @@ type User struct {
 	MainGoal          string    `json:"-"`
 	Employees         string    `json:"-"`
 	MarketVerticals   string    `json:"-"`
+	JobTitle          string    `json:"-"`
 	GithubAccessToken string    `json:"-"`
 	Token             string    `json:"-"`
 	StripeToken       string    `json:"-"`
