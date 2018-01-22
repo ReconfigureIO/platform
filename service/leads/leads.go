@@ -2,6 +2,7 @@ package leads
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -22,7 +23,8 @@ type Leads interface {
 	// If a user signs up with an InviteToken, convert from contact to a user
 	Invited(token models.InviteToken, user models.User) error
 
-	//syncIntercom
+	// Updates an intercom customer to match our User
+	SyncIntercomCustomer(user models.User) error
 }
 
 type leads struct {
@@ -166,18 +168,19 @@ func (s *leads) Invited(token models.InviteToken, user models.User) error {
 
 func (s *leads) SyncIntercomCustomer(user models.User) error {
 	ic := s.intercom
-	icUser, err := ic.Users.FindByID(user.ID)
+	icUser, err := ic.Users.FindByUserID(user.ID)
 	if err != nil {
 		return err
 	}
+	return nil
 	icUser.Name = user.Name
 	icUser.Email = user.Email
 	icUser.Phone = user.PhoneNumber
-	icUser.Company = user.Company
+	// icUser.Company = user.Company
 	icUser.Landing = user.Landing
-	icUser.MainGoal = user.MainGoal
-	icUser.Employees = user.Employees
-	icUser.MarketVerticals = user.MarketVerticals
+	icUser.CustomAttributes[main_goal] = user.MainGoal[0:251]
+	icUser.CustomAttributes[employees] = user.Employees[0:251]
+	icUser.CustomAttributes[market_verticals] = user.MarketVerticals[0:251]
 	_, err = ic.Users.Save(&icUser)
 	if err != nil {
 		return err
