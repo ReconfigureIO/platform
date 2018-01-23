@@ -3,7 +3,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = "us-east-1"
         KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
-        RECO_INTERCOM_ACCESS_TOKEN = "ssm:///reconfigureio/platform/production/intercom_token"
+        RECO_INTERCOM_ACCESS_TOKEN = "ssm://reconfigureio/platform/production/intercom_token"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
