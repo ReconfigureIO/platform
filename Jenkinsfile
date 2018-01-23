@@ -3,6 +3,7 @@ pipeline {
     environment {
         AWS_DEFAULT_REGION = "us-east-1"
         KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
+        RECO_INTERCOM_ACCESS_TOKEN = "ssm:///reconfigureio/platform/production/intercom_token"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
@@ -45,7 +46,7 @@ pipeline {
 
         stage('test') {
             steps {
-                sh 'docker-compose run --rm test make vet integration-tests'
+                sh 'dist-image/ssm-env && docker-compose run --rm test make vet integration-tests'
             }
         }
 
