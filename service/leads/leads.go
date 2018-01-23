@@ -2,7 +2,6 @@ package leads
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -176,16 +175,16 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	icUser.Name = user.Name
 	icUser.Email = user.Email
 	icUser.Phone = user.PhoneNumber
-	icUser.Landing = user.Landing
-	icUser.CustomAttributes[main_goal] = user.MainGoal[0:251]
-	icUser.CustomAttributes[employees] = user.Employees[0:251]
-	icUser.CustomAttributes[market_verticals] = user.MarketVerticals[0:251]
+	icUser.CustomAttributes["landing"] = truncateString(user.Landing, 252)
+	icUser.CustomAttributes["main_goal"] = truncateString(user.MainGoal, 252)
+	icUser.CustomAttributes["employees"] = truncateString(user.Employees, 252)
+	icUser.CustomAttributes["market_verticals"] = truncateString(user.MarketVerticals, 252)
 
 	companyList := intercom.CompanyList{
 		Companies: []intercom.Company{
 			{
-				ID:   user.ID,
-				Name: user.Company[0:251],
+				CompanyID: user.ID,
+				Name:      truncateString(user.Company, 252),
 			},
 		},
 	}
@@ -197,4 +196,12 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 		return err
 	}
 	return nil
+}
+
+func truncateString(str string, num int) string {
+	output := str
+	if len(str) > num {
+		output = str[0 : num-1]
+	}
+	return output
 }
