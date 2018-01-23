@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -96,11 +97,11 @@ var migrations = []*gormigrate.Migration{
 				MarketVerticals string `json:"-"`
 				JobTitle        string `json:"-"`
 			}
-			err = tx.AutoMigrate(&User{}).Error
+			err := tx.AutoMigrate(&User{}).Error
 			return err
 		},
 		Rollback: func(tx *gorm.DB) error {
-			return Error.New()
+			return errors.New("Migration failed. Hit rollback conditions while adding marketing fields to users")
 		},
 	},
 }
