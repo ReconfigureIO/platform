@@ -84,12 +84,17 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
+	useSpotInstance := true
+	if build.Project.ID == publicProjectID {
+		useSpotInstance = false
+	}
+
 	newDep := models.Deployment{
 		Build:        build,
 		BuildID:      post.BuildID,
 		Command:      post.Command,
 		Token:        uniuri.NewLen(64),
-		SpotInstance: d.UseSpotInstances,
+		SpotInstance: useSpotInstance,
 		UserID:       user.ID,
 	}
 
