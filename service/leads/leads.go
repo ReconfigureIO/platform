@@ -172,17 +172,29 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	if err != nil {
 		return err
 	}
-	return nil
+
 	icUser.Name = user.Name
 	icUser.Email = user.Email
 	icUser.Phone = user.PhoneNumber
-	// icUser.Company = user.Company
 	icUser.Landing = user.Landing
 	icUser.CustomAttributes[main_goal] = user.MainGoal[0:251]
 	icUser.CustomAttributes[employees] = user.Employees[0:251]
 	icUser.CustomAttributes[market_verticals] = user.MarketVerticals[0:251]
+
+	companyList := intercom.CompanyList{
+		Companies: []intercom.Company{
+			{
+				ID:   user.ID,
+				Name: user.Company[0:251],
+			},
+		},
+	}
+
+	icUser.Companies = &companyList
+
 	_, err = ic.Users.Save(&icUser)
 	if err != nil {
 		return err
 	}
+	return nil
 }
