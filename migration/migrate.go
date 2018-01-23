@@ -86,6 +86,23 @@ var migrations = []*gormigrate.Migration{
 			return tx.Table("deployments").DropColumn("user_id").Error
 		},
 	},
+	{
+		ID: "201801231441",
+		Migrate: func(tx *gorm.DB) error {
+			type User struct {
+				Landing         string `json:"-"`
+				MainGoal        string `json:"-"`
+				Employees       string `json:"-"`
+				MarketVerticals string `json:"-"`
+				JobTitle        string `json:"-"`
+			}
+			err = tx.AutoMigrate(&User{}).Error
+			return err
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return Error.New()
+		},
+	},
 }
 
 const (
