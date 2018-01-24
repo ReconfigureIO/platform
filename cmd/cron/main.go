@@ -120,7 +120,7 @@ func terminateDeployments() {
 	err := deployment.NewInstances(d, deploy).UpdateInstanceStatus(ctx)
 
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while marking deployments as terminated")
 	}
 }
 
@@ -132,7 +132,7 @@ func findDeploymentIPs() {
 	err := deployment.NewInstances(d, deploy).FindIPs(ctx)
 
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while finding deployment IPs")
 	}
 }
 
@@ -142,7 +142,7 @@ func generatedAFIs() {
 
 	err := watcher.FindAFI(context.Background(), 100)
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while checking for generated AFIs")
 	}
 }
 
@@ -150,7 +150,7 @@ func checkHours() {
 	log.Printf("checking for users exceeding their subscription hours")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while checking users have not exceeded their hour allowances")
 	}
 }
 

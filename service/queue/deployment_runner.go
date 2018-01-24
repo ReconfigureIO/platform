@@ -25,8 +25,28 @@ var _ JobRunner = DeploymentRunner{}
 func (d DeploymentRunner) Run(j Job) {
 	depID := j.ID
 
+	//If deployment is already running, stop and log error
+	var dep models.Deployment
+	err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
+		return db.Order("timestamp")
+	}).First(&dep, "id = ?", depID).Error
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if dep.HasStarted() {
+		log.WithFields(log.Fields{
+			"deployment": depID,
+			"status":     dep.Status(),
+			"spot":       dep.SpotInstance,
+			"instance":   dep.InstanceID,
+		}).Error("Trying to start deployment that has already started")
+		return
+	}
+
 	deployment := models.Deployment{}
-	err := d.DB.Preload("Build").First(&deployment, "id = ?", depID).Error
+	err = d.DB.Preload("Build").First(&deployment, "id = ?", depID).Error
 	if err != nil {
 		log.Error(err)
 		return
@@ -75,28 +95,6 @@ func (d DeploymentRunner) Run(j Job) {
 	if err != nil {
 		log.Error(err)
 		return
-	}
-
-	// wait for deployment
-	for {
-		var dep models.Deployment
-		err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
-			return db.Order("timestamp")
-		}).First(&dep, "id = ?", depID).Error
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		if dep.HasFinished() {
-			break
-		}
-
-		interval := d.pollInterval
-		if interval == 0 {
-			interval = time.Second * 60
-		}
-		time.Sleep(interval)
 	}
 }
 
