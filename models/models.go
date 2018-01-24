@@ -173,7 +173,7 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage, StatusTerminated},
 	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
