@@ -73,10 +73,16 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, creat
 		return u, UserError("No valid email found")
 	}
 
-	q := s.db.Where(models.User{GithubID: ghUser.GetID()})
+	u, err = createOrUpdateUser(s.db, u, createNew)
+
+	return u, err
+}
+
+func createOrUpdateUser(db *gorm.DB, u models.User, createNew bool) (models.User, error) {
+	q := db.Where(models.User{GithubID: u.GithubID})
 
 	var user models.User
-	if err = q.First(&user).Error; err != nil {
+	if err := q.First(&user).Error; err != nil {
 		// not found
 		user = models.NewUser()
 		if err != gorm.ErrRecordNotFound {
@@ -87,10 +93,10 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, creat
 		}
 	}
 
-	err = q.Attrs(user).FirstOrInit(&u).Error
+	err := q.Attrs(user).FirstOrInit(&u).Error
 	if err != nil {
 		return u, err
 	}
-	s.db.Save(&u)
+	db.Save(&u)
 	return u, err
 }
