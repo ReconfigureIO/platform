@@ -84,7 +84,7 @@ func (d Deployment) Create(c *gin.Context) {
 		return
 	}
 
-	useSpotInstance := true
+	useSpotInstance := d.UseSpotInstances
 	if build.Project.ID == publicProjectID {
 		useSpotInstance = false
 	}
