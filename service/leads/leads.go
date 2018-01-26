@@ -24,6 +24,8 @@ type Leads interface {
 
 	// Updates an intercom customer to match our User
 	SyncIntercomCustomer(user models.User) error
+
+	ImportIntercomData(user models.User) error
 }
 
 type leads struct {
@@ -179,6 +181,7 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	icUser.CustomAttributes["main_goal"] = truncateString(user.MainGoal, 252)
 	icUser.CustomAttributes["employees"] = truncateString(user.Employees, 252)
 	icUser.CustomAttributes["market_verticals"] = truncateString(user.MarketVerticals, 252)
+	icUser.CustomAttributes["job_title"] = truncateString(user.JobTitle, 252)
 
 	companyList := intercom.CompanyList{
 		Companies: []intercom.Company{
@@ -192,6 +195,31 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	icUser.Companies = &companyList
 
 	_, err = ic.Users.Save(&icUser)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *leads) ImportIntercomData(user models.User) error {
+	ic := s.intercom
+	icUser, err := ic.Users.FindByUserID(user.ID)
+	if err != nil {
+		return err
+	}
+
+	user.Name = icUser.Name
+	user.Email = icUser.Email
+	user.Phone = icUser.PhoneNumber
+	user.Landing = icUser.CustomAttributes["landing"]
+	user.MainGoal = icUser.CustomAttributes["main_goal"]
+	user.Employees = icUser.CustomAttributes["employees"]
+	user.MarketVerticals = icUser.CustomAttributes["market_verticals"]
+	user.JobTitle = icUser.CustomAttributes["job_title"]
+
+	user.Company = icUser.Companies.Companies[0]
+
+	err = s.db.Save(&user).Error
 	if err != nil {
 		return err
 	}
