@@ -25,6 +25,7 @@ type Leads interface {
 	// Updates an intercom customer to match our User
 	SyncIntercomCustomer(user models.User) error
 
+	// Pulls in a user's data from intercom and saves it to the DB
 	ImportIntercomData(user models.User) error
 }
 
@@ -219,7 +220,7 @@ func (s *leads) ImportIntercomData(user models.User) error {
 
 	user.Company = icUser.Companies.Companies[0]
 
-	err = s.db.Save(&user).Error
+	err = s.db.Model(&user).Updates(&user).Error
 	if err != nil {
 		return err
 	}
