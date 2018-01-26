@@ -102,8 +102,17 @@ var migrations = []*gormigrate.Migration{
 	{
 		ID: "201801260952",
 		Migrate: func(tx *gorm.DB) error {
-			err := leads.ImportIntercomData()
-			return err
+			var userIDs []string
+			db.Model(&User).Select("id").Find(&userIDs)
+			for _, id := range userIDs {
+				err := leads.ImportIntercomData(id)
+				if err != nil {
+					log.WithError(err).WithFields(log.Fields{
+						"user_id": id,
+					}).Printf("Failed to import data from intercom for user")
+				}
+			}
+			return nil
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return errors.New("Migration failed. Hit rollback conditions while importing marketing data from intercom")

@@ -26,7 +26,7 @@ type Leads interface {
 	SyncIntercomCustomer(user models.User) error
 
 	// Pulls in a user's data from intercom and saves it to the DB
-	ImportIntercomData(user models.User) error
+	ImportIntercomData(string) error
 }
 
 type leads struct {
@@ -202,9 +202,15 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	return nil
 }
 
-func (s *leads) ImportIntercomData(user models.User) error {
+func (s *leads) ImportIntercomData(userid string) error {
 	ic := s.intercom
-	icUser, err := ic.Users.FindByUserID(user.ID)
+	icUser, err := ic.Users.FindByUserID(userid)
+	if err != nil {
+		return err
+	}
+
+	var user models.User
+	err = s.db.Where("id = ?", userid).First(&user).Error
 	if err != nil {
 		return err
 	}
