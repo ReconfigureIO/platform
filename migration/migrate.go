@@ -99,6 +99,16 @@ var migrations = []*gormigrate.Migration{
 			return errors.New("Migration failed. Hit rollback conditions while adding marketing fields to users")
 		},
 	},
+	{
+		ID: "201801260952",
+		Migrate: func(tx *gorm.DB) error {
+			err := leads.ImportIntercomData()
+			return err
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return errors.New("Migration failed. Hit rollback conditions while importing marketing data from intercom")
+		},
+	},
 }
 
 const (
