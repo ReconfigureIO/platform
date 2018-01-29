@@ -50,7 +50,7 @@ func TestImportIntercomData(t *testing.T) {
 		}
 		leads := New(icConfig, db)
 
-		userDetailed := models.User{
+		user := models.User{
 			ID:              "24694b52-b7ea-49d5-8352-fd460fa46a2a",
 			Name:            "Max Siegieda",
 			Email:           "max.siegieda@reconfigure.io",
@@ -62,23 +62,20 @@ func TestImportIntercomData(t *testing.T) {
 			JobTitle:        "Operations Specialist",
 		}
 		//put user data in intercom
-		err := leads.SyncIntercomCustomer(userDetailed)
+		err := leads.SyncIntercomCustomer(user)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 		//get user data from intercom
-		err = leads.ImportIntercomData(userDetailed.ID, true)
+		returned, err := leads.ImportIntercomData(user.ID)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 
-		var userAfterImport models.User
-		db.Where(&models.User{Name: userDetailed.Name}).First(&userAfterImport)
-
-		if !reflect.DeepEqual(userDetailed, userAfterImport) {
-			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", userDetailed, userAfterImport)
+		if !reflect.DeepEqual(user, returned) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", user, returned)
 			return
 		}
 

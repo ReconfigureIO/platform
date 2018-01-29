@@ -2,7 +2,6 @@ package leads
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -27,7 +26,7 @@ type Leads interface {
 	SyncIntercomCustomer(user models.User) error
 
 	// Pulls in a user's data from intercom and saves it to the DB
-	ImportIntercomData(string, bool) error
+	ImportIntercomData(string) (models.User, error)
 }
 
 type leads struct {
@@ -203,11 +202,11 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	return nil
 }
 
-func (s *leads) ImportIntercomData(userid string, createUser bool) error {
+func (s *leads) ImportIntercomData(userid string) (models.User, error) {
 	ic := s.intercom
 	icUser, err := ic.Users.FindByUserID(userid)
 	if err != nil {
-		return err
+		return models.User{}, err
 	}
 
 	var user models.User
@@ -235,19 +234,7 @@ func (s *leads) ImportIntercomData(userid string, createUser bool) error {
 
 	user.Company = icUser.Companies.Companies[0].Name
 
-	if createUser {
-		fmt.Println("creating user")
-		err = s.db.Create(&user).Error
-		if err != nil {
-			return err
-		}
-	} else {
-		err = s.db.Model(&user).Updates(&user).Error
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return user, nil
 }
 
 func truncateString(str string, num int) string {
