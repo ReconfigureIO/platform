@@ -3,11 +3,12 @@ package migration
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/gormigrate.v1"
 )
 
@@ -103,14 +104,15 @@ var migrations = []*gormigrate.Migration{
 		ID: "201801260952",
 		Migrate: func(tx *gorm.DB) error {
 			var userIDs []string
-			db.Model(&User).Select("id").Find(&userIDs)
+			tx.Select("id").Find(&User{})
 			for _, id := range userIDs {
-				err := leads.ImportIntercomData(id, false)
+				user, err := leads.ImportIntercomData(id)
 				if err != nil {
 					log.WithError(err).WithFields(log.Fields{
 						"user_id": id,
 					}).Printf("Failed to import data from intercom for user")
 				}
+				err = tx.Model(&User{}).Update(&user)
 			}
 			return nil
 		},
@@ -144,10 +146,12 @@ func MigrateSchema() {
 		panic("failed to connect database")
 	}
 	db.LogMode(true)
-	MigrateAll(db)
+	intercomKey := os.Getenv("RECO_INTERCOM_ACCESS_TOKEN")
+	leads := leads.New(intercomKey, db)
+	MigrateAll(db, leads)
 }
 
-func MigrateAll(db *gorm.DB) {
+func MigrateAll(db *gorm.DB, leads leads.Leads) {
 	options := gormigrate.Options{
 		TableName:      "migrations",
 		IDColumnName:   "id",
