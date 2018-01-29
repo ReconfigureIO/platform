@@ -105,7 +105,7 @@ var migrations = []*gormigrate.Migration{
 			var userIDs []string
 			db.Model(&User).Select("id").Find(&userIDs)
 			for _, id := range userIDs {
-				err := leads.ImportIntercomData(id)
+				err := leads.ImportIntercomData(id, false)
 				if err != nil {
 					log.WithError(err).WithFields(log.Fields{
 						"user_id": id,

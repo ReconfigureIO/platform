@@ -2,6 +2,7 @@ package leads
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -26,7 +27,7 @@ type Leads interface {
 	SyncIntercomCustomer(user models.User) error
 
 	// Pulls in a user's data from intercom and saves it to the DB
-	ImportIntercomData(string) error
+	ImportIntercomData(string, bool) error
 }
 
 type leads struct {
@@ -202,7 +203,7 @@ func (s *leads) SyncIntercomCustomer(user models.User) error {
 	return nil
 }
 
-func (s *leads) ImportIntercomData(userid string) error {
+func (s *leads) ImportIntercomData(userid string, createUser bool) error {
 	ic := s.intercom
 	icUser, err := ic.Users.FindByUserID(userid)
 	if err != nil {
@@ -210,25 +211,41 @@ func (s *leads) ImportIntercomData(userid string) error {
 	}
 
 	var user models.User
-	err = s.db.Where("id = ?", userid).First(&user).Error
-	if err != nil {
-		return err
-	}
+	var ok bool
 
+	user.ID = userid
 	user.Name = icUser.Name
 	user.Email = icUser.Email
-	user.Phone = icUser.PhoneNumber
-	user.Landing = icUser.CustomAttributes["landing"]
-	user.MainGoal = icUser.CustomAttributes["main_goal"]
-	user.Employees = icUser.CustomAttributes["employees"]
-	user.MarketVerticals = icUser.CustomAttributes["market_verticals"]
-	user.JobTitle = icUser.CustomAttributes["job_title"]
+	user.PhoneNumber = icUser.Phone
+	if user.Landing, ok = icUser.CustomAttributes["landing"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no landing field")
+	}
+	if user.MainGoal, ok = icUser.CustomAttributes["main_goal"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no main_goal field")
+	}
+	if user.Employees, ok = icUser.CustomAttributes["employees"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no employees field")
+	}
+	if user.MarketVerticals, ok = icUser.CustomAttributes["market_verticals"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no market_verticals field")
+	}
+	if user.JobTitle, ok = icUser.CustomAttributes["job_title"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no job_title field")
+	}
 
-	user.Company = icUser.Companies.Companies[0]
+	user.Company = icUser.Companies.Companies[0].Name
 
-	err = s.db.Model(&user).Updates(&user).Error
-	if err != nil {
-		return err
+	if createUser {
+		fmt.Println("creating user")
+		err = s.db.Create(&user).Error
+		if err != nil {
+			return err
+		}
+	} else {
+		err = s.db.Model(&user).Updates(&user).Error
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

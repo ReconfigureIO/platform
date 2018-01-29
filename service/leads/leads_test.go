@@ -4,6 +4,7 @@ package leads
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -36,5 +37,50 @@ func TestSyncIntercomCustomer(t *testing.T) {
 			t.Error(err)
 			return
 		}
+	})
+}
+
+func TestImportIntercomData(t *testing.T) {
+	models.RunTransaction(func(db *gorm.DB) {
+		icConfig := events.IntercomConfig{
+			AccessToken: os.Getenv("RECO_INTERCOM_ACCESS_TOKEN"),
+		}
+		if icConfig.AccessToken == "" {
+			t.Fatal("Intercom access token missing, cannot test intercom integration")
+		}
+		leads := New(icConfig, db)
+
+		userDetailed := models.User{
+			ID:              "24694b52-b7ea-49d5-8352-fd460fa46a2a",
+			Name:            "Max Siegieda",
+			Email:           "max.siegieda@reconfigure.io",
+			PhoneNumber:     "0123456789",
+			MainGoal:        "to test intercom sync",
+			Employees:       "123456789",
+			MarketVerticals: "Services",
+			Company:         "Reconfigure.io",
+			JobTitle:        "Operations Specialist",
+		}
+		//put user data in intercom
+		err := leads.SyncIntercomCustomer(userDetailed)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		//get user data from intercom
+		err = leads.ImportIntercomData(userDetailed.ID, true)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		var userAfterImport models.User
+		db.Where(&models.User{Name: userDetailed.Name}).First(&userAfterImport)
+
+		if !reflect.DeepEqual(userDetailed, userAfterImport) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", userDetailed, userAfterImport)
+			return
+		}
+
 	})
 }
