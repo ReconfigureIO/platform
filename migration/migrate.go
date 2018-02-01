@@ -106,7 +106,7 @@ var migrations = []*gormigrate.Migration{
 			var userIDs []string
 			tx.Select("id").Find(&User{})
 			for _, id := range userIDs {
-				user, err := leads.ImportIntercomData(id)
+				user, err := userData.ImportIntercomData(id)
 				if err != nil {
 					log.WithError(err).WithFields(log.Fields{
 						"user_id": id,
@@ -121,6 +121,8 @@ var migrations = []*gormigrate.Migration{
 		},
 	},
 }
+
+var userData leads.Leads
 
 const (
 	sqlFillDeploymentUserID = `
@@ -147,11 +149,11 @@ func MigrateSchema() {
 	}
 	db.LogMode(true)
 	intercomKey := os.Getenv("RECO_INTERCOM_ACCESS_TOKEN")
-	leads := leads.New(intercomKey, db)
-	MigrateAll(db, leads)
+	userData = leads.New(intercomKey, db)
+	MigrateAll(db)
 }
 
-func MigrateAll(db *gorm.DB, leads leads.Leads) {
+func MigrateAll(db *gorm.DB) {
 	options := gormigrate.Options{
 		TableName:      "migrations",
 		IDColumnName:   "id",
