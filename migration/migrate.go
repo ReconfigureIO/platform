@@ -1,12 +1,14 @@
 package migration
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/gormigrate.v1"
 )
 
@@ -81,7 +83,46 @@ var migrations = []*gormigrate.Migration{
 			return nil
 		},
 	},
+	{
+		ID: "201801231441",
+		Migrate: func(tx *gorm.DB) error {
+			type User struct {
+				Landing         string `json:"-"`
+				MainGoal        string `json:"-"`
+				Employees       string `json:"-"`
+				MarketVerticals string `json:"-"`
+				JobTitle        string `json:"-"`
+			}
+			err := tx.AutoMigrate(&User{}).Error
+			return err
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return errors.New("Migration failed. Hit rollback conditions while adding marketing fields to users")
+		},
+	},
+	{
+		ID: "201801260952",
+		Migrate: func(tx *gorm.DB) error {
+			var userIDs []string
+			tx.Select("id").Find(&User{})
+			for _, id := range userIDs {
+				user, err := userData.ImportIntercomData(id)
+				if err != nil {
+					log.WithError(err).WithFields(log.Fields{
+						"user_id": id,
+					}).Printf("Failed to import data from intercom for user")
+				}
+				err = tx.Model(&User{}).Update(&user)
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return errors.New("Migration failed. Hit rollback conditions while importing marketing data from intercom")
+		},
+	},
 }
+
+var userData leads.Leads
 
 const (
 	sqlFillDeploymentUserID = `
@@ -107,6 +148,8 @@ func MigrateSchema() {
 		panic("failed to connect database")
 	}
 	db.LogMode(true)
+	intercomKey := os.Getenv("RECO_INTERCOM_ACCESS_TOKEN")
+	userData = leads.New(intercomKey, db)
 	MigrateAll(db)
 }
 
