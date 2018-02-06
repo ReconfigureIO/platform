@@ -87,14 +87,7 @@ var migrations = []*gormigrate.Migration{
 	{
 		ID: "201801231441",
 		Migrate: func(tx *gorm.DB) error {
-			type User struct {
-				Landing         string `json:"-"`
-				MainGoal        string `json:"-"`
-				Employees       string `json:"-"`
-				MarketVerticals string `json:"-"`
-				JobTitle        string `json:"-"`
-			}
-			err := tx.AutoMigrate(&User{}).Error
+			err := tx.Exec(sqlAddUserMarketingFields).Error
 			return err
 		},
 		Rollback: func(tx *gorm.DB) error {
@@ -137,6 +130,15 @@ WHERE deployments.build_id = builds.id AND builds.project_id = projects.id AND p
 	sqlSetDeploymentUserIDNotNull = `
 ALTER TABLE deployments
 ALTER COLUMN user_id SET NOT NULL
+`
+
+	sqlAddUserMarketingFields = `
+ALTER TABLE users
+ADD COLUMN landing text,
+ADD COLUMN main_goal text,
+ADD COLUMN employees text,
+ADD COLUMN market_verticals text,
+ADD COLUMN job_title text;
 `
 )
 
