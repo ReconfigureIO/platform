@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -112,7 +113,7 @@ var migrations = []*gormigrate.Migration{
 						"user_id": id,
 					}).Printf("Failed to import data from intercom for user")
 				}
-				err = tx.Model(&User{}).Update(&user)
+				err = tx.Model(&User{}).Update(&user).Error
 			}
 			return nil
 		},
@@ -148,8 +149,10 @@ func MigrateSchema() {
 		panic("failed to connect database")
 	}
 	db.LogMode(true)
-	intercomKey := os.Getenv("RECO_INTERCOM_ACCESS_TOKEN")
-	userData = leads.New(intercomKey, db)
+	intercomConfig := events.IntercomConfig{
+		AccessToken: os.Getenv("RECO_INTERCOM_ACCESS_TOKEN"),
+	}
+	userData = leads.New(intercomConfig, db)
 	MigrateAll(db)
 }
 
