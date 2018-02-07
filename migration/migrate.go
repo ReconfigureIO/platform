@@ -97,16 +97,29 @@ var migrations = []*gormigrate.Migration{
 	{
 		ID: "201801260952",
 		Migrate: func(tx *gorm.DB) error {
+			log.Printf("beginning to find intercom users")
+			rows, err := tx.Table("users").Select("id").Rows()
+			if err != nil {
+				log.WithError(err).Printf("Failed to import data from intercom for user")
+				return err
+			}
 			var userIDs []string
-			tx.Select("id").Find(&User{})
+			for rows.Next() {
+				var id string
+				rows.Scan(&id)
+				userIDs = append(userIDs, id)
+			}
+			rows.Close()
 			for _, id := range userIDs {
+				log.Printf("trying to import data for user %s", id)
 				user, err := userData.ImportIntercomData(id)
 				if err != nil {
 					log.WithError(err).WithFields(log.Fields{
 						"user_id": id,
 					}).Printf("Failed to import data from intercom for user")
 				}
-				err = tx.Model(&User{}).Update(&user).Error
+				log.Printf("user: %s", user)
+				err = tx.Update(&user).Error
 			}
 			return nil
 		},
