@@ -85,16 +85,6 @@ var migrations = []*gormigrate.Migration{
 		},
 	},
 	{
-		ID: "201801231441",
-		Migrate: func(tx *gorm.DB) error {
-			err := tx.Exec(sqlAddUserMarketingFields).Error
-			return err
-		},
-		Rollback: func(tx *gorm.DB) error {
-			return errors.New("Migration failed. Hit rollback conditions while adding marketing fields to users")
-		},
-	},
-	{
 		ID: "201801260952",
 		Migrate: func(tx *gorm.DB) error {
 			log.Printf("beginning to find intercom users")
@@ -112,8 +102,8 @@ var migrations = []*gormigrate.Migration{
 						"user_id": id,
 					}).Printf("Failed to import data from intercom for user")
 				}
-				log.Printf("user: %s", user)
-				_, err = repo.UpdateUser(user)
+				migrationUser := modelsUserToMigrationsUser(user)
+				_, err = repo.UpdateUser(migrationUser)
 				if err != nil {
 					log.WithError(err).WithFields(log.Fields{
 						"user_id": id,

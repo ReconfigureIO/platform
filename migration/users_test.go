@@ -7,8 +7,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"reflect"
 	"testing"
-
-	"github.com/ReconfigureIO/platform/models"
 )
 
 func TestUpdateUser(t *testing.T) {

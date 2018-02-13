@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
@@ -44,4 +45,27 @@ func (r *userRepo) UpdateUser(user User) (User, error) {
 	var retUser User
 	err = r.db.Where("id = ?", user.ID).First(&retUser).Error
 	return retUser, err
+}
+
+func modelsUserToMigrationsUser(mUser models.User) User {
+	user := User{
+		ID:                mUser.ID,
+		GithubID:          mUser.GithubID,
+		GithubName:        mUser.GithubName,
+		Name:              mUser.Name,
+		Email:             mUser.Email,
+		CreatedAt:         mUser.CreatedAt,
+		PhoneNumber:       mUser.PhoneNumber,
+		Company:           mUser.Company,
+		Landing:           mUser.Landing,
+		MainGoal:          mUser.MainGoal,
+		Employees:         mUser.Employees,
+		MarketVerticals:   mUser.MarketVerticals,
+		JobTitle:          mUser.JobTitle,
+		GithubAccessToken: mUser.GithubAccessToken,
+		Token:             mUser.Token,
+		StripeToken:       mUser.StripeToken,
+		BillingPlan:       mUser.BillingPlan,
+	}
+	return user
 }
