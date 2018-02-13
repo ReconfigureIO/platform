@@ -85,6 +85,18 @@ var migrations = []*gormigrate.Migration{
 		},
 	},
 	{
+		ID: "201801260948",
+		Migrate: func(tx *gorm.DB) error {
+			err = tx.AutoMigrate(&User{}).Error
+			if err != nil {
+				return err
+			}
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return errors.New("Could not automigrate marketing fields into user table")
+		},
+	},
+	{
 		ID: "201801260952",
 		Migrate: func(tx *gorm.DB) error {
 			log.Printf("beginning to find intercom users")
