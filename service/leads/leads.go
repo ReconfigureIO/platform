@@ -231,8 +231,9 @@ func (s *leads) ImportIntercomData(userid string) (models.User, error) {
 	if user.JobTitle, ok = icUser.CustomAttributes["job_title"].(string); !ok {
 		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no job_title field")
 	}
-
-	user.Company = icUser.Companies.Companies[0].Name
+	if len(icUser.Companies.Companies) >= 1 {
+		user.Company = icUser.Companies.Companies[0].Name
+	}
 
 	return user, nil
 }
