@@ -32,6 +32,7 @@ func TestUpdateUser(t *testing.T) {
 			Employees:       "foobar",
 			MarketVerticals: "foobar",
 			JobTitle:        "foobar",
+			CreatedAt:       user.CreatedAt,
 		}
 		testRepo := NewUserRepo(db)
 		returned, err := testRepo.UpdateUser(fancyUser)
