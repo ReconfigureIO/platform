@@ -208,7 +208,19 @@ func (s *leads) ImportIntercomData(userid string) (models.User, error) {
 	if err != nil {
 		return models.User{}, err
 	}
+	user := convertIcUser(icUser, userid)
 
+	return user, nil
+}
+
+func truncateString(str string, num int) string {
+	output := str
+	if len(str) > num {
+		output = str[0 : num-1]
+	}
+	return output
+}
+func convertIcUser(icUser intercom.User, userid string) models.User {
 	var user models.User
 	var ok bool
 
@@ -231,17 +243,11 @@ func (s *leads) ImportIntercomData(userid string) (models.User, error) {
 	if user.JobTitle, ok = icUser.CustomAttributes["job_title"].(string); !ok {
 		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no job_title field")
 	}
-	if len(icUser.Companies.Companies) >= 1 {
-		user.Company = icUser.Companies.Companies[0].Name
+	if icUser.Companies != nil {
+		if len(icUser.Companies.Companies) >= 1 {
+			user.Company = icUser.Companies.Companies[0].Name
+		}
 	}
 
-	return user, nil
-}
-
-func truncateString(str string, num int) string {
-	output := str
-	if len(str) > num {
-		output = str[0 : num-1]
-	}
-	return output
+	return user
 }
