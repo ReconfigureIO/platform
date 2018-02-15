@@ -41,7 +41,7 @@ func (r *userRepo) ListUserIDs() ([]string, error) {
 }
 
 func (r *userRepo) UpdateUser(user User) (User, error) {
-	err := r.db.Update(&user).Error
+	err := r.db.Model(&user).Update(&user).Error
 	var retUser User
 	err = r.db.Where("id = ?", user.ID).First(&retUser).Error
 	return retUser, err

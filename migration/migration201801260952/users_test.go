@@ -3,6 +3,7 @@
 package migration201801260952
 
 import (
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"reflect"
@@ -38,7 +39,8 @@ func TestUpdateUser(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !reflect.DeepEqual(fancyUser, returned) {
-			t.Fail()
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", fancyUser, returned)
 		}
+
 	})
 }
