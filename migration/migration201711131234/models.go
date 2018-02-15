@@ -1,4 +1,4 @@
-package migration
+package migration201711131234
 
 import (
 	"time"
