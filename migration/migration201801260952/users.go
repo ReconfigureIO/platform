@@ -1,4 +1,4 @@
-package migration
+package migration201801260952
 
 import (
 	"github.com/ReconfigureIO/platform/models"

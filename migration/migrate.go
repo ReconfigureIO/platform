@@ -8,8 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/migration/migration201711131234"
 	"github.com/ReconfigureIO/platform/migration/migration201801260948"
 	"github.com/ReconfigureIO/platform/migration/migration201801260952"
-	"github.com/ReconfigureIO/platform/service/events"
-	"github.com/ReconfigureIO/platform/service/leads"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
@@ -23,8 +22,6 @@ var migrations = []*gormigrate.Migration{
 	&migration201801260952.Migration,
 }
 
-var userData leads.Leads
-
 // MigrateSchema performs database migration.
 func MigrateSchema() {
 	gormConnDets := os.Getenv("DATABASE_URL")
@@ -34,10 +31,6 @@ func MigrateSchema() {
 		panic("failed to connect database")
 	}
 	db.LogMode(true)
-	intercomConfig := events.IntercomConfig{
-		AccessToken: os.Getenv("RECO_INTERCOM_ACCESS_TOKEN"),
-	}
-	userData = leads.New(intercomConfig, db)
 	MigrateAll(db)
 }
 

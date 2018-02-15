@@ -1,6 +1,11 @@
-package migration201801260948
+package migration201801260952
 
 import (
+	"errors"
+	"os"
+
+	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
@@ -10,6 +15,10 @@ import (
 var Migration = gormigrate.Migration{
 	ID: "201801260952",
 	Migrate: func(tx *gorm.DB) error {
+		intercomConfig := events.IntercomConfig{
+			AccessToken: os.Getenv("RECO_INTERCOM_ACCESS_TOKEN"),
+		}
+		userData := leads.New(intercomConfig, tx)
 		log.Printf("beginning to find intercom users")
 		repo := NewUserRepo(tx)
 		userIDs, err := repo.ListUserIDs()
