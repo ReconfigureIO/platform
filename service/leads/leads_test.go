@@ -10,6 +10,7 @@ import (
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/jinzhu/gorm"
+	intercom "gopkg.in/intercom/intercom-go.v2"
 )
 
 func TestSyncIntercomCustomer(t *testing.T) {
@@ -80,4 +81,10 @@ func TestImportIntercomData(t *testing.T) {
 		}
 
 	})
+}
+
+func TestConvertIcUser(t *testing.T) {
+	icUser := intercom.User{}
+	_ = convertIcUser(icUser, "foobar")
+	return
 }
