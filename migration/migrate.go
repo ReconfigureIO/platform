@@ -6,7 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/migration/migration1"
 	"github.com/ReconfigureIO/platform/migration/migration201711131234"
-	//"github.com/ReconfigureIO/platform/migration/migration201801260948"
+	"github.com/ReconfigureIO/platform/migration/migration201801260948"
 	"github.com/ReconfigureIO/platform/migration/migration201801260952"
 
 	"github.com/jinzhu/gorm"
@@ -18,7 +18,7 @@ import (
 var migrations = []*gormigrate.Migration{
 	&migration1.Migration,
 	&migration201711131234.Migration,
-	//&migration201801260948.Migration,
+	&migration201801260948.Migration,
 	&migration201801260952.Migration,
 }
 
