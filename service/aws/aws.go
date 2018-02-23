@@ -36,6 +36,7 @@ type Service interface {
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
 	GetJobStream(*batch.JobDetail) (*cloudwatchlogs.LogStream, error)
+	ListBatchJobs(ctx, context.Context, limit int) ([]string, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
 }
@@ -429,4 +430,22 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 	}
 
 	return ret, nil
+}
+
+func (s *service) ListBatchJobs(ctx, context.Context, limit int) ([]string, error) {
+	var jobIds []*string
+	batchSession := batch.New(s.session)
+
+	inp := &batch.ListJobsInput{MaxResults: *int64{&limit}}
+	resp, err := batchSession.ListJobsWithContext(ctx, inp)
+	if err != nil {
+		return nil, err
+	}
+	if len(resp.JobSummaryList) == 0 {
+		return jobIds, nil
+	}
+	for _, job := range resp.JobSummaryList {
+		jobIds = append(jobIds, &job.JobId)
+	}
+	return jobIds, nil
 }
