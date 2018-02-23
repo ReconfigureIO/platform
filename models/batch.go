@@ -11,6 +11,7 @@ import (
 type BatchRepo interface {
 	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
+	SetCwLogName(id string, logName string) error
 }
 
 type batchRepo struct{ db *gorm.DB }
@@ -31,5 +32,15 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 	db := repo.db
 	err := db.Model(&batchJob).Association("Events").Append(event).Error
+	return err
+}
+
+func (repo *batchRepo) SetCwLogName(id string, logName string) error {
+	batchJob := BatchJob{}
+	err := repo.db.Where("id = ?", id).First(&batchJob).Error
+	if err != nil {
+		return err
+	}
+	err = db.Model(&batchJob).Update("cw_log_name", logName).Error
 	return err
 }

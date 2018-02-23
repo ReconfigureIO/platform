@@ -36,7 +36,8 @@ type Service interface {
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
 	GetJobStream(*batch.JobDetail) (*cloudwatchlogs.LogStream, error)
-	ListBatchJobs(ctx, context.Context, limit int) ([]string, error)
+	ListBatchJobs(ctx context.Context, limit int) ([]string, error)
+	GetCwLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
 }

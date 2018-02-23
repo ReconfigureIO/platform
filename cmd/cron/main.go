@@ -146,6 +146,16 @@ func generatedAFIs() {
 	}
 }
 
+func getBatchJobLogNames() {
+	log.Printf("Getting log names")
+	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
+
+	err := watcher.FindAFI(context.Background(), 100)
+	if err != nil {
+		log.WithError(err).Error("Errored while checking for generated AFIs")
+	}
+}
+
 func checkHours() {
 	log.Printf("checking for users exceeding their subscription hours")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
