@@ -37,14 +37,13 @@ func TestBatchAddEvent(t *testing.T) {
 func TestBatchSetCwLogName(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
-		//create a build in the DB
 		batch := BatchJob{
 			BatchID: "foo",
 		}
 		db.Create(&batch)
 		d.SetCwLogName(batch.BatchID, "bar")
 
-		db.Fist(&batch)
+		db.First(&batch)
 		if batch.CwLogName != "bar" {
 			t.Fatal("Failed to set batch job's log name")
 			return
