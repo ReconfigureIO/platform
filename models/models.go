@@ -184,9 +184,10 @@ var statuses = struct {
 
 // BatchJob model.
 type BatchJob struct {
-	ID      int64           `gorm:"primary_key" json:"-"`
-	BatchID string          `json:"-"`
-	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
+	ID        int64           `gorm:"primary_key" json:"-"`
+	BatchID   string          `json:"-"`
+	CwLogName string          `json:"-"`
+	Events    []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
 // Status returns the status of the job.

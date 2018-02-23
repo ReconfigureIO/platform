@@ -434,10 +434,12 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 }
 
 func (s *service) ListBatchJobs(ctx context.Context, limit int) ([]string, error) {
-	var jobIds []*string
+	var jobIds []string
 	batchSession := batch.New(s.session)
 
-	inp := &batch.ListJobsInput{MaxResults: *int64{&limit}}
+	reqLimit := int64(limit)
+
+	inp := &batch.ListJobsInput{MaxResults: &reqLimit}
 	resp, err := batchSession.ListJobsWithContext(ctx, inp)
 	if err != nil {
 		return nil, err
@@ -446,18 +448,23 @@ func (s *service) ListBatchJobs(ctx context.Context, limit int) ([]string, error
 		return jobIds, nil
 	}
 	for _, job := range resp.JobSummaryList {
-		jobIds = append(jobIds, &job.JobId)
+		jobIds = append(jobIds, *job.JobId)
 	}
 	return jobIds, nil
 }
 
 func (s *service) GetCwLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
 	ret := make(map[string]string)
+	var jobIds []*string
+
+	for _, id := range batchJobIDs {
+		jobIds = append(jobIds, &id)
+	}
 
 	batchSession := batch.New(s.session)
 
 	cfg := batch.DescribeJobsInput{
-		Jobs: *batchJobIDs,
+		Jobs: jobIds,
 	}
 
 	results, err := batchSession.DescribeJobsWithContext(ctx, &cfg)
@@ -466,7 +473,7 @@ func (s *service) GetCwLogNames(ctx context.Context, batchJobIDs []string) (map[
 	}
 
 	for _, job := range results.Jobs {
-		ret[job.JobId] = job.Container.LogStreamName
+		ret[*job.JobId] = *job.Container.LogStreamName
 	}
 
 	return ret, nil

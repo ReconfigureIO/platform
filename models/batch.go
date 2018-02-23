@@ -37,10 +37,10 @@ func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 
 func (repo *batchRepo) SetCwLogName(id string, logName string) error {
 	batchJob := BatchJob{}
-	err := repo.db.Where("id = ?", id).First(&batchJob).Error
+	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
 	if err != nil {
 		return err
 	}
-	err = db.Model(&batchJob).Update("cw_log_name", logName).Error
+	err = repo.db.Model(&batchJob).Update("cw_log_name", logName).Error
 	return err
 }
