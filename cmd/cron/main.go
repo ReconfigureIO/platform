@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
+	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -100,6 +101,7 @@ func cronCmd() {
 	}
 
 	schedule(5*time.Minute, generatedAFIs)
+	schedule(5*time.Minute, getBatchJobLogNames)
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
 	schedule(time.Minute, findDeploymentIPs)
@@ -148,11 +150,11 @@ func generatedAFIs() {
 
 func getBatchJobLogNames() {
 	log.Printf("Getting log names")
-	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
+	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
 
-	err := watcher.FindAFI(context.Background(), 100)
+	err := watcher.FindLogNames(context.Background(), 100)
 	if err != nil {
-		log.WithError(err).Error("Errored while checking for generated AFIs")
+		log.WithError(err).Error("Errored while reading batch job log names")
 	}
 }
 
