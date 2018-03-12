@@ -49,6 +49,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		case <-refreshTicker.C:
 			err := refresh()
 			if err != nil {
+				log.WithError(err).WithFields(log.Fields{"batch_job_id": b.BatchID}).Error("ticker refresh failed")
 				sugar.InternalError(c, err)
 				return false
 			}
@@ -58,12 +59,14 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 
 	jobDetail, err := awsSession.GetJobDetail(b.BatchID)
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"batch_job_id": b.BatchID}).Error("Unable to get batch job details from AWS")
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	logStream, err := awsSession.GetJobStream(jobDetail)
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{"batch_job_id": b.BatchID}).Error("Unable to get log stream from AWS")
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
