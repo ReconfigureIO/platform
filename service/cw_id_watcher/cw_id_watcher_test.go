@@ -3,6 +3,7 @@ package cw_id_watcher
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
@@ -18,17 +19,35 @@ func TestFindLogNames(t *testing.T) {
 
 	watcher := NewLogWatcher(a, b)
 
-	batchJobIDs := []string{"foobar"}
-	cwLogNames := map[string]string{"foobar": "cwLogName"}
+	batchJobs := []models.BatchJob{
+		models.BatchJob{
+			ID:      123456789,
+			BatchID: "foobar",
+			Events: []models.BatchJobEvent{
+				models.BatchJobEvent{
+					Timestamp: time.Unix(20, 0),
+					Status:    "STARTED",
+				},
+				models.BatchJobEvent{
+					Timestamp: time.Unix(0, 0),
+					Status:    "QUEUED",
+				},
+			},
+		},
+	}
+	batchJobIDs := []string{batchJobs[0].BatchID}
+
+	cwLogNames := map[string]string{batchJobs[0].BatchID: "cwLogName"}
 
 	ctx := context.Background()
 	limit := 100
+	sinceTime := time.Unix(0, 0)
 
-	a.EXPECT().ListBatchJobs(ctx, limit).Return(batchJobIDs, nil)
+	b.EXPECT().ActiveJobsWithoutLogs(sinceTime).Return(batchJobs, nil)
 	a.EXPECT().GetCwLogNames(ctx, batchJobIDs).Return(cwLogNames, nil)
-	b.EXPECT().SetCwLogName("foobar", "cwLogName").Return(nil)
+	b.EXPECT().SetCwLogName(batchJobs[0].BatchID, cwLogNames[batchJobs[0].BatchID]).Return(nil)
 
-	err := watcher.FindLogNames(ctx, limit)
+	err := watcher.FindLogNames(ctx, limit, sinceTime)
 
 	if err != nil {
 		t.Error(err)
