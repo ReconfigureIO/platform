@@ -12,7 +12,24 @@ type BatchRepo interface {
 	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
 	SetCwLogName(id string, logName string) error
+	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
 }
+
+const (
+	sqlBatchJobsWithoutLogs = `
+select j.id as id
+from batch_jobs j
+left join batch_job_events started
+on j.id = started.batch_job_id
+    and started.id = (
+        select e1.id
+        from batch_job_events e1
+        where j.id = e1.batch_job_id and e1.status = 'STARTED'
+        limit 1
+    )
+where (cw_log_name = '' and started.timestamp > ?)
+`
+)
 
 type batchRepo struct{ db *gorm.DB }
 
@@ -43,4 +60,28 @@ func (repo *batchRepo) SetCwLogName(id string, logName string) error {
 	}
 	err = repo.db.Model(&batchJob).Update("cw_log_name", logName).Error
 	return err
+}
+
+func (repo *batchRepo) ActiveJobsWithoutLogs(sinceTime time.Time) ([]BatchJob, error) {
+	db := repo.db
+	rows, err := db.Raw(sqlBatchJobsWithoutLogs, sinceTime).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	rows.Close()
+
+	var batchJobs []BatchJob
+	err = db.Where("id in (?)", ids).Find(&batchJobs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return batchJobs, nil
 }

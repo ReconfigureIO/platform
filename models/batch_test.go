@@ -3,7 +3,9 @@
 package models
 
 import (
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -46,6 +48,53 @@ func TestBatchSetCwLogName(t *testing.T) {
 		db.First(&batch)
 		if batch.CwLogName != "bar" {
 			t.Fatal("Failed to set batch job's log name")
+			return
+		}
+	})
+}
+
+func TestBatchActiveJobsWithoutLogs(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+
+		batch := BatchJob{
+			ID: 123456789,
+			Events: []BatchJobEvent{
+				BatchJobEvent{
+					Timestamp: time.Unix(20, 0),
+					Status:    "STARTED",
+				},
+				BatchJobEvent{
+					Timestamp: time.Unix(0, 0),
+					Status:    "QUEUED",
+				},
+			},
+		}
+		err := db.Create(&batch).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		batchJobs, err := d.ActiveJobsWithoutLogs(time.Unix(0, 0))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		ids := []int64{}
+		for _, returnedBatchJob := range batchJobs {
+			ids = append(ids, returnedBatchJob.ID)
+		}
+
+		expected := []int64{batch.ID}
+		if !reflect.DeepEqual(expected, ids) {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, ids)
+			return
+		}
+
+		if !reflect.DeepEqual(batchJobs[0].CwLogName, "") {
+			t.Fatalf("\nExpected dep to have Null Cloudwatch Log Name but got:      %+v\n", batchJobs[0].CwLogName)
 			return
 		}
 	})
