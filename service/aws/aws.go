@@ -37,7 +37,7 @@ type Service interface {
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
 	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
 	ListBatchJobs(ctx context.Context, limit int) ([]string, error)
-	GetCwLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
+	GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
 }
@@ -453,7 +453,7 @@ func (s *service) ListBatchJobs(ctx context.Context, limit int) ([]string, error
 	return jobIds, nil
 }
 
-func (s *service) GetCwLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
+func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
 	ret := make(map[string]string)
 	var jobIds []*string
 

@@ -11,7 +11,7 @@ import (
 type BatchRepo interface {
 	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
-	SetCwLogName(id string, logName string) error
+	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
 }
 
@@ -52,7 +52,7 @@ func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 	return err
 }
 
-func (repo *batchRepo) SetCwLogName(id string, logName string) error {
+func (repo *batchRepo) SetLogName(id string, logName string) error {
 	batchJob := BatchJob{}
 	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
 	if err != nil {

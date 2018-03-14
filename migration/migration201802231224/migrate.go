@@ -15,7 +15,7 @@ var Migration = gormigrate.Migration{
 		return err
 	},
 	Rollback: func(tx *gorm.DB) error {
-		return errors.New("Migration failed. Hit rollback conditions while adding CwLogName field to BatchJobs")
+		return errors.New("Migration failed. Hit rollback conditions while adding LogName field to BatchJobs")
 	},
 }
 

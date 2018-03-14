@@ -34,16 +34,16 @@ func (watcher *LogWatcher) FindLogNames(ctx context.Context, limit int, sinceTim
 		batchJobIDs = append(batchJobIDs, returnedBatchJob.BatchID)
 	}
 
-	cwLogNames, err := watcher.awsService.GetCwLogNames(ctx, batchJobIDs)
+	LogNames, err := watcher.awsService.GetLogNames(ctx, batchJobIDs)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{"batch_job_ids": batchJobIDs}).Error("Couldn't get cw log names for batch jobs")
 		return err
 	}
 
 	for _, jobID := range batchJobIDs {
-		logName, found := cwLogNames[jobID]
+		logName, found := LogNames[jobID]
 		if found {
-			err := watcher.batch.SetCwLogName(jobID, logName)
+			err := watcher.batch.SetLogName(jobID, logName)
 			if err != nil {
 				return err
 			}

@@ -36,17 +36,17 @@ func TestBatchAddEvent(t *testing.T) {
 	})
 }
 
-func TestBatchSetCwLogName(t *testing.T) {
+func TestBatchSetLogName(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
 		batch := BatchJob{
 			BatchID: "foo",
 		}
 		db.Create(&batch)
-		d.SetCwLogName(batch.BatchID, "bar")
+		d.SetLogName(batch.BatchID, "bar")
 
 		db.First(&batch)
-		if batch.CwLogName != "bar" {
+		if batch.LogName != "bar" {
 			t.Fatal("Failed to set batch job's log name")
 			return
 		}
@@ -93,8 +93,8 @@ func TestBatchActiveJobsWithoutLogs(t *testing.T) {
 			return
 		}
 
-		if !reflect.DeepEqual(batchJobs[0].CwLogName, "") {
-			t.Fatalf("\nExpected dep to have Null Cloudwatch Log Name but got:      %+v\n", batchJobs[0].CwLogName)
+		if !reflect.DeepEqual(batchJobs[0].LogName, "") {
+			t.Fatalf("\nExpected dep to have Null Cloudwatch Log Name but got:      %+v\n", batchJobs[0].LogName)
 			return
 		}
 	})

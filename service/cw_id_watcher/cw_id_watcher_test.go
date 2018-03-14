@@ -37,15 +37,15 @@ func TestFindLogNames(t *testing.T) {
 	}
 	batchJobIDs := []string{batchJobs[0].BatchID}
 
-	cwLogNames := map[string]string{batchJobs[0].BatchID: "cwLogName"}
+	LogNames := map[string]string{batchJobs[0].BatchID: "LogName"}
 
 	ctx := context.Background()
 	limit := 100
 	sinceTime := time.Unix(0, 0)
 
 	b.EXPECT().ActiveJobsWithoutLogs(sinceTime).Return(batchJobs, nil)
-	a.EXPECT().GetCwLogNames(ctx, batchJobIDs).Return(cwLogNames, nil)
-	b.EXPECT().SetCwLogName(batchJobs[0].BatchID, cwLogNames[batchJobs[0].BatchID]).Return(nil)
+	a.EXPECT().GetLogNames(ctx, batchJobIDs).Return(LogNames, nil)
+	b.EXPECT().SetLogName(batchJobs[0].BatchID, LogNames[batchJobs[0].BatchID]).Return(nil)
 
 	err := watcher.FindLogNames(ctx, limit, sinceTime)
 
