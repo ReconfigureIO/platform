@@ -27,7 +27,7 @@ on j.id = started.batch_job_id
         where j.id = e1.batch_job_id and e1.status = 'STARTED'
         limit 1
     )
-where (cw_log_name = '' and started.timestamp > ?)
+where (log_name = '' and started.timestamp > ?)
 `
 )
 
@@ -58,7 +58,7 @@ func (repo *batchRepo) SetLogName(id string, logName string) error {
 	if err != nil {
 		return err
 	}
-	err = repo.db.Model(&batchJob).Update("cw_log_name", logName).Error
+	err = repo.db.Model(&batchJob).Update("log_name", logName).Error
 	return err
 }
 
