@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/migration/migration201711131234"
 	"github.com/ReconfigureIO/platform/migration/migration201801260948"
 	"github.com/ReconfigureIO/platform/migration/migration201801260952"
+	"github.com/ReconfigureIO/platform/migration/migration201802231224"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -20,6 +21,7 @@ var migrations = []*gormigrate.Migration{
 	&migration201711131234.Migration,
 	&migration201801260948.Migration,
 	&migration201801260952.Migration,
+	&migration201802231224.Migration,
 }
 
 // MigrateSchema performs database migration.

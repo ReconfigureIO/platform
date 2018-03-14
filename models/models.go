@@ -186,6 +186,7 @@ var statuses = struct {
 type BatchJob struct {
 	ID      int64           `gorm:"primary_key" json:"-"`
 	BatchID string          `json:"-"`
+	LogName string          `json:"-"`
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
