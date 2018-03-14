@@ -152,7 +152,9 @@ func getBatchJobLogNames() {
 	log.Printf("Getting log names")
 	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
 
-	err := watcher.FindLogNames(context.Background(), 100)
+	// find batch jobs that've become active in the last hour
+	sinceTime := time.Now().Add(-1 * time.Hour)
+	err := watcher.FindLogNames(context.Background(), 100, sinceTime)
 	if err != nil {
 		log.WithError(err).Error("Errored while reading batch job log names")
 	}

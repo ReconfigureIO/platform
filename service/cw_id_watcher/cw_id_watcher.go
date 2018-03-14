@@ -2,6 +2,7 @@ package cw_id_watcher
 
 import (
 	"context"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
@@ -21,15 +22,16 @@ func NewLogWatcher(awsService aws.Service, batch models.BatchRepo) *LogWatcher {
 	return &w
 }
 
-func (watcher *LogWatcher) FindLogNames(ctx context.Context, limit int) error {
-	batchJobIDs, err := watcher.awsService.ListBatchJobs(ctx, limit)
-	if err != nil {
-		log.WithError(err).Error("Couldn't list batch jobs")
-		return err
+func (watcher *LogWatcher) FindLogNames(ctx context.Context, limit int, sinceTime time.Time) error {
+	batchJobs, err := watcher.batch.ActiveJobsWithoutLogs(sinceTime)
+
+	if len(batchJobs) == 0 {
+		return nil
 	}
 
-	if len(batchJobIDs) == 0 {
-		return nil
+	batchJobIDs := []string{}
+	for _, returnedBatchJob := range batchJobs {
+		batchJobIDs = append(batchJobIDs, returnedBatchJob.BatchID)
 	}
 
 	cwLogNames, err := watcher.awsService.GetCwLogNames(ctx, batchJobIDs)
