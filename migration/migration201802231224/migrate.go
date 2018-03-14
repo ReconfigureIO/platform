@@ -22,6 +22,6 @@ var Migration = gormigrate.Migration{
 const (
 	sqlAddBatchJobsLogName = `
 ALTER TABLE batch_jobs
-ADD COLUMN cw_log_name text;
+ADD COLUMN log_name text;
 `
 )
