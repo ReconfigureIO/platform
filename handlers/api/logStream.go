@@ -85,6 +85,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		for !b.HasFinished() {
 			select {
 			case <-ctx.Done():
+				log.Printf("closing log stream: %s", *logStream.LogStreamName)
 				return
 			case <-refreshTicker.C:
 				err := refresh()
