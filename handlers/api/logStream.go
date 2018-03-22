@@ -27,10 +27,6 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
 
-	refresh := func() error {
-		return db.Model(&b).Association("Events").Find(&b.Events).Error
-	}
-
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -47,7 +43,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		case <-ticker.C:
 			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
-			err := refresh()
+			err := refreshEvents(b)
 			if err != nil {
 				sugar.InternalError(c, err)
 				return false
@@ -87,7 +83,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 			case <-ctx.Done():
 				return
 			case <-refreshTicker.C:
-				err := refresh()
+				err := refreshEvents(b)
 				if err != nil {
 					break
 				}
@@ -192,4 +188,8 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 	conf := service.GetServiceConfig()
 	stream.Start(ctx, lstream, c, conf.LogGroup)
 
+}
+
+func refreshEvents(b *models.BatchJob) error {
+	return db.Model(&b).Association("Events").Find(&b.Events).Error
 }
