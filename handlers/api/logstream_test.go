@@ -10,7 +10,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func TestRefreshEvents(t *testing.T) {
+func TestRefreshBatchJobEvents(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
 		//create a BatchJob in the DB
 		timeNow := time.Now()
@@ -33,7 +33,7 @@ func TestRefreshEvents(t *testing.T) {
 			return
 		}
 
-		err = refreshEvents(&batchJob, db)
+		err = refreshBatchJobEvents(&batchJob, db)
 		if err != nil {
 			t.Error(err)
 			return
@@ -52,7 +52,7 @@ func TestRefreshEvents(t *testing.T) {
 	})
 }
 
-func TestRefreshEventsReverseOrder(t *testing.T) {
+func TestRefreshBatchJobEventsReverseOrder(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
 		//create a BatchJob in the DB
 		timeNow := time.Now()
@@ -75,7 +75,7 @@ func TestRefreshEventsReverseOrder(t *testing.T) {
 			return
 		}
 
-		err = refreshEvents(&batchJob, db)
+		err = refreshBatchJobEvents(&batchJob, db)
 		if err != nil {
 			t.Error(err)
 			return
@@ -84,6 +84,85 @@ func TestRefreshEventsReverseOrder(t *testing.T) {
 		// Did the events come out in the logical order?
 		if !(batchJob.Events[0].Status == "STARTED") {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", batchJob.Events[0].Status)
+			return
+		}
+	})
+}
+
+func TestRefreshDeploymentEvents(t *testing.T) {
+	models.RunTransaction(func(db *gorm.DB) {
+		//create a Deployment in the DB
+		timeNow := time.Now()
+		timeLater := timeNow.Add(5 * time.Minute)
+		deployment := models.Deployment{
+			Events: []models.DeploymentEvent{
+				models.DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: timeNow,
+				},
+				models.DeploymentEvent{
+					Status:    "COMPLETED",
+					Timestamp: timeLater,
+				},
+			},
+		}
+		err := db.Create(&deployment).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = refreshDeploymentEvents(&deployment, db)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		if len(deployment.Events) == 0 {
+			t.Fatalf("Expected 2 events, got 0")
+			return
+		}
+
+		// Did the events come out in the logical order?
+		if !(deployment.Events[0].Status == "STARTED") {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", deployment.Events[0].Status)
+			return
+		}
+	})
+}
+
+func TestRefreshDeploymentEventsReverseOrder(t *testing.T) {
+	models.RunTransaction(func(db *gorm.DB) {
+		//create a Deployment in the DB
+		timeNow := time.Now()
+		timeLater := timeNow.Add(5 * time.Minute)
+		deployment := models.Deployment{
+			Events: []models.DeploymentEvent{
+				models.DeploymentEvent{
+					Status:    "COMPLETED",
+					Timestamp: timeLater,
+				},
+				models.DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: timeNow,
+				},
+			},
+		}
+		err := db.Create(&deployment).Error
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = refreshDeploymentEvents(&deployment, db)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		// Did the events come out in the logical order?
+		if !(deployment.Events[0].Status == "STARTED") {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", deployment.Events[0].Status)
 			return
 		}
 	})

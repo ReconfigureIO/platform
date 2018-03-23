@@ -44,7 +44,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		case <-ticker.C:
 			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
-			err := refreshEvents(b, db)
+			err := refreshBatchJobEvents(b, db)
 			if err != nil {
 				sugar.InternalError(c, err)
 				return false
@@ -84,7 +84,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 			case <-ctx.Done():
 				return
 			case <-refreshTicker.C:
-				err := refreshEvents(b, db)
+				err := refreshBatchJobEvents(b, db)
 				if err != nil {
 					break
 				}
@@ -191,6 +191,10 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 
 }
 
-func refreshEvents(b *models.BatchJob, db *gorm.DB) error {
+func refreshBatchJobEvents(b *models.BatchJob, db *gorm.DB) error {
 	return db.Model(&b).Order("timestamp asc").Association("Events").Find(&b.Events).Error
+}
+
+func refreshDeploymentEvents(deployment *models.Deployment, db *gorm.DB) error {
+	return db.Model(&deployment).Order("timestamp asc").Association("Events").Find(&deployment.Events).Error
 }
