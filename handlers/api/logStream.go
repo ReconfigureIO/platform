@@ -192,5 +192,5 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 }
 
 func refreshEvents(b *models.BatchJob, db *gorm.DB) error {
-	return db.Model(&b).Association("Events").Find(&b.Events).Error
+	return db.Model(&b).Order("timestamp asc").Association("Events").Find(&b.Events).Error
 }
