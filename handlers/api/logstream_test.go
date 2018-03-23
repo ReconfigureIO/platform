@@ -167,3 +167,70 @@ func TestRefreshDeploymentEventsReverseOrder(t *testing.T) {
 		}
 	})
 }
+
+func TestRefreshBatchJobEventsAppended(t *testing.T) {
+	models.RunTransaction(func(db *gorm.DB) {
+		for i := 0; i < 100; i++ {
+			//create a BatchJob in the DB
+			timeNow := time.Now()
+			timeLater := timeNow.Add(5 * time.Minute)
+			batchJob := models.BatchJob{
+				Events: []models.BatchJobEvent{
+					models.BatchJobEvent{
+						Status:    "STARTED",
+						Timestamp: timeNow,
+					},
+				},
+			}
+			err := db.Create(&batchJob).Error
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			err = refreshBatchJobEvents(&batchJob, db)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if !(len(batchJob.Events) == 1) {
+				t.Fatalf("Expected 1 events, got %s", len(batchJob.Events))
+				return
+			}
+
+			if !(batchJob.Events[0].Status == "STARTED") {
+				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", batchJob.Events[0].Status)
+				return
+			}
+
+			completedEvent := models.BatchJobEvent{
+				Status:    "COMPLETED",
+				Timestamp: timeLater,
+			}
+			batchRepo := models.BatchDataSource(db)
+			batchRepo.AddEvent(batchJob, completedEvent)
+
+			err = refreshBatchJobEvents(&batchJob, db)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+
+			if !(len(batchJob.Events) == 2) {
+				t.Fatalf("Expected 2 events, got %s", len(batchJob.Events))
+				return
+			}
+
+			if !(batchJob.Events[0].Status == "STARTED") {
+				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", batchJob.Events[0].Status)
+				return
+			}
+
+			if !(batchJob.Events[1].Status == "COMPLETED") {
+				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "COMPLETED", batchJob.Events[0].Status)
+				return
+			}
+		}
+	})
+}
