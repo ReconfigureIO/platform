@@ -170,7 +170,7 @@ func TestRefreshDeploymentEventsReverseOrder(t *testing.T) {
 
 func TestRefreshBatchJobEventsAppended(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 1000; i++ {
 			//create a BatchJob in the DB
 			timeNow := time.Now()
 			timeLater := timeNow.Add(5 * time.Minute)
@@ -211,24 +211,26 @@ func TestRefreshBatchJobEventsAppended(t *testing.T) {
 			batchRepo := models.BatchDataSource(db)
 			batchRepo.AddEvent(batchJob, completedEvent)
 
-			err = refreshBatchJobEvents(&batchJob, db)
+			//refresh onto a new object to mimic a second event coming in on a second web request
+			newBatch := models.BatchJob{ID: batchJob.ID}
+			err = refreshBatchJobEvents(&newBatch, db)
 			if err != nil {
 				t.Error(err)
 				return
 			}
 
-			if !(len(batchJob.Events) == 2) {
-				t.Fatalf("Expected 2 events, got %s", len(batchJob.Events))
+			if !(len(newBatch.Events) == 2) {
+				t.Fatalf("Expected 2 events, got %v", len(newBatch.Events))
 				return
 			}
 
-			if !(batchJob.Events[0].Status == "STARTED") {
-				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", batchJob.Events[0].Status)
+			if !(newBatch.Events[0].Status == "STARTED") {
+				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "STARTED", newBatch.Events[0].Status)
 				return
 			}
 
-			if !(batchJob.Events[1].Status == "COMPLETED") {
-				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "COMPLETED", batchJob.Events[0].Status)
+			if !(newBatch.Events[1].Status == "COMPLETED") {
+				t.Fatalf("\nExpected: %+v\nGot:      %+v\n", "COMPLETED", newBatch.Events[0].Status)
 				return
 			}
 		}
