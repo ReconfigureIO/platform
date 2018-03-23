@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -194,10 +195,15 @@ type BatchJob struct {
 func (b *BatchJob) Status() string {
 	events := b.Events
 	length := len(events)
-	if len(events) > 0 {
+	switch length {
+	case 0:
+		return StatusSubmitted
+	case 1:
+		return events[length-1].Status
+	default:
+		sort.Slice(events, func(i, j int) bool { return events[i].Timestamp.Before(events[j].Timestamp) })
 		return events[length-1].Status
 	}
-	return StatusSubmitted
 }
 
 // HasStarted returns if batch job has started.

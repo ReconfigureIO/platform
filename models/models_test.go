@@ -35,3 +35,47 @@ func TestUserModelsHook(t *testing.T) {
 		}
 	})
 }
+
+func TestHasFinished(t *testing.T) {
+	timeNow := time.Now()
+	timeLater := timeNow.Add(5 * time.Minute)
+	batchJob := BatchJob{
+		Events: []BatchJobEvent{
+			BatchJobEvent{
+				Status:    "STARTED",
+				Timestamp: timeNow,
+			},
+			BatchJobEvent{
+				Status:    "COMPLETED",
+				Timestamp: timeLater,
+			},
+		},
+	}
+
+	if !batchJob.HasFinished() {
+		t.Fatalf("BatchJob has finished, HasFinished says it has not")
+		return
+	}
+}
+
+func TestHasFinishedReverseOrder(t *testing.T) {
+	timeNow := time.Now()
+	timeLater := timeNow.Add(5 * time.Minute)
+	batchJob := BatchJob{
+		Events: []BatchJobEvent{
+			BatchJobEvent{
+				Status:    "COMPLETED",
+				Timestamp: timeLater,
+			},
+			BatchJobEvent{
+				Status:    "STARTED",
+				Timestamp: timeNow,
+			},
+		},
+	}
+
+	if !batchJob.HasFinished() {
+		t.Fatalf("BatchJob has finished, HasFinished says it has not")
+		return
+	}
+}
