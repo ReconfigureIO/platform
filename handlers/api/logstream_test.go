@@ -3,7 +3,6 @@
 package api
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -44,8 +43,6 @@ func TestRefreshEvents(t *testing.T) {
 			t.Fatalf("Expected 2 events, got 0")
 			return
 		}
-
-		fmt.Println(batchJob.Events[0])
 
 		// Did the events come out in the logical order?
 		if !(batchJob.Events[0].Status == "STARTED") {
