@@ -13,6 +13,7 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,7 +44,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		case <-ticker.C:
 			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
-			err := refreshEvents(b)
+			err := refreshEvents(b, db)
 			if err != nil {
 				sugar.InternalError(c, err)
 				return false
@@ -83,7 +84,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 			case <-ctx.Done():
 				return
 			case <-refreshTicker.C:
-				err := refreshEvents(b)
+				err := refreshEvents(b, db)
 				if err != nil {
 					break
 				}
@@ -190,6 +191,6 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 
 }
 
-func refreshEvents(b *models.BatchJob) error {
+func refreshEvents(b *models.BatchJob, db *gorm.DB) error {
 	return db.Model(&b).Association("Events").Find(&b.Events).Error
 }

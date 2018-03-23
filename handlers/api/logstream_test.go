@@ -34,7 +34,7 @@ func TestRefreshEvents(t *testing.T) {
 			return
 		}
 
-		err = refreshEvents(&batchJob)
+		err = refreshEvents(&batchJob, db)
 		if err != nil {
 			t.Error(err)
 			return
@@ -78,7 +78,7 @@ func TestRefreshEventsReverseOrder(t *testing.T) {
 			return
 		}
 
-		err = refreshEvents(&batchJob)
+		err = refreshEvents(&batchJob, db)
 		if err != nil {
 			t.Error(err)
 			return
