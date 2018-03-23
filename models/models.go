@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -194,6 +195,9 @@ type BatchJob struct {
 func (b *BatchJob) Status() string {
 	events := b.Events
 	length := len(events)
+	if len(events) > 1 {
+		sort.Slice(events, func(i, j int) bool { return events[i].Timestamp.Before(events[j].Timestamp) })
+	}
 	if len(events) > 0 {
 		return events[length-1].Status
 	}
