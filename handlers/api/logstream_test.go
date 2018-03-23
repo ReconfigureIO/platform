@@ -39,8 +39,8 @@ func TestRefreshBatchJobEvents(t *testing.T) {
 			return
 		}
 
-		if len(batchJob.Events) == 0 {
-			t.Fatalf("Expected 2 events, got 0")
+		if len(batchJob.Events) != 2 {
+			t.Fatalf("Expected 2 events, got %v", len(batchJob.Events))
 			return
 		}
 
@@ -118,8 +118,8 @@ func TestRefreshDeploymentEvents(t *testing.T) {
 			return
 		}
 
-		if len(deployment.Events) == 0 {
-			t.Fatalf("Expected 2 events, got 0")
+		if len(deployment.Events) != 2 {
+			t.Fatalf("Expected 2 events, got %v", len(deployment.Events))
 			return
 		}
 
