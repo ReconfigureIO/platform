@@ -21,6 +21,12 @@ type Leads interface {
 
 	// If a user signs up with an InviteToken, convert from contact to a user
 	Invited(token models.InviteToken, user models.User) error
+
+	// Updates an intercom customer to match our User
+	SyncIntercomCustomer(user models.User) error
+
+	// Pulls in a user's data from intercom and saves it to the DB
+	ImportIntercomData(string) (models.User, error)
 }
 
 type leads struct {
@@ -160,4 +166,88 @@ func (s *leads) Invited(token models.InviteToken, user models.User) error {
 	intercom_user := intercom.User{Email: user.Email}
 	_, err := s.intercom.Contacts.Convert(&contact, &intercom_user)
 	return err
+}
+
+func (s *leads) SyncIntercomCustomer(user models.User) error {
+	ic := s.intercom
+	icUser, err := ic.Users.FindByUserID(user.ID)
+	if err != nil {
+		return err
+	}
+
+	icUser.Name = user.Name
+	icUser.Email = user.Email
+	icUser.Phone = user.PhoneNumber
+	icUser.CustomAttributes["landing"] = truncateString(user.Landing, 252)
+	icUser.CustomAttributes["main_goal"] = truncateString(user.MainGoal, 252)
+	icUser.CustomAttributes["employees"] = truncateString(user.Employees, 252)
+	icUser.CustomAttributes["market_verticals"] = truncateString(user.MarketVerticals, 252)
+	icUser.CustomAttributes["job_title"] = truncateString(user.JobTitle, 252)
+
+	companyList := intercom.CompanyList{
+		Companies: []intercom.Company{
+			{
+				CompanyID: user.ID,
+				Name:      truncateString(user.Company, 252),
+			},
+		},
+	}
+
+	icUser.Companies = &companyList
+
+	_, err = ic.Users.Save(&icUser)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *leads) ImportIntercomData(userid string) (models.User, error) {
+	ic := s.intercom
+	icUser, err := ic.Users.FindByUserID(userid)
+	if err != nil {
+		return models.User{}, err
+	}
+	user := convertIcUser(icUser, userid)
+
+	return user, nil
+}
+
+func truncateString(str string, num int) string {
+	output := str
+	if len(str) > num {
+		output = str[0 : num-1]
+	}
+	return output
+}
+func convertIcUser(icUser intercom.User, userid string) models.User {
+	var user models.User
+	var ok bool
+
+	user.ID = userid
+	user.Name = icUser.Name
+	user.Email = icUser.Email
+	user.PhoneNumber = icUser.Phone
+	if user.Landing, ok = icUser.CustomAttributes["landing"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no landing field")
+	}
+	if user.MainGoal, ok = icUser.CustomAttributes["main_goal"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no main_goal field")
+	}
+	if user.Employees, ok = icUser.CustomAttributes["employees"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no employees field")
+	}
+	if user.MarketVerticals, ok = icUser.CustomAttributes["market_verticals"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no market_verticals field")
+	}
+	if user.JobTitle, ok = icUser.CustomAttributes["job_title"].(string); !ok {
+		log.WithFields(log.Fields{"user_id": user.ID}).Error("User has no job_title field")
+	}
+	if icUser.Companies != nil {
+		if len(icUser.Companies.Companies) >= 1 {
+			user.Company = icUser.Companies.Companies[0].Name
+		}
+	}
+
+	return user
 }

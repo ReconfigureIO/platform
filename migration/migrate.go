@@ -2,101 +2,27 @@ package migration
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	"github.com/ReconfigureIO/platform/migration/migration1"
+	"github.com/ReconfigureIO/platform/migration/migration201711131234"
+	"github.com/ReconfigureIO/platform/migration/migration201801260948"
+	"github.com/ReconfigureIO/platform/migration/migration201801260952"
+	"github.com/ReconfigureIO/platform/migration/migration201802231224"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/gormigrate.v1"
 )
 
 var migrations = []*gormigrate.Migration{
-	{
-		ID: "201711131225",
-		Migrate: func(tx *gorm.DB) error {
-			err := tx.AutoMigrate(&InviteToken{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&User{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&Project{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&Simulation{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&Build{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&BatchJob{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&BatchJobEvent{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&Deployment{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&DeploymentEvent{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&BuildReport{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&Graph{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.AutoMigrate(&QueueEntry{}).Error
-			return err
-		},
-		Rollback: func(tx *gorm.DB) error {
-			return nil
-		},
-	},
-	{
-		ID: "201711131228",
-		Migrate: func(tx *gorm.DB) error {
-			err := tx.AutoMigrate(&Deployment{}).Error
-			if err != nil {
-				return err
-			}
-			err = tx.Raw(sqlDeploymentStatusForUser).Error
-			if err != nil {
-				return err
-			}
-			type Deployment struct {
-				UserID string `gorm:"NOT_NULL"`
-			}
-			err = tx.AutoMigrate(&Deployment{}).Error
-			return err
-		},
-		Rollback: func(tx *gorm.DB) error {
-			return tx.Table("deployments").DropColumn("user_id").Error
-		},
-	},
+	&migration1.Migration,
+	&migration201711131234.Migration,
+	&migration201801260948.Migration,
+	&migration201801260952.Migration,
+	&migration201802231224.Migration,
 }
-
-const (
-	sqlDeploymentStatusForUser = `
-UPDATE deployments
-SET
-user_id = users.id
-FROM builds, projects, users
-WHERE deployments.build_id = builds.id AND builds.project_id = projects.id AND projects.user_id = users.id
-`
-)
 
 // MigrateSchema performs database migration.
 func MigrateSchema() {
@@ -106,11 +32,18 @@ func MigrateSchema() {
 		fmt.Println(err)
 		panic("failed to connect database")
 	}
+	db.LogMode(true)
 	MigrateAll(db)
 }
 
 func MigrateAll(db *gorm.DB) {
-	m := gormigrate.New(db, gormigrate.DefaultOptions, migrations)
+	options := gormigrate.Options{
+		TableName:      "migrations",
+		IDColumnName:   "id",
+		IDColumnSize:   255,
+		UseTransaction: true,
+	}
+	m := gormigrate.New(db, &options, migrations)
 
 	if err := m.Migrate(); err != nil {
 		log.Fatalf("Could not migrate: %v", err)

@@ -35,7 +35,8 @@ type Service interface {
 	RunDeployment(command string) (string, error)
 	GetJobDetail(id string) (*batch.JobDetail, error)
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
-	GetJobStream(*batch.JobDetail) (*cloudwatchlogs.LogStream, error)
+	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
+	GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
 	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	Conf() *ServiceConfig
 }
@@ -325,14 +326,14 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	return resp.Jobs[0], nil
 }
 
-func (s *service) GetJobStream(job *batch.JobDetail) (*cloudwatchlogs.LogStream, error) {
+func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
 		LogGroupName:        aws.String(s.conf.LogGroup), // Required
 		Descending:          aws.Bool(true),
 		Limit:               aws.Int64(1),
-		LogStreamNamePrefix: job.Container.LogStreamName,
+		LogStreamNamePrefix: aws.String(logStreamName),
 	}
 	resp, err := cwLogs.DescribeLogStreams(searchParams)
 	if err != nil {
@@ -426,6 +427,32 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 
 	for _, image := range results.FpgaImages {
 		ret[*image.FpgaImageGlobalId] = Status{*image.State.Code, *image.UpdateTime}
+	}
+
+	return ret, nil
+}
+
+func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
+	ret := make(map[string]string)
+	var jobIds []*string
+
+	for _, id := range batchJobIDs {
+		jobIds = append(jobIds, &id)
+	}
+
+	batchSession := batch.New(s.session)
+
+	cfg := batch.DescribeJobsInput{
+		Jobs: jobIds,
+	}
+
+	results, err := batchSession.DescribeJobsWithContext(ctx, &cfg)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, job := range results.Jobs {
+		ret[*job.JobId] = *job.Container.LogStreamName
 	}
 
 	return ret, nil

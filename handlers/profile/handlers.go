@@ -3,14 +3,17 @@ package profile
 import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // Profile handles requests for profile get & update
 type Profile struct {
-	DB *gorm.DB
+	DB    *gorm.DB
+	Leads leads.Leads
 	// subs models.SubscriptionDataSource I want to do this, but the cache makes it an issue cross request
 }
 
@@ -66,6 +69,11 @@ func (p Profile) Update(c *gin.Context) {
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
 		return
+	}
+
+	err = p.Leads.SyncIntercomCustomer(user)
+	if err != nil {
+		log.WithError(err).Error("Error while syncing user to intercom")
 	}
 
 	prof.FromUser(user, sub)

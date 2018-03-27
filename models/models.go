@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -54,6 +55,11 @@ type User struct {
 	CreatedAt         time.Time `json:"created_at"`
 	PhoneNumber       string    `json:"phone_number"`
 	Company           string    `json:"company"`
+	Landing           string    `json:"-"`
+	MainGoal          string    `json:"-"`
+	Employees         string    `json:"-"`
+	MarketVerticals   string    `json:"-"`
+	JobTitle          string    `json:"-"`
 	GithubAccessToken string    `json:"-"`
 	Token             string    `json:"-"`
 	StripeToken       string    `json:"-"`
@@ -143,7 +149,7 @@ var statuses = struct {
 	started  []string
 	finished []string
 }{
-	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage},
+	started:  []string{StatusStarted, StatusCompleted, StatusErrored, StatusTerminating, StatusCreatingImage, StatusTerminated},
 	finished: []string{StatusCompleted, StatusErrored, StatusTerminated},
 }
 
@@ -151,6 +157,7 @@ var statuses = struct {
 type BatchJob struct {
 	ID      int64           `gorm:"primary_key" json:"-"`
 	BatchID string          `json:"-"`
+	LogName string          `json:"-"`
 	Events  []BatchJobEvent `json:"events" gorm:"ForeignKey:BatchJobId"`
 }
 
@@ -158,10 +165,15 @@ type BatchJob struct {
 func (b *BatchJob) Status() string {
 	events := b.Events
 	length := len(events)
-	if len(events) > 0 {
+	switch length {
+	case 0:
+		return StatusSubmitted
+	case 1:
+		return events[length-1].Status
+	default:
+		sort.Slice(events, func(i, j int) bool { return events[i].Timestamp.Before(events[j].Timestamp) })
 		return events[length-1].Status
 	}
-	return StatusSubmitted
 }
 
 // HasStarted returns if batch job has started.

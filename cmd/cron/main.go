@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
+	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -100,6 +101,7 @@ func cronCmd() {
 	}
 
 	schedule(5*time.Minute, generatedAFIs)
+	schedule(5*time.Minute, getBatchJobLogNames)
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
 	schedule(time.Minute, findDeploymentIPs)
@@ -120,7 +122,7 @@ func terminateDeployments() {
 	err := deployment.NewInstances(d, deploy).UpdateInstanceStatus(ctx)
 
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while marking deployments as terminated")
 	}
 }
 
@@ -132,7 +134,7 @@ func findDeploymentIPs() {
 	err := deployment.NewInstances(d, deploy).FindIPs(ctx)
 
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while finding deployment IPs")
 	}
 }
 
@@ -142,7 +144,19 @@ func generatedAFIs() {
 
 	err := watcher.FindAFI(context.Background(), 100)
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while checking for generated AFIs")
+	}
+}
+
+func getBatchJobLogNames() {
+	log.Printf("Getting log names")
+	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
+
+	// find batch jobs that've become active in the last hour
+	sinceTime := time.Now().Add(-1 * time.Hour)
+	err := watcher.FindLogNames(context.Background(), 100, sinceTime)
+	if err != nil {
+		log.WithError(err).Error("Errored while reading batch job log names")
 	}
 }
 
@@ -150,7 +164,7 @@ func checkHours() {
 	log.Printf("checking for users exceeding their subscription hours")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
 	if err != nil {
-		exitWithErr(err)
+		log.WithError(err).Error("Errored while checking users have not exceeded their hour allowances")
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,10 +27,6 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	// set necessary headers to inform client of streaming connection
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
-
-	refresh := func() error {
-		return db.Model(&b).Association("Events").Find(&b.Events).Error
-	}
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -47,7 +44,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		case <-ticker.C:
 			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
-			err := refresh()
+			err := refreshBatchJobEvents(b, db)
 			if err != nil {
 				sugar.InternalError(c, err)
 				return false
@@ -56,16 +53,25 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		return true
 	})
 
-	jobDetail, err := awsSession.GetJobDetail(b.BatchID)
-	if err != nil {
-		sugar.ErrResponse(c, 500, err)
-		return
-	}
-
-	logStream, err := awsSession.GetJobStream(jobDetail)
-	if err != nil {
-		sugar.ErrResponse(c, 500, err)
-		return
+	var logStream *cloudwatchlogs.LogStream
+	var err error
+	if b.LogName != "" {
+		logStream, err = awsSession.GetJobStream(b.LogName)
+		if err != nil {
+			sugar.ErrResponse(c, 500, err)
+			return
+		}
+	} else {
+		jobDetail, err := awsSession.GetJobDetail(b.BatchID)
+		if err != nil {
+			sugar.ErrResponse(c, 500, err)
+			return
+		}
+		logStream, err = awsSession.GetJobStream(*jobDetail.Container.LogStreamName)
+		if err != nil {
+			sugar.ErrResponse(c, 500, err)
+			return
+		}
 	}
 
 	log.Printf("opening log stream: %s", *logStream.LogStreamName)
@@ -76,9 +82,10 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 		for !b.HasFinished() {
 			select {
 			case <-ctx.Done():
+				log.Printf("closing log stream: %s", *logStream.LogStreamName)
 				return
 			case <-refreshTicker.C:
-				err := refresh()
+				err := refreshBatchJobEvents(b, db)
 				if err != nil {
 					break
 				}
@@ -183,4 +190,12 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 	conf := service.GetServiceConfig()
 	stream.Start(ctx, lstream, c, conf.LogGroup)
 
+}
+
+func refreshBatchJobEvents(b *models.BatchJob, db *gorm.DB) error {
+	return db.Model(&b).Order("timestamp asc").Association("Events").Find(&b.Events).Error
+}
+
+func refreshDeploymentEvents(deployment *models.Deployment, db *gorm.DB) error {
+	return db.Model(&deployment).Order("timestamp asc").Association("Events").Find(&deployment.Events).Error
 }
