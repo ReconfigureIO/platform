@@ -5,21 +5,23 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
 
 type BuildRepo interface {
-	// Return a list of deployments, with the statuses specified,
+	// Return a list of builds, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, ReportV1) error
 	GetBuildReport(build Build) (BuildReport, error)
+	ActiveBuilds(user User) ([]Build, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
 
-// DeploymentDataSource returns the data source for deployments.
+// BuildDataSource returns the data source for builds.
 func BuildDataSource(db *gorm.DB) BuildRepo {
 	return &buildRepo{db: db}
 }
@@ -36,6 +38,27 @@ ON j.batch_job_id = e.batch_job_id
     )
 WHERE (e.status in (?))
 LIMIT ?
+`
+	SQL_ACTIVE_BUILDS = `
+select j.id as id, started.timestamp as started, terminated.timestamp as terminated
+from builds j
+join projects on projects.id = j.project_id
+left join batch_jobs on batch_jobs.id = j.batch_job_id
+left join batch_job_events started
+on batch_jobs.id = started.batch_job_id
+    and started.id = (
+        select e1.id
+        from batch_job_events e1
+        where j.batch_job_id = e1.batch_job_id and e1.status = 'STARTED'
+    )
+left outer join batch_job_events terminated
+on batch_jobs.id = terminated.batch_job_id
+    and terminated.id = (
+        select e2.id
+        from batch_job_events e2
+        where j.batch_job_id = e2.batch_job_id and e2.status = 'TERMINATED'
+    )
+where projects.user_id = ? and terminated IS NULL
 `
 )
 
@@ -61,6 +84,43 @@ func (repo *buildRepo) GetBuildsWithStatus(statuses []string, limit int) ([]Buil
 	}
 
 	return builds, nil
+}
+
+func (repo *buildRepo) ActiveBuilds(user User) ([]Build, error) {
+	db := repo.db
+
+	rows, err := db.Raw(SQL_ACTIVE_BUILDS, user.ID).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for rows.Next() {
+		var bst BuildStartedTerminated
+		err = db.ScanRows(rows, &bst)
+		if err != nil {
+			return []Build{}, err
+		}
+		ids = append(ids, bst.Id)
+	}
+	rows.Close()
+
+	var builds []Build
+	err = db.Preload("BatchJob").Preload("BatchJob.Events").Where("id in (?)", ids).Find(&builds).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return builds, nil
+
+}
+
+//scanrows needs an exact match to tie a row to an object.
+//this object has an ID, started, terminated time
+type BuildStartedTerminated struct {
+	Id         string
+	Started    time.Time
+	Terminated time.Time
 }
 
 // Build model.
