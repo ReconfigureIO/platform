@@ -1,8 +1,6 @@
 package admin
 
 import (
-	"fmt"
-
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
@@ -55,10 +53,6 @@ func (b Build) List(c *gin.Context) {
 	for rows.Next() {
 		var temp1 BuildData
 		rows.Scan(&temp1.BuildID, &temp1.UserID, &temp1.UserGithubName, &temp1.UserName, &temp1.UserCompany, &temp1.ProjectName, &temp1.BuildStatus)
-		fmt.Printf("resulting object: %v", temp1)
-		fmt.Println("")
-		fmt.Println(temp1.BuildID)
-		fmt.Println(temp1.BuildStatus)
 		builds = append(builds, temp1)
 	}
 	rows.Close()
@@ -68,13 +62,11 @@ func (b Build) List(c *gin.Context) {
 		b.DB.Where("id = ?", build.UserID).First(&user)
 		sub, err := models.SubscriptionDataSource(b.DB).CurrentSubscription(user)
 		if err != nil {
-			fmt.Println("error :(")
 			sugar.InternalError(c, err)
 			return
 		}
 		var temp BuildInfo
 		temp.FromBuildData(build, sub)
-		fmt.Printf("resulting object: %v", temp)
 		output = append(output, temp)
 	}
 
@@ -93,7 +85,6 @@ type BuildInfo struct {
 }
 
 func (b *BuildInfo) FromBuildData(bd BuildData, sub models.SubscriptionInfo) {
-	fmt.Println("bd.BuildID = " + bd.BuildID)
 	b.BuildID = bd.BuildID
 	b.BuildStatus = bd.BuildStatus
 	b.UserID = bd.UserID
@@ -101,7 +92,6 @@ func (b *BuildInfo) FromBuildData(bd BuildData, sub models.SubscriptionInfo) {
 	b.UserName = bd.UserName
 	b.UserCompany = bd.UserCompany
 	b.ProjectName = bd.ProjectName
-	//is this user a paying customer?
 	if sub.Identifier == models.PlanOpenSource {
 		b.BuildInput = "s3://reconfigureio-builds/builds/" + b.BuildID + "/build.tar.gz"
 	}
