@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/storage"
+
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -24,6 +27,8 @@ const (
 type Deployment struct {
 	Events           events.EventService
 	UseSpotInstances bool
+	Storage          storage.Service
+	DeployService    deployment.Service
 }
 
 func (d Deployment) Preload() *gorm.DB {

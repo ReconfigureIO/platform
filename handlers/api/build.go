@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ReconfigureIO/platform/service/storage"
+
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -15,7 +17,8 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	Events events.EventService
+	Events  events.EventService
+	Storage storage.Service
 }
 
 // Common preload functionality.
@@ -184,7 +187,7 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	_, err = awsSession.Upload(build.InputUrl(), c.Request.Body, c.Request.ContentLength)
+	_, err = b.Storage.Upload(build.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return

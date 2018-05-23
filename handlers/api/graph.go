@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,8 @@ import (
 
 // Graph handles requests for graphs.
 type Graph struct {
-	Events events.EventService
+	Events  events.EventService
+	Storage storage.Service
 }
 
 // Common preload functionality.
@@ -128,7 +130,7 @@ func (g Graph) Input(c *gin.Context) {
 		return
 	}
 
-	_, err = awsSession.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
+	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
@@ -164,7 +166,7 @@ func (g Graph) Download(c *gin.Context) {
 		return
 	}
 
-	object, err := awsSession.Download(c, graph.ArtifactUrl())
+	object, err := g.Storage.Download(c, graph.ArtifactUrl())
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return

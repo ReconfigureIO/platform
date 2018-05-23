@@ -7,10 +7,12 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
+	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -20,6 +22,7 @@ import (
 
 var (
 	version string
+	ss      storage.Service
 )
 
 func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
@@ -76,7 +79,14 @@ func main() {
 
 	leads := leads.New(conf.Reco.Intercom, db)
 
-	api.Configure(*conf)
+	//set up storage
+	ss = aws.New(conf.Reco.AWS)
+
+	awsSession := aws.New(conf.Reco.AWS)
+
+	deploy := deployment.New(conf.Reco.Deploy)
+
+	publicProjectID := conf.Reco.PublicProjectID
 
 	// ping test
 	r.GET("/ping", func(c *gin.Context) {
@@ -113,7 +123,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, awsSession, deploy, publicProjectID)
 
 	// queue
 	var deploymentQueue queue.Queue
