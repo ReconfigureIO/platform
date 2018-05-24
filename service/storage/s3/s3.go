@@ -2,13 +2,11 @@ package s3
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 
-	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -18,27 +16,29 @@ import (
 // ErrNotFound is not found error.
 var ErrNotFound = errors.New("Not Found")
 
-type service struct {
+type Service struct {
 	session *session.Session
 	conf    ServiceConfig
 }
 
 // ServiceConfig holds configuration for service.
 type ServiceConfig struct {
-	LogGroup      string `env:"RECO_AWS_LOG_GROUP" envDefault:"/aws/batch/job"`
-	Bucket        string `env:"RECO_AWS_BUCKET" envDefault:"reconfigureio-builds"`
-	Queue         string `env:"RECO_AWS_QUEUE" envDefault:"build-jobs"`
-	JobDefinition string `env:"RECO_AWS_JOB" envDefault:"sdaccel-builder-build"`
+	Bucket string
+	Region string
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig) storage.Service {
-	s := service{conf: conf}
-	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
+func New(bucket, region string) *Service {
+	conf := ServiceConfig{
+		Bucket: bucket,
+		Region: region,
+	}
+	s := Service{conf: conf}
+	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion(conf.Region)))
 	return &s
 }
 
-func (s *service) Upload(key string, r io.Reader, length int64) (string, error) {
+func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) {
 	s3Session := s3.New(s.session)
 
 	// s3.PutObjectInput takes in a io.ReadSeeker
@@ -97,7 +97,7 @@ func (s *service) Upload(key string, r io.Reader, length int64) (string, error) 
 	return s.s3Url(key), nil
 }
 
-func (s *service) Download(ctx context.Context, key string) ([]byte, error) {
+func (s *Service) Download(key string) (io.ReadCloser, error) {
 	s3Session := s3.New(s.session)
 
 	getParams := &s3.GetObjectInput{
@@ -105,19 +105,13 @@ func (s *service) Download(ctx context.Context, key string) ([]byte, error) {
 		Key:    aws.String(key),           // Required
 	}
 
-	object, err := s3Session.GetObjectWithContext(ctx, getParams)
+	object, err := s3Session.GetObject(getParams)
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(object.Body)
-	object.Body.Close()
-	return data, err
+	return object.Body, err
 }
 
-func (s *service) s3Url(key string) string {
+func (s *Service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
-}
-
-func (s *service) Conf() *ServiceConfig {
-	return &s.conf
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/ReconfigureIO/platform/service/storage"
+	"github.com/ReconfigureIO/platform/service/storage/s3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -80,9 +80,7 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	//set up storage
-	ss = aws.New(conf.Reco.AWS)
-
-	awsSession := aws.New(conf.Reco.AWS)
+	ss = s3.New(conf.Reco.AWS.Bucket, "us-east-1")
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
@@ -123,7 +121,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, awsSession, deploy, publicProjectID)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, ss, deploy, publicProjectID)
 
 	// queue
 	var deploymentQueue queue.Queue

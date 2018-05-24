@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -166,14 +167,17 @@ func (g Graph) Download(c *gin.Context) {
 		return
 	}
 
-	object, err := g.Storage.Download(c, graph.ArtifactUrl())
+	object, err := g.Storage.Download(graph.ArtifactUrl())
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(object)
+
 	c.Header("Content-Encoding", "gzip")
-	c.Data(200, "application/pdf", object)
+	c.Data(200, "application/pdf", buf.Bytes())
 
 }
 
