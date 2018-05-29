@@ -6,20 +6,22 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/auth"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/auth/github"
+	svcauth "github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // Setup sets all auth routes.
-func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads) {
-	gh := github.New(db)
-
+func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads, authService svcauth.Service) {
 	authRoutes := r.Group("/oauth")
 	{
 
-		signup := auth.SignupUser{DB: db, GH: gh, Leads: leads}
+		signup := auth.SignupUser{
+			DB:          db,
+			AuthService: authService,
+			Leads:       leads,
+		}
 		authRoutes.GET("/signin", signup.ResignIn)
 		authRoutes.GET("/new-account", signup.SignUpNoToken)
 		authRoutes.GET("/signup/:token", signup.SignUp)

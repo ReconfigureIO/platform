@@ -34,6 +34,23 @@ func New(db *gorm.DB) *Service {
 	return &Service{OauthConf: oauthConf, db: db}
 }
 
+// RedirectURL generates a URL to be followed by the client, where the client
+// can choose through a UI to allow the application to use their information.
+func (s *Service) RedirectURL(state string) string {
+	return s.OauthConf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+}
+
+// Exchange is a part of the OAuth2 contract, whereby we take the code returned
+// to us by the service via the user, and then make a call to the server to
+// exchange this code for an OAuth2 access token.
+func (s *Service) Exchange(ctx context.Context, code string) (string, error) {
+	token, err := s.OauthConf.Exchange(ctx, code)
+	if err != nil {
+		return "", err
+	}
+	return token.AccessToken, nil
+}
+
 // GetOrCreateUser fetches or create a user.
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
