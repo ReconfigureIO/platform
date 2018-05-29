@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"

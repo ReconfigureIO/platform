@@ -6,7 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/auth"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
