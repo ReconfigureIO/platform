@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	//log "github.com/sirupsen/logrus"
+	// log "github.com/sirupsen/logrus"
 )
 
 type ContainerConfig struct {
@@ -331,7 +331,7 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	ec2Session := ec2.New(s.session)
 
 	if len(instanceids) > 0 {
-		//regular instances
+		// regular instances
 		cfg := ec2.DescribeInstancesInput{
 			InstanceIds: instanceids,
 		}
@@ -351,7 +351,7 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	}
 
 	if len(spotInstanceIDs) > 0 {
-		//spot instance
+		// spot instance
 		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
 			SpotInstanceRequestIds: spotInstanceIDs,
 		}
@@ -414,7 +414,7 @@ func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.
 	ec2Session := ec2.New(s.session)
 
 	if len(instanceids) > 0 {
-		//regular instances
+		// regular instances
 		cfg := ec2.DescribeInstancesInput{
 			InstanceIds: instanceids,
 		}
@@ -434,7 +434,7 @@ func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.
 	}
 
 	if len(spotInstanceIDs) > 0 {
-		//spot instance
+		// spot instance
 		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
 			SpotInstanceRequestIds: spotInstanceIDs,
 		}

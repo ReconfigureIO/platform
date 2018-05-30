@@ -12,7 +12,7 @@ import (
 func TestGetPublicBuilds(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
 		DB(db)
-		//create a build in the DB
+		// create a build in the DB
 		builds := []models.Build{
 			{
 				Project: models.Project{

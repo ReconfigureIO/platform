@@ -47,7 +47,7 @@ type User struct {
 type Project struct {
 	uuidHook
 	ID          string  `gorm:"primary_key" json:"id"`
-	User        User    `json:"-" gorm:"ForeignKey:UserID"` //Project belongs to User
+	User        User    `json:"-" gorm:"ForeignKey:UserID"` // Project belongs to User
 	UserID      string  `json:"-"`
 	Name        string  `json:"name"`
 	Builds      []Build `json:"builds,omitempty" gorm:"ForeignKey:ProjectID"`
