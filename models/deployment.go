@@ -18,7 +18,7 @@ type DeploymentRepo interface {
 
 	GetWithUser(string) ([]Deployment, error)
 
-	//used to build complex queries
+	// used to build complex queries
 	Query(string) *gorm.DB
 	Preload() *gorm.DB
 
@@ -270,7 +270,7 @@ func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time)
 
 	for _, dep := range deps {
 		if dep.Started == emptyTime {
-			//empty start time means this dep shouldn't be considered
+			// empty start time means this dep shouldn't be considered
 			continue
 		}
 		s := dep.Started

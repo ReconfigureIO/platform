@@ -12,7 +12,7 @@ import (
 
 func TestRefreshBatchJobEvents(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		//create a BatchJob in the DB
+		// create a BatchJob in the DB
 		timeNow := time.Now()
 		timeLater := timeNow.Add(5 * time.Minute)
 		batchJob := models.BatchJob{
@@ -54,7 +54,7 @@ func TestRefreshBatchJobEvents(t *testing.T) {
 
 func TestRefreshBatchJobEventsReverseOrder(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		//create a BatchJob in the DB
+		// create a BatchJob in the DB
 		timeNow := time.Now()
 		timeLater := timeNow.Add(5 * time.Minute)
 		batchJob := models.BatchJob{
@@ -91,7 +91,7 @@ func TestRefreshBatchJobEventsReverseOrder(t *testing.T) {
 
 func TestRefreshDeploymentEvents(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		//create a Deployment in the DB
+		// create a Deployment in the DB
 		timeNow := time.Now()
 		timeLater := timeNow.Add(5 * time.Minute)
 		deployment := models.Deployment{
@@ -133,7 +133,7 @@ func TestRefreshDeploymentEvents(t *testing.T) {
 
 func TestRefreshDeploymentEventsReverseOrder(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		//create a Deployment in the DB
+		// create a Deployment in the DB
 		timeNow := time.Now()
 		timeLater := timeNow.Add(5 * time.Minute)
 		deployment := models.Deployment{

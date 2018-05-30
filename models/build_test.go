@@ -12,7 +12,7 @@ import (
 func TestGetBuildsWithStatus(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BuildDataSource(db)
-		//create a build in the DB
+		// create a build in the DB
 		build := Build{
 			BatchJob: BatchJob{
 				Events: []BatchJobEvent{
@@ -23,7 +23,7 @@ func TestGetBuildsWithStatus(t *testing.T) {
 			},
 		}
 		db.Create(&build)
-		//run the get with status function
+		// run the get with status function
 		builds, err := d.GetBuildsWithStatus([]string{"COMPLETED"}, 10)
 		if err != nil {
 			t.Error(err)
@@ -34,7 +34,7 @@ func TestGetBuildsWithStatus(t *testing.T) {
 		for _, returnedBuild := range builds {
 			ids = append(ids, returnedBuild.ID)
 		}
-		//return from get with status should match the build we made at the start
+		// return from get with status should match the build we made at the start
 		expected := []string{build.ID}
 		if !reflect.DeepEqual(expected, ids) {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", expected, builds)
@@ -46,11 +46,11 @@ func TestGetBuildsWithStatus(t *testing.T) {
 func TestCreateBuildReport(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BuildDataSource(db)
-		//create a build in the DB
+		// create a build in the DB
 		build := Build{}
 		db.Create(&build)
 		report := ReportV1{}
-		//run the get with status function
+		// run the get with status function
 		err := d.StoreBuildReport(build, report)
 		if err != nil {
 			t.Error(err)

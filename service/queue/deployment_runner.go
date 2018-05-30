@@ -25,7 +25,7 @@ var _ JobRunner = DeploymentRunner{}
 func (d DeploymentRunner) Run(j Job) {
 	depID := j.ID
 
-	//If deployment is already running, stop and log error
+	// If deployment is already running, stop and log error
 	var dep models.Deployment
 	err := d.DB.Preload("Events", func(db *gorm.DB) *gorm.DB {
 		return db.Order("timestamp")
@@ -52,7 +52,7 @@ func (d DeploymentRunner) Run(j Job) {
 		return
 	}
 
-	//Can user still afford to run deployment?
+	// Can user still afford to run deployment?
 	subscriptionDS := models.SubscriptionDataSource(d.DB)
 	// Get the user's subscription info for this billing period.
 	subscriptionInfo, err := subscriptionDS.CurrentSubscription(j.User)

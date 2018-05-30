@@ -12,15 +12,15 @@ import (
 
 func TestUpdateUser(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
-		//make a basic user and save to DB
+		// make a basic user and save to DB
 		user := User{
 			Name: "foobar",
 		}
 		db.Create(&user)
-		//pull the UUID back
+		// pull the UUID back
 
 		db.Where("name = ?", user.Name).First(&user)
-		//now use the UUID in a fancy user
+		// now use the UUID in a fancy user
 		fancyUser := User{
 			ID:              user.ID,
 			Name:            "not foobar",
