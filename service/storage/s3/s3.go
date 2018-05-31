@@ -2,19 +2,14 @@ package s3
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
 
-	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
-
-// ErrNotFound is not found error.
-var ErrNotFound = errors.New("Not Found")
 
 type Service struct {
 	session *session.Session
