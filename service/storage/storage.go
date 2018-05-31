@@ -2,7 +2,8 @@ package storage
 
 import "io"
 
-// Interface for anything storagey
+// A Service provides a content store.
+// It is implemented by service/storage/s3.Service.
 type Service interface {
 	Upload(key string, r io.Reader, length int64) (string, error)
 	Download(key string) (io.ReadCloser, error)
