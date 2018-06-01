@@ -80,7 +80,7 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	//set up storage
-	storage = s3.New(conf.Reco.AWS.Bucket, "us-east-1")
+	storage := s3.New(s3.ConfigProvider{})
 
 	deploy := deployment.New(conf.Reco.Deploy)
 

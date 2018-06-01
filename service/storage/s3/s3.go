@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -13,20 +14,27 @@ import (
 
 type Service struct {
 	session *session.Session
-	conf    ServiceConfig
+	conf    ConfigProvider
 }
 
 // ServiceConfig holds configuration for service.
-type ServiceConfig struct {
+type ConfigProvider struct {
 	Bucket string
 	Region string
 }
 
 // New creates a new service with conf.
-func New(bucket, region string) *Service {
-	conf := ServiceConfig{
-		Bucket: bucket,
-		Region: region,
+func New(conf ConfigProvider) *Service {
+	if conf == (ConfigProvider{}) {
+		// attempt to pull config from environment
+		region := os.Getenv("AWS_REGION")
+		if region == "" {
+			region = os.Getenv("AWS_DEFAULT_REGION")
+		}
+		conf = ConfigProvider{
+			Bucket: os.Getenv("RECO_AWS_BUCKET"),
+			Region: region,
+		}
 	}
 	s := Service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion(conf.Region)))
