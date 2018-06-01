@@ -80,7 +80,7 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	//set up storage
-	ss = s3.New(conf.Reco.AWS.Bucket, "us-east-1")
+	storage = s3.New(conf.Reco.AWS.Bucket, "us-east-1")
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
@@ -121,7 +121,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, ss, deploy, publicProjectID)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, storage, deploy, publicProjectID)
 
 	// queue
 	var deploymentQueue queue.Queue
