@@ -44,8 +44,6 @@ func TestIndexHandler(t *testing.T) {
 	r.LoadHTMLGlob("../templates/*")
 	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil, nil, nil, "foobar")
 
-	//routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, ss, deploy, publicProjectID)
-
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
 	if err != nil {
