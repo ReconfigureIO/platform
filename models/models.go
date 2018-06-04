@@ -77,6 +77,30 @@ func NewUser() User {
 	return User{Token: uniuri.NewLen(64), BillingPlan: PlanOpenSource}
 }
 
+// CreateOrUpdateUser creates the given u in the database if it doesn't exist, and otherwise returns the existing one.
+func CreateOrUpdateUser(db *gorm.DB, u User, createNew bool) (User, error) {
+	q := db.Where(User{GithubID: u.GithubID})
+
+	var user User
+	if err := q.First(&user).Error; err != nil {
+		// not found
+		user = NewUser()
+		if err != gorm.ErrRecordNotFound {
+			return user, err
+		}
+		if !createNew {
+			return user, err
+		}
+	}
+
+	err := q.Attrs(user).FirstOrInit(&u).Error
+	if err != nil {
+		return u, err
+	}
+	db.Save(&u)
+	return u, err
+}
+
 // Project model.
 type Project struct {
 	uuidHook

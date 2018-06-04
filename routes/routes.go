@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/storage"
@@ -17,7 +18,8 @@ import (
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, awsService aws.Service, events events.EventService, leads leads.Leads, storage storage.Service, deploy deployment.Service, publicProjectID string) *gin.Engine {
+func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, awsService aws.Service, events events.EventService, leads leads.Leads, storage storage.Service, deploy deployment.Service, publicProjectID string, authService auth.Service) *gin.Engine {
+
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -34,7 +36,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 	SetupAdmin(admin, db, leads)
 
 	// signup & login flow
-	SetupAuth(r, db, leads)
+	SetupAuth(r, db, leads, authService)
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 

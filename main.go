@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -123,8 +124,10 @@ func main() {
 	r.Use(cors.New(corsConfig))
 	r.LoadHTMLGlob("templates/*")
 
+	authService := github.New(db)
+
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ReconfigureIO/platform/config"
+	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -42,10 +43,7 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, nil, events, nil, nil, nil, "foobar")
-
-	// (config.RecoConfig, string, *gin.Engine, *gorm.DB, events.EventService, nil, nil, nil, string)
-	// (config.RecoConfig, string, *gin.Engine, *gorm.DB, "github.com/ReconfigureIO/platform/service/aws".Service, events.EventService, leads.Leads, storage.Service, deployment.Service, string)
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, nil, events, nil, nil, nil, "foobar", &auth.NOPService{})
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

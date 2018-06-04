@@ -79,3 +79,42 @@ func TestHasFinishedReverseOrder(t *testing.T) {
 		return
 	}
 }
+
+func TestCreateOrUpdateUser(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		u := User{
+			GithubID:          123,
+			GithubName:        "foo",
+			Email:             "baz",
+			GithubAccessToken: "foobar",
+		}
+
+		// test no create
+		createdUser, err := CreateOrUpdateUser(db, u, false)
+		if err != gorm.ErrRecordNotFound {
+			t.Error(err)
+		}
+		if createdUser.GithubName != "" {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", User{}, createdUser)
+		}
+
+		// test create
+		createdUser, err = CreateOrUpdateUser(db, u, true)
+		if err != nil {
+			t.Error(err)
+		}
+		if createdUser.GithubName != u.GithubName {
+			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", u, createdUser)
+		}
+
+		// test no overwrite
+		u.Name = "not bar"
+		createdUser, err = CreateOrUpdateUser(db, u, true)
+		if err != nil {
+			t.Error(err)
+		}
+		if createdUser.Name == u.Name {
+			t.Fatalf("User's name got overwritten unexpectedly")
+		}
+	})
+}
