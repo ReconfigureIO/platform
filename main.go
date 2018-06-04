@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
+	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/service/storage/s3"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/gin-contrib/cors"
@@ -21,8 +22,8 @@ import (
 )
 
 var (
-	version string
-	storage storage.Service
+	version        string
+	storageService storage.Service
 )
 
 func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
@@ -81,7 +82,7 @@ func main() {
 
 	//set up storage
 	configProvider := session.Must(session.NewSession())
-	storage := s3.Service{Bucket: conf.Reco.StorageBucket, ConfigProvider: configProvider}
+	storageService = &s3.Service{Bucket: conf.Reco.StorageBucket, ConfigProvider: configProvider}
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
@@ -122,7 +123,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, storage, deploy, publicProjectID)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, storageService, deploy, publicProjectID)
 
 	// queue
 	var deploymentQueue queue.Queue
