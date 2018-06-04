@@ -28,7 +28,7 @@ func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.Batc
 }
 
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
-	//get list of builds waiting for AFI generation to finish
+	// get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := watcher.d.GetBuildsWithStatus(creating_statuses, limit)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 		return nil
 	}
 
-	//get the status of the associated AFIs
+	// get the status of the associated AFIs
 	statuses, err := watcher.awsService.DescribeAFIStatus(ctx, buildswaitingonafis)
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	log.Printf("statuses of %v", statuses)
 	afigenerated := 0
 
-	//for each build check associated AFI, if done, post event
+	// for each build check associated AFI, if done, post event
 	for _, build := range buildswaitingonafis {
 		status, found := statuses[build.FPGAImage]
 		if found {

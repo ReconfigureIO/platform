@@ -62,13 +62,13 @@ func TestImportIntercomData(t *testing.T) {
 			Company:         "Reconfigure.io",
 			JobTitle:        "Operations Specialist",
 		}
-		//put user data in intercom
+		// put user data in intercom
 		err := leads.SyncIntercomCustomer(user)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		//get user data from intercom
+		// get user data from intercom
 		returned, err := leads.ImportIntercomData(user.ID)
 		if err != nil {
 			t.Error(err)

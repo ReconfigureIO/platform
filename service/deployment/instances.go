@@ -80,7 +80,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		return nil
 	}
 
-	//get the status of the associated EC2 instances
+	// get the status of the associated EC2 instances
 	statuses, err := instances.Deploy.DescribeInstanceStatus(ctx, runningdeployments)
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 
 	terminating := 0
 
-	//for each deployment, if instance is terminated, send event
+	// for each deployment, if instance is terminated, send event
 	for _, deployment := range runningdeployments {
 		status, found := statuses[deployment.InstanceID]
 		depStatus := deployment.Status()
@@ -137,7 +137,7 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 		return nil
 	}
 
-	//AWS Describe the associated EC2 instances to get their IPv4 addresses
+	// AWS Describe the associated EC2 instances to get their IPv4 addresses
 	instanceIPs, err := instances.Deploy.DescribeInstanceIPs(ctx, deploymentsWithoutIPs)
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 
 	updated := 0
 
-	//for each deployment, if we have an IP, set IP
+	// for each deployment, if we have an IP, set IP
 	for _, deployment := range deploymentsWithoutIPs {
 		ip, found := instanceIPs[deployment.InstanceID]
 		if found {

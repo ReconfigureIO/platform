@@ -11,7 +11,7 @@ import (
 
 func TestUserModelsHook(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
-		//create a user in the DB
+		// create a user in the DB
 		user := User{}
 		err := db.Create(&user).Error
 		if err != nil {

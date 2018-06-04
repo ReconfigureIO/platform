@@ -18,7 +18,7 @@ func TestCreateOrUpdateUser(t *testing.T) {
 			GithubAccessToken: "foobar",
 		}
 
-		//test no create
+		// test no create
 		createdUser, err := createOrUpdateUser(db, u, false)
 		if err != gorm.ErrRecordNotFound {
 			t.Error(err)
@@ -27,7 +27,7 @@ func TestCreateOrUpdateUser(t *testing.T) {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", models.User{}, createdUser)
 		}
 
-		//test create
+		// test create
 		createdUser, err = createOrUpdateUser(db, u, true)
 		if err != nil {
 			t.Error(err)
@@ -36,7 +36,7 @@ func TestCreateOrUpdateUser(t *testing.T) {
 			t.Fatalf("\nExpected: %+v\nGot:      %+v\n", u, createdUser)
 		}
 
-		//test no overwrite
+		// test no overwrite
 		u.Name = "not bar"
 		createdUser, err = createOrUpdateUser(db, u, true)
 		if err != nil {
