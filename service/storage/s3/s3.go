@@ -5,24 +5,30 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 type Service struct {
-	Conf   client.ConfigProvider
-	Bucket string
+	Bucket         string
+	ConfigProvider client.ConfigProvider
+
+	once sync.Once
+	s3   *s3.S3
+}
+
+func (s *Service) ensureInit() {
+	s.once.Do(func() {
+		s.s3 = s3.New(s.ConfigProvider)
+	})
 }
 
 func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) {
-	s3Session := s3.New(session.Must(session.NewSession()))
-	if s.Conf != nil {
-		s3Session = s3.New(s.Conf)
-	}
+	s.ensureInit()
 
 	// s3.PutObjectInput takes in a io.ReadSeeker
 	// rather than reading everything into memory
@@ -73,7 +79,7 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 		ContentLength: aws.Int64(length),
 	}
 
-	_, err := s3Session.PutObject(putParams)
+	_, err := s.s3.PutObject(putParams)
 	if err != nil {
 		return "", err
 	}
@@ -81,17 +87,14 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 }
 
 func (s *Service) Download(key string) (io.ReadCloser, error) {
-	s3Session := s3.New(session.Must(session.NewSession()))
-	if s.Conf != nil {
-		s3Session = s3.New(s.Conf)
-	}
+	s.ensureInit()
 
 	getParams := &s3.GetObjectInput{
 		Bucket: aws.String(s.Bucket), // Required
 		Key:    aws.String(key),      // Required
 	}
 
-	object, err := s3Session.GetObject(getParams)
+	object, err := s.s3.GetObject(getParams)
 	if err != nil {
 		return nil, err
 	}
