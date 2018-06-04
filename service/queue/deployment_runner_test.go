@@ -17,8 +17,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func startDeploymentQueue() (Queue, []Job) {
-	db := connectDB()
+func startDeploymentQueue(db *gorm.DB) (Queue, []Job) {
 	jobs, err := genDeploymentsJobs(db, 5)
 	if err != nil {
 		log.Fatal(err)
@@ -64,23 +63,26 @@ func genDeploymentsJobs(db *gorm.DB, n int) ([]Job, error) {
 }
 
 func TestDeploymentRunner(t *testing.T) {
-	queue, jobs := startDeploymentQueue()
-	for _, job := range jobs {
-		queue.Push(job)
-	}
-	service := queue.(*dbQueue).runner.(DeploymentRunner).Service.(*fakeDepService)
-	for {
-		time.Sleep(time.Second * 1)
+	models.RunTransaction(func(db *gorm.DB) {
 
-		service.Lock()
-		count := service.count
-		service.Unlock()
-
-		if count >= len(jobs) {
-			queue.Halt()
-			break
+		queue, jobs := startDeploymentQueue(db)
+		for _, job := range jobs {
+			queue.Push(job)
 		}
-	}
+		service := queue.(*dbQueue).runner.(DeploymentRunner).Service.(*fakeDepService)
+		for {
+			time.Sleep(time.Second * 1)
+
+			service.Lock()
+			count := service.count
+			service.Unlock()
+
+			if count >= len(jobs) {
+				queue.Halt()
+				break
+			}
+		}
+	})
 }
 
 var _ deployment.Service = &fakeDepService{}
