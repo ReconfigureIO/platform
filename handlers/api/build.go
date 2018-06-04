@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/storage"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -17,8 +18,10 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	Events  events.EventService
-	Storage storage.Service
+	Events          events.EventService
+	Storage         storage.Service
+	Aws             aws.Service
+	PublicProjectID string
 }
 
 // Common preload functionality.
@@ -57,8 +60,8 @@ func (b Build) ByID(c *gin.Context) (models.Build, error) {
 	err := b.Query(c).First(&build, "builds.id = ?", id).Error
 	// Not found? Might be a public build ID
 	if err == gorm.ErrRecordNotFound {
-		err = b.QueryWhere("projects.id=?", publicProjectID).
-			Where(&models.Build{ProjectID: publicProjectID}).First(&build, "builds.id = ?", id).Error
+		err = b.QueryWhere("projects.id=?", b.PublicProjectID).
+			Where(&models.Build{ProjectID: b.PublicProjectID}).First(&build, "builds.id = ?", id).Error
 	}
 
 	if err != nil {
@@ -111,12 +114,12 @@ func (b Build) userBuilds(c *gin.Context, project string) (builds []models.Build
 }
 
 func (b Build) publicBuilds() (builds []models.Build, err error) {
-	if publicProjectID == "" {
+	if b.PublicProjectID == "" {
 		err = errors.New("global project configuration missing")
 		return
 	}
 
-	q := b.QueryWhere("projects.id=?", publicProjectID)
+	q := b.QueryWhere("projects.id=?", b.PublicProjectID)
 
 	err = q.Find(&builds).Error
 	return
@@ -194,14 +197,14 @@ func (b Build) Input(c *gin.Context) {
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
 	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := awsSession.RunBuild(build, callbackURL, reportsURL)
+	buildID, err := b.Aws.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(buildID)
+		batchJob := BatchService{Aws: b.Aws}.New(buildID)
 		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -219,7 +222,7 @@ func (b Build) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(awsSession, c, &build.BatchJob)
+	StreamBatchLogs(b.Aws, c, &build.BatchJob)
 }
 
 func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {
@@ -265,7 +268,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{}.AddEvent(&build.BatchJob, event)
+	newEvent, err := BatchService{Aws: b.Aws}.AddEvent(&build.BatchJob, event)
 
 	if event.Status == "CREATING_IMAGE" {
 		err = db.Model(&build).Update("FPGAImage", event.Message).Error

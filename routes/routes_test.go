@@ -42,7 +42,10 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil, nil, nil, "foobar")
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, nil, events, nil, nil, nil, "foobar")
+
+	// (config.RecoConfig, string, *gin.Engine, *gorm.DB, events.EventService, nil, nil, nil, string)
+	// (config.RecoConfig, string, *gin.Engine, *gorm.DB, "github.com/ReconfigureIO/platform/service/aws".Service, events.EventService, leads.Leads, storage.Service, deployment.Service, string)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

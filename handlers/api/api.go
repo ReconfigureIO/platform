@@ -3,9 +3,6 @@ package api
 import (
 	"errors"
 
-	"github.com/ReconfigureIO/platform/config"
-	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/queue"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
@@ -21,26 +18,12 @@ var (
 
 	db *gorm.DB
 
-	awsSession aws.Service
-
-	deploy deployment.Service
-
 	deploymentQueue queue.Queue
-
-	publicProjectID string
 )
 
 // DB sets the database to use for the API.
 func DB(d *gorm.DB) {
 	db = d
-}
-
-func Configure(conf config.Config) {
-	awsSession = aws.New(conf.Reco.AWS)
-
-	deploy = deployment.New(conf.Reco.Deploy)
-
-	publicProjectID = conf.Reco.PublicProjectID
 }
 
 // DepQueue sets the deployment queue.

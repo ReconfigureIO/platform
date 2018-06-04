@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -19,6 +20,7 @@ import (
 type Graph struct {
 	Events  events.EventService
 	Storage storage.Service
+	Aws     aws.Service
 }
 
 // Common preload functionality.
@@ -138,14 +140,14 @@ func (g Graph) Input(c *gin.Context) {
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
-	graphID, err := awsSession.RunGraph(graph, callbackURL)
+	graphID, err := g.Aws.RunGraph(graph, callbackURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(graphID)
+		batchJob := BatchService{Aws: g.Aws}.New(graphID)
 		return tx.Model(&graph).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -237,7 +239,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{}.AddEvent(&graph.BatchJob, event)
+	newEvent, err := BatchService{Aws: g.Aws}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
 		c.Error(err)

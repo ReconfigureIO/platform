@@ -97,7 +97,7 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	stream.Start(ctx, lstream, c, awsSession.Conf().LogGroup)
 }
 
-func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment *models.Deployment) {
+func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c *gin.Context, deployment *models.Deployment) {
 	ctx, cancel := WithClose(c)
 	defer cancel()
 

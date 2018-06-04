@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -16,7 +17,7 @@ import (
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads, storage storage.Service, deploy deployment.Service, publicProjectID string) *gin.Engine {
+func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, awsService aws.Service, events events.EventService, leads leads.Leads, storage storage.Service, deploy deployment.Service, publicProjectID string) *gin.Engine {
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -48,7 +49,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		billingRoutes.GET("/hours-remaining", billing.RemainingHours)
 	}
 
-	build := api.Build{Events: events, Storage: storage}
+	build := api.Build{Events: events, Storage: storage, PublicProjectID: publicProjectID, Aws: awsService}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
@@ -71,7 +72,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage)
+	simulation := api.NewSimulation(events, storage, awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -95,7 +96,9 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,
+		Aws:              awsService,
 		UseSpotInstances: config.FeatureUseSpotInstances,
+		PublicProjectID:  publicProjectID,
 	}
 
 	deploymentRoute := apiRoutes.Group("/deployments")

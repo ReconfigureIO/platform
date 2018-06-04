@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -82,6 +83,8 @@ func main() {
 	configProvider := session.Must(session.NewSession())
 	storageService := &s3.Service{Bucket: conf.Reco.StorageBucket, ConfigProvider: configProvider}
 
+	awsSession := aws.New(conf.Reco.AWS)
+
 	deploy := deployment.New(conf.Reco.Deploy)
 
 	publicProjectID := conf.Reco.PublicProjectID
@@ -121,7 +124,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, storageService, deploy, publicProjectID)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID)
 
 	// queue
 	var deploymentQueue queue.Queue

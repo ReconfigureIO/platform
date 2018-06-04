@@ -22,7 +22,7 @@ type Simulation struct {
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService, storageService storage.Service) Simulation {
+func NewSimulation(events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
 	return Simulation{
 		Aws:     awsSession,
 		Events:  events,
@@ -130,7 +130,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(simID)
+		batchJob := BatchService{Aws: s.Aws}.New(simID)
 		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -223,7 +223,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{}.AddEvent(&sim.BatchJob, event)
+	newEvent, err := BatchService{Aws: s.Aws}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
 		c.Error(err)
