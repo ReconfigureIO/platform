@@ -49,7 +49,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		billingRoutes.GET("/hours-remaining", billing.RemainingHours)
 	}
 
-	build := api.Build{Events: events, Storage: storage, PublicProjectID: publicProjectID, Aws: awsService}
+	build := api.Build{Events: events, Storage: storage, PublicProjectID: publicProjectID, AWS: awsService}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
@@ -96,7 +96,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,
-		Aws:              awsService,
+		AWS:              awsService,
 		UseSpotInstances: config.FeatureUseSpotInstances,
 		PublicProjectID:  publicProjectID,
 	}

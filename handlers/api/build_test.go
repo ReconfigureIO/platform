@@ -33,7 +33,8 @@ func TestGetPublicBuilds(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		pBuilds, err := Build{}.publicBuilds()
+		publicProjectID := builds[0].Project.ID
+		pBuilds, err := Build{PublicProjectID: publicProjectID}.publicBuilds()
 		if err != nil {
 			t.Fatal(err)
 		}

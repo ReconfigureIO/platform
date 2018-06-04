@@ -20,7 +20,7 @@ import (
 type Build struct {
 	Events          events.EventService
 	Storage         storage.Service
-	Aws             aws.Service
+	AWS             aws.Service
 	PublicProjectID string
 }
 
@@ -197,14 +197,14 @@ func (b Build) Input(c *gin.Context) {
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
 	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
-	buildID, err := b.Aws.RunBuild(build, callbackURL, reportsURL)
+	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{Aws: b.Aws}.New(buildID)
+		batchJob := BatchService{AWS: b.AWS}.New(buildID)
 		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -222,7 +222,7 @@ func (b Build) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(b.Aws, c, &build.BatchJob)
+	StreamBatchLogs(b.AWS, c, &build.BatchJob)
 }
 
 func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {
@@ -268,7 +268,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{Aws: b.Aws}.AddEvent(&build.BatchJob, event)
+	newEvent, err := BatchService{AWS: b.AWS}.AddEvent(&build.BatchJob, event)
 
 	if event.Status == "CREATING_IMAGE" {
 		err = db.Model(&build).Update("FPGAImage", event.Message).Error

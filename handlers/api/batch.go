@@ -9,7 +9,7 @@ import (
 
 // BatchService is aws batch job service.
 type BatchService struct {
-	Aws aws.Service
+	AWS aws.Service
 }
 
 // New creates a new batch job with its queued event.
@@ -34,7 +34,7 @@ func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatch
 	}
 
 	if newEvent.Status == models.StatusTerminating {
-		err = b.Aws.HaltJob(batchJob.BatchID)
+		err = b.AWS.HaltJob(batchJob.BatchID)
 		if err != nil {
 			return models.BatchJobEvent{}, err
 		} else {

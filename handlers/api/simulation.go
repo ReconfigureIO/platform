@@ -16,7 +16,7 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	Aws     aws.Service
+	AWS     aws.Service
 	Events  events.EventService
 	Storage storage.Service
 }
@@ -24,7 +24,7 @@ type Simulation struct {
 // NewSimulation creates a new Simulation.
 func NewSimulation(events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
 	return Simulation{
-		Aws:     awsSession,
+		AWS:     awsSession,
 		Events:  events,
 		Storage: storageService,
 	}
@@ -123,14 +123,14 @@ func (s Simulation) Input(c *gin.Context) {
 
 	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
 
-	simID, err := s.Aws.RunSimulation(s3Url, callbackURL, sim.Command)
+	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{Aws: s.Aws}.New(simID)
+		batchJob := BatchService{AWS: s.AWS}.New(simID)
 		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -177,7 +177,7 @@ func (s Simulation) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(s.Aws, c, &sim.BatchJob)
+	StreamBatchLogs(s.AWS, c, &sim.BatchJob)
 }
 
 func (s Simulation) canPostEvent(c *gin.Context, sim models.Simulation) bool {
@@ -223,7 +223,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{Aws: s.Aws}.AddEvent(&sim.BatchJob, event)
+	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
 		c.Error(err)
