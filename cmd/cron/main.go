@@ -23,7 +23,7 @@ import (
 
 var (
 	deploy     deployment.Service
-	AWSService aws.Service
+	awsService aws.Service
 
 	db *gorm.DB
 
@@ -49,7 +49,7 @@ func setup(*cobra.Command, []string) {
 	}
 
 	deploy = deployment.New(conf.Reco.Deploy)
-	AWSService = aws.New(conf.Reco.AWS)
+	awsService = aws.New(conf.Reco.AWS)
 
 	db = config.SetupDB(conf)
 	api.DB(db)
@@ -140,7 +140,7 @@ func findDeploymentIPs() {
 
 func generatedAFIs() {
 	log.Printf("checking afis")
-	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), AWSService, models.BatchDataSource(db))
+	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
 
 	err := watcher.FindAFI(context.Background(), 100)
 	if err != nil {
@@ -150,7 +150,7 @@ func generatedAFIs() {
 
 func getBatchJobLogNames() {
 	log.Printf("Getting log names")
-	watcher := cw_id_watcher.NewLogWatcher(AWSService, models.BatchDataSource(db))
+	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
 
 	// find batch jobs that've become active in the last hour
 	sinceTime := time.Now().Add(-1 * time.Hour)
