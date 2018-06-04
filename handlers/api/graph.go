@@ -174,7 +174,11 @@ func (g Graph) Download(c *gin.Context) {
 	}
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(object)
+	_, err = buf.ReadFrom(object)
+	if err != nil {
+		sugar.ErrResponse(c, 500, err)
+		return
+	}
 
 	c.Header("Content-Encoding", "gzip")
 	c.Data(200, "application/pdf", buf.Bytes())
