@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/github"
+	"github.com/ReconfigureIO/platform/service/auth"
+	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -23,9 +23,9 @@ const (
 )
 
 type SignupUser struct {
-	DB    *gorm.DB
-	GH    *github.Service
-	Leads leads.Leads
+	DB          *gorm.DB
+	AuthService auth.Service
+	Leads       leads.Leads
 }
 
 func (s *SignupUser) GetAuthToken(token string) (models.InviteToken, error) {
@@ -51,7 +51,7 @@ func (s *SignupUser) ResignIn(c *gin.Context) {
 	checkRedirURL(c, session)
 	session.Save()
 
-	url := s.GH.OauthConf.AuthCodeURL(newState, oauth2.AccessTypeOnline)
+	url := s.AuthService.RedirectURL(newState)
 	c.Redirect(http.StatusFound, url)
 }
 
@@ -76,7 +76,7 @@ func (s *SignupUser) SignUp(c *gin.Context) {
 	checkRedirURL(c, session)
 	session.Save()
 
-	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
+	url := s.AuthService.RedirectURL(invite.Token)
 	c.Redirect(http.StatusFound, url)
 }
 
@@ -95,7 +95,7 @@ func (s *SignupUser) SignUpNoToken(c *gin.Context) {
 	checkRedirURL(c, session)
 	session.Save()
 
-	url := s.GH.OauthConf.AuthCodeURL(invite.Token, oauth2.AccessTypeOnline)
+	url := s.AuthService.RedirectURL(invite.Token)
 	c.Redirect(http.StatusFound, url)
 }
 
@@ -152,15 +152,13 @@ func (s *SignupUser) Callback(c *gin.Context) {
 
 	code := c.Query("code")
 
-	token, err := s.GH.OauthConf.Exchange(context.Background(), code)
-
+	accessToken, err := s.AuthService.Exchange(context.Background(), code)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Error: %s", err)
 		return
 	}
 
-	user, err := s.GH.GetOrCreateUser(c, token.AccessToken, newUser)
-
+	user, err := s.AuthService.GetOrCreateUser(c, accessToken, newUser)
 	if err != nil {
 		if _, ok := err.(github.UserError); ok {
 			sugar.ErrResponse(c, 400, err)

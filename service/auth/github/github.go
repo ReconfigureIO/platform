@@ -34,6 +34,23 @@ func New(db *gorm.DB) *Service {
 	return &Service{OauthConf: oauthConf, db: db}
 }
 
+// RedirectURL generates a URL to be followed by the client, where the client
+// can choose through a UI to allow the application to use their information.
+func (s *Service) RedirectURL(state string) string {
+	return s.OauthConf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+}
+
+// Exchange is a part of the OAuth2 contract, whereby we take the code returned
+// to us by the service via the user, and then make a call to the server to
+// exchange this code for an OAuth2 access token.
+func (s *Service) Exchange(ctx context.Context, code string) (string, error) {
+	token, err := s.OauthConf.Exchange(ctx, code)
+	if err != nil {
+		return "", err
+	}
+	return token.AccessToken, nil
+}
+
 // GetOrCreateUser fetches or create a user.
 // Given an access token, fetch the user data from github, and assign
 // update or create the user in the db.
@@ -73,30 +90,7 @@ func (s *Service) GetOrCreateUser(ctx context.Context, accessToken string, creat
 		return u, UserError("No valid email found")
 	}
 
-	u, err = createOrUpdateUser(s.db, u, createNew)
+	u, err = models.CreateOrUpdateUser(s.db, u, createNew)
 
-	return u, err
-}
-
-func createOrUpdateUser(db *gorm.DB, u models.User, createNew bool) (models.User, error) {
-	q := db.Where(models.User{GithubID: u.GithubID})
-
-	var user models.User
-	if err := q.First(&user).Error; err != nil {
-		// not found
-		user = models.NewUser()
-		if err != gorm.ErrRecordNotFound {
-			return user, err
-		}
-		if !createNew {
-			return user, err
-		}
-	}
-
-	err := q.Attrs(user).FirstOrInit(&u).Error
-	if err != nil {
-		return u, err
-	}
-	db.Save(&u)
 	return u, err
 }
