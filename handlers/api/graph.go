@@ -12,6 +12,7 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // Graph handles requests for graphs.
@@ -168,6 +169,14 @@ func (g Graph) Download(c *gin.Context) {
 	}
 
 	object, err := g.Storage.Download(graph.ArtifactUrl())
+	if object != nil {
+		defer func() {
+			err := object.Close()
+			if err != nil {
+				log.WithError(err).Error("Failed to close g.Storage.Download")
+			}
+		}()
+	}
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
