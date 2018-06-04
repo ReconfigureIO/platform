@@ -11,7 +11,6 @@ import (
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
-	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/service/storage/s3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
@@ -22,7 +21,7 @@ import (
 
 var (
 	version string
-	ss      storage.Service
+	storage storage.Service
 )
 
 func startDeploymentQueue(conf config.Config, db *gorm.DB) queue.Queue {
@@ -80,7 +79,7 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	//set up storage
-	storage := s3.New(s3.ConfigProvider{})
+	storage := s3.Service{Bucket: conf.Reco.StorageBucket}
 
 	deploy := deployment.New(conf.Reco.Deploy)
 

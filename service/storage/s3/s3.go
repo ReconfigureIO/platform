@@ -8,41 +8,21 @@ import (
 
 	"github.com/abiosoft/errs"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 type Service struct {
-	session *session.Session
-	conf    ConfigProvider
-}
-
-// ServiceConfig holds configuration for service.
-type ConfigProvider struct {
+	Conf   client.ConfigProvider
 	Bucket string
-	Region string
-}
-
-// New creates a new service with conf.
-func New(conf ConfigProvider) *Service {
-	if conf == (ConfigProvider{}) {
-		// attempt to pull config from environment
-		region := os.Getenv("AWS_REGION")
-		if region == "" {
-			region = os.Getenv("AWS_DEFAULT_REGION")
-		}
-		conf = ConfigProvider{
-			Bucket: os.Getenv("RECO_AWS_BUCKET"),
-			Region: region,
-		}
-	}
-	s := Service{conf: conf}
-	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion(conf.Region)))
-	return &s
 }
 
 func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) {
-	s3Session := s3.New(s.session)
+	s3Session := s3.New(session.Must(session.NewSession()))
+	if s.Conf != nil {
+		s3Session = s3.New(s.Conf)
+	}
 
 	// s3.PutObjectInput takes in a io.ReadSeeker
 	// rather than reading everything into memory
@@ -87,8 +67,8 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 	}
 
 	putParams := &s3.PutObjectInput{
-		Bucket:        aws.String(s.conf.Bucket), // Required
-		Key:           aws.String(key),           // Required
+		Bucket:        aws.String(s.Bucket), // Required
+		Key:           aws.String(key),      // Required
 		Body:          reader,
 		ContentLength: aws.Int64(length),
 	}
@@ -101,11 +81,14 @@ func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) 
 }
 
 func (s *Service) Download(key string) (io.ReadCloser, error) {
-	s3Session := s3.New(s.session)
+	s3Session := s3.New(session.Must(session.NewSession()))
+	if s.Conf != nil {
+		s3Session = s3.New(s.Conf)
+	}
 
 	getParams := &s3.GetObjectInput{
-		Bucket: aws.String(s.conf.Bucket), // Required
-		Key:    aws.String(key),           // Required
+		Bucket: aws.String(s.Bucket), // Required
+		Key:    aws.String(key),      // Required
 	}
 
 	object, err := s3Session.GetObject(getParams)
@@ -116,5 +99,5 @@ func (s *Service) Download(key string) (io.ReadCloser, error) {
 }
 
 func (s *Service) s3Url(key string) string {
-	return "s3://" + s.conf.Bucket + "/" + key
+	return "s3://" + s.Bucket + "/" + key
 }
