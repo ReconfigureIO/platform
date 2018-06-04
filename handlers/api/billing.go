@@ -143,7 +143,7 @@ func (b billingHours) Used() (int, error) {
 }
 
 func (b billingHours) Net() (int, error) {
-	//If billingHours is invalid, stop
+	// If billingHours is invalid, stop
 	if b.err != nil {
 		return 0, b.err
 	}

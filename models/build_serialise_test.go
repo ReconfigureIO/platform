@@ -28,7 +28,7 @@ func TestSerialiseDeserialise(t *testing.T) {
 	var output interface{}
 	err = json.Unmarshal(newBytes, &output)
 
-	//return from get with status should match the build we made at the start
+	// return from get with status should match the build we made at the start
 	if !reflect.DeepEqual(input, output) {
 		t.Fatalf("\nExpected: %+v\nGot: %+v\n", input, output)
 		return

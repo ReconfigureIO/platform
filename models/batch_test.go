@@ -13,7 +13,7 @@ import (
 func TestBatchAddEvent(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
-		//create a build in the DB
+		// create a build in the DB
 		batch := BatchJob{
 			Events: []BatchJobEvent{
 				BatchJobEvent{
