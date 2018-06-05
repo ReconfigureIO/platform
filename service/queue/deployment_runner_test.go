@@ -28,14 +28,14 @@ func startDeploymentQueue() (Queue, []Job) {
 		Hostname:     "test.reconfigure.io",
 		DB:           db,
 		Service:      &fakeDepService{db: db},
-		pollInterval: time.Second * 1,
+		pollInterval: 10 * time.Millisecond,
 	}
 	deploymentQueue := &dbQueue{
 		jobType:      "deployment",
 		runner:       runner,
 		concurrent:   2,
 		service:      QueueService{db: db},
-		pollInterval: time.Second * 1,
+		pollInterval: 10 * time.Millisecond,
 		halt:         make(chan struct{}),
 	}
 

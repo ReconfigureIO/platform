@@ -39,7 +39,7 @@ func TestDBQueue(t *testing.T) {
 		runner:       runner,
 		concurrent:   2,
 		service:      QueueService{db: connectDB()},
-		pollInterval: time.Second * 1,
+		pollInterval: 10 * time.Millisecond,
 		halt:         make(chan struct{}),
 	}
 
@@ -48,8 +48,8 @@ func TestDBQueue(t *testing.T) {
 	}
 	go queue.Start()
 
-	for i := 0; i < 10; i++ {
-		time.Sleep(time.Second * 1)
+	for i := 0; i < 100; i++ {
+		time.Sleep(100 * time.Millisecond)
 		if atomic.LoadUint64(&runner.nDispatched) >= 5 {
 			queue.Halt()
 			break
