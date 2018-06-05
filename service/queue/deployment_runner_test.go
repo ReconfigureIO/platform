@@ -36,6 +36,7 @@ func startDeploymentQueue() (Queue, []Job) {
 		concurrent:   2,
 		service:      QueueService{db: db},
 		pollInterval: time.Second * 1,
+		halt:         make(chan struct{}),
 	}
 
 	go deploymentQueue.Start()

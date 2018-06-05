@@ -30,6 +30,7 @@ func NewWithDBStore(db *gorm.DB, runner JobRunner, concurrent int, jobType strin
 		concurrent:   concurrent,
 		service:      QueueService{db: db},
 		pollInterval: time.Second * 60,
+		halt:         make(chan struct{}),
 	}
 }
 
@@ -45,7 +46,6 @@ func (d *dbQueue) CountUserJobsInStatus(user models.User, status string) (int, e
 func (d *dbQueue) Start() {
 	d.resetStuckJobs()
 
-	d.halt = make(chan struct{})
 	ticker := time.NewTicker(d.pollInterval)
 
 loop:

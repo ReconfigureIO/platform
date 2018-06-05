@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -39,6 +40,7 @@ func TestDBQueue(t *testing.T) {
 		concurrent:   2,
 		service:      QueueService{db: connectDB()},
 		pollInterval: time.Second * 1,
+		halt:         make(chan struct{}),
 	}
 
 	for _, job := range jobs {
@@ -48,33 +50,29 @@ func TestDBQueue(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		time.Sleep(time.Second * 1)
-		if len(runner.dispatched) >= 5 {
+		if atomic.LoadUint64(&runner.nDispatched) >= 5 {
 			queue.Halt()
 			break
 		}
 	}
 
 	for _, job := range jobs {
-		if _, ok := runner.dispatched[job.ID]; !ok {
+		if _, ok := runner.dispatched.Load(job.ID); !ok {
 			t.Errorf("Job %s not dispatched", job.ID)
 		}
 	}
 }
 
 type fakeRunner struct {
-	dispatched map[string]struct{}
-	sync.Mutex
+	dispatched  sync.Map
+	nDispatched uint64
 }
 
 func (f *fakeRunner) Run(job Job) {
 	log.Println("starting", job.ID)
 
-	f.Lock()
-	defer f.Unlock()
-	if f.dispatched == nil {
-		f.dispatched = make(map[string]struct{})
-	}
-	f.dispatched[job.ID] = struct{}{}
+	f.dispatched.Store(job.ID, struct{}{})
+	atomic.AddUint64(&f.nDispatched, 1)
 }
 
 func (f fakeRunner) Stop(job Job) {
