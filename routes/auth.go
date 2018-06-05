@@ -16,7 +16,6 @@ import (
 func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads, authService svcauth.Service) {
 	authRoutes := r.Group("/oauth")
 	{
-
 		signup := auth.SignupUser{
 			DB:          db,
 			AuthService: authService,

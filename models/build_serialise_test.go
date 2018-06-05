@@ -33,5 +33,4 @@ func TestSerialiseDeserialise(t *testing.T) {
 		t.Fatalf("\nExpected: %+v\nGot: %+v\n", input, output)
 		return
 	}
-
 }

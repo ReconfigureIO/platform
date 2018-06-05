@@ -189,7 +189,6 @@ func streamDeploymentLogs(service deployment.Service, c *gin.Context, deployment
 	}()
 	conf := service.GetServiceConfig()
 	stream.Start(ctx, lstream, c, conf.LogGroup)
-
 }
 
 func refreshBatchJobEvents(b *models.BatchJob, db *gorm.DB) error {

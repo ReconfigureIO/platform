@@ -41,7 +41,6 @@ func TestDeploySpotInstance(t *testing.T) {
 	if !DryRunOk(err) {
 		t.Error(err)
 	}
-
 }
 
 func TestDeployInstance(t *testing.T) {

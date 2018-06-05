@@ -172,7 +172,6 @@ func (g Graph) Download(c *gin.Context) {
 
 	c.Header("Content-Encoding", "gzip")
 	c.Data(200, "application/pdf", object)
-
 }
 
 func (g Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
@@ -230,5 +229,4 @@ func (g Graph) CreateEvent(c *gin.Context) {
 	sugar.EnqueueEvent(g.Events, c, eventMessage, graph.Project.UserID, map[string]interface{}{"graph_id": graph.ID, "project_name": graph.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
-
 }

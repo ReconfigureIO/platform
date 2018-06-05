@@ -267,7 +267,6 @@ func (s *service) StopDeployment(ctx context.Context, deployment models.Deployme
 		return s.stopSpotInstance(ctx, InstanceId)
 	}
 	return s.stopInstance(ctx, InstanceId)
-
 }
 
 func (s *service) GetDepDetail(id int) (string, error) {
@@ -296,7 +295,6 @@ func (s *service) GetDeploymentStream(ctx context.Context, deployment models.Dep
 		return nil, awsservice.ErrNotFound
 	}
 	return resp.LogStreams[0], nil
-
 }
 
 func isNotFound(err error) bool {

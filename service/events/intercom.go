@@ -58,7 +58,6 @@ func (s intercomEventService) Seen(user models.User) {
 	default:
 		log.Printf("User seen queue full. Discarding event: %v", user)
 	}
-
 }
 
 func (s intercomEventService) EnqueueEvent(event Event) {
