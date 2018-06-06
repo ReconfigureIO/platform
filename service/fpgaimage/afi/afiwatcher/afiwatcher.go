@@ -41,7 +41,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	}
 
 	log.Printf("statuses of %v", statuses)
-	afigenerated := 0
+	afiGenerated := 0
 
 	// for each build check associated AFI, if done, post event
 	for _, build := range buildsWaitingOnAFIs {
@@ -73,10 +73,10 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 				}
 			}
 
-			afigenerated += 1
+			afiGenerated++
 		}
 	}
 
-	log.Printf("%d builds have finished generating AFIs", afigenerated)
+	log.Printf("%d builds have finished generating AFIs", afiGenerated)
 	return nil
 }
