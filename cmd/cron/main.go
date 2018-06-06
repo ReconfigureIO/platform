@@ -53,10 +53,6 @@ func setup(*cobra.Command, []string) {
 
 	db = config.SetupDB(conf)
 	api.DB(db)
-
-	if err != nil {
-		log.Fatalf("failed to connect to database: %s", err.Error())
-	}
 }
 
 // add commands to root command
