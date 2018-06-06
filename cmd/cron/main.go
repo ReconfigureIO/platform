@@ -12,6 +12,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
 	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -137,7 +138,7 @@ func generatedAFIs() {
 	watcher := afiwatcher.AFIWatcher{
 		BatchRepo:           models.BatchDataSource(db),
 		BuildRepo:           models.BuildDataSource(db),
-		DescribeAFIStatuser: awsService,
+		DescribeAFIStatuser: &afi.Service{},
 	}
 
 	err := watcher.FindAFI(context.Background(), 100)
