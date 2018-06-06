@@ -64,7 +64,7 @@ func (s *service) s3Url(key string) string {
 func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
-	debugArtifactUrl := s.s3Url(build.DebugUrl())
+	debugArtifactURL := s.s3Url(build.DebugUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
 	memory := int64(32000)
 
@@ -93,7 +93,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 				},
 				{
 					Name:  aws.String("DEBUG_URL"),
-					Value: aws.String(debugArtifactUrl),
+					Value: aws.String(debugArtifactURL),
 				},
 				{
 					Name:  aws.String("DEVICE"),
