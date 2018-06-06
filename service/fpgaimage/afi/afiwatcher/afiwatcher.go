@@ -12,12 +12,16 @@ var (
 	creating_statuses = []string{models.StatusCreatingImage}
 )
 
+// AFIWatcher considers builds which aren't yet finished, and looks for their AFIs.
+// When it finds them, the build is marked as completed or errored.
 type AFIWatcher struct {
 	BatchRepo        models.BatchRepo
 	BuildRepo        models.BuildRepo
 	FPGAImageService fpgaimage.Service
 }
 
+// FindAFI searches for 'limit' builds which are in the StatusCreatingImage state,
+// and searches for their AFIs. When found, the build is marked as completed or errored.
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
