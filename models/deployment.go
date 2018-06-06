@@ -261,7 +261,6 @@ func (repo *deploymentRepo) GetWithoutIP() ([]Deployment, error) {
 	}
 
 	return deps, nil
-
 }
 
 func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time) int {

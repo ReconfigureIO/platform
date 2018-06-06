@@ -55,7 +55,6 @@ func (s *leads) Invite(num int) (invited int, err error) {
 	var canInviteTag intercom.Tag
 
 	for _, t := range tags.Tags {
-
 		if t.Name == "invite_ready" {
 			readyTag = t
 		}

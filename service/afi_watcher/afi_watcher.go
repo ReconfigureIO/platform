@@ -84,5 +84,4 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 
 	log.Printf("%d builds have finished generating AFIs", afigenerated)
 	return nil
-
 }

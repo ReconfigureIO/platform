@@ -57,7 +57,6 @@ func setup(*cobra.Command, []string) {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %s", err.Error())
 	}
-
 }
 
 // add commands to root command
@@ -111,7 +110,6 @@ func cronCmd() {
 
 	waitForever := make(chan struct{})
 	<-waitForever
-
 }
 
 func terminateDeployments() {

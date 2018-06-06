@@ -122,7 +122,6 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 	}).Info("Terminated deployments")
 
 	return nil
-
 }
 
 // For all deployments that do not have an IPv4 address, find their IPs
@@ -162,5 +161,4 @@ func (instances *instances) FindIPs(ctx context.Context) error {
 	}).Info("Found IPs for deployments")
 
 	return nil
-
 }

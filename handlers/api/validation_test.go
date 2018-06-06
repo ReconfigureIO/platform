@@ -16,7 +16,6 @@ func TestProjValidation(t *testing.T) {
 	if err != nil {
 		t.Error()
 	}
-
 }
 
 func TestDepJobEventValidation(t *testing.T) {
@@ -28,5 +27,4 @@ func TestDepJobEventValidation(t *testing.T) {
 	if err != nil {
 		t.Error()
 	}
-
 }
