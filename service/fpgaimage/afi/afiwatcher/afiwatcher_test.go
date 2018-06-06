@@ -16,12 +16,12 @@ func TestFindAFI(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := fpgaimage.NewMockService(mockCtrl)
+	fpgaImageService := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
-		BatchRepo:           batchRepo,
-		BuildRepo:           buildRepo,
-		DescribeAFIStatuser: describeAFIStatuser,
+		BatchRepo:        batchRepo,
+		BuildRepo:        buildRepo,
+		FPGAImageService: fpgaImageService,
 	}
 
 	// the time.Now we return as part of afistatus comes back as
@@ -53,7 +53,7 @@ func TestFindAFI(t *testing.T) {
 	}
 
 	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 	batchRepo.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
 
 	err := watcher.FindAFI(ctx, limit)
@@ -69,12 +69,12 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := fpgaimage.NewMockService(mockCtrl)
+	fpgaImageService := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
-		BatchRepo:           batchRepo,
-		BuildRepo:           buildRepo,
-		DescribeAFIStatuser: describeAFIStatuser,
+		BatchRepo:        batchRepo,
+		BuildRepo:        buildRepo,
+		FPGAImageService: fpgaImageService,
 	}
 
 	afistatus := map[string]fpgaimage.Status{"agfi-foobar": {"invalid-status", time.Now()}}
@@ -95,7 +95,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	limit := 100
 
 	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 
 	err := watcher.FindAFI(ctx, limit)
 

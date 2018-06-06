@@ -13,9 +13,9 @@ var (
 )
 
 type AFIWatcher struct {
-	BatchRepo           models.BatchRepo
-	BuildRepo           models.BuildRepo
-	DescribeAFIStatuser fpgaimage.Service
+	BatchRepo        models.BatchRepo
+	BuildRepo        models.BuildRepo
+	FPGAImageService fpgaimage.Service
 }
 
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
@@ -31,7 +31,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	}
 
 	// get the status of the associated AFIs
-	statuses, err := watcher.DescribeAFIStatuser.DescribeAFIStatus(ctx, buildswaitingonafis)
+	statuses, err := watcher.FPGAImageService.DescribeAFIStatus(ctx, buildswaitingonafis)
 	if err != nil {
 		return err
 	}

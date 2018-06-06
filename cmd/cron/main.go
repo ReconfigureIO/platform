@@ -136,9 +136,9 @@ func findDeploymentIPs() {
 func generatedAFIs() {
 	log.Printf("checking afis")
 	watcher := afiwatcher.AFIWatcher{
-		BatchRepo:           models.BatchDataSource(db),
-		BuildRepo:           models.BuildDataSource(db),
-		DescribeAFIStatuser: &afi.Service{},
+		BatchRepo:        models.BatchDataSource(db),
+		BuildRepo:        models.BuildDataSource(db),
+		FPGAImageService: &afi.Service{},
 	}
 
 	err := watcher.FindAFI(context.Background(), 100)
