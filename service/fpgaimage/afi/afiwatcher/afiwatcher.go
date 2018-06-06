@@ -24,18 +24,18 @@ type AFIWatcher struct {
 // and searches for their AFIs. When found, the build is marked as completed or errored.
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
-	buildswaitingonafis, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
+	buildsWaitingOnAFIs, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
 	if err != nil {
 		return err
 	}
-	log.Printf("Looking up %d builds", len(buildswaitingonafis))
+	log.Printf("Looking up %d builds", len(buildsWaitingOnAFIs))
 
-	if len(buildswaitingonafis) == 0 {
+	if len(buildsWaitingOnAFIs) == 0 {
 		return nil
 	}
 
 	// get the status of the associated AFIs
-	statuses, err := watcher.FPGAImageService.DescribeAFIStatus(ctx, buildswaitingonafis)
+	statuses, err := watcher.FPGAImageService.DescribeAFIStatus(ctx, buildsWaitingOnAFIs)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	afigenerated := 0
 
 	// for each build check associated AFI, if done, post event
-	for _, build := range buildswaitingonafis {
+	for _, build := range buildsWaitingOnAFIs {
 		status, found := statuses[build.FPGAImage]
 		if found {
 			var event *models.BatchJobEvent
