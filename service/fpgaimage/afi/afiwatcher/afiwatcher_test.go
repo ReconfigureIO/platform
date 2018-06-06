@@ -58,7 +58,7 @@ func TestFindAFI(t *testing.T) {
 		Code:      0,
 	}
 
-	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(statusCreating, limit).Return(builds, nil)
 	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afiStatus, nil)
 	batchRepo.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
 
@@ -105,7 +105,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	ctx := context.Background()
 	limit := 100
 
-	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(statusCreating, limit).Return(builds, nil)
 	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afiStatus, nil)
 
 	err := watcher.FindAFI(ctx, limit)

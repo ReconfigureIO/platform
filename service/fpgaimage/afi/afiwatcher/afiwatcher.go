@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	creating_statuses = []string{models.StatusCreatingImage}
+	statusCreating = []string{models.StatusCreatingImage}
 )
 
 // AFIWatcher considers builds which aren't yet finished, and looks for their AFIs.
@@ -24,7 +24,7 @@ type AFIWatcher struct {
 // and searches for their AFIs. When found, the build is marked as completed or errored.
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
-	buildsWaitingOnAFIs, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
+	buildsWaitingOnAFIs, err := watcher.BuildRepo.GetBuildsWithStatus(statusCreating, limit)
 	if err != nil {
 		return err
 	}
