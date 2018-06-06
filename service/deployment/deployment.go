@@ -126,7 +126,7 @@ func (s *service) runSpotInstance(ctx context.Context, encodedConfig string, dry
 				AssociatePublicIpAddress: aws.Bool(true),
 				DeleteOnTermination:      aws.Bool(true),
 				SubnetId:                 aws.String(s.Conf.Subnet),
-				Groups:                   []*string{aws.String(s.Conf.SecurityGroup)},
+				Groups:                   aws.StringSlice([]string{s.Conf.SecurityGroup}),
 			},
 		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
@@ -169,7 +169,7 @@ func (s *service) runInstance(ctx context.Context, encodedConfig string, dryRun 
 				AssociatePublicIpAddress: aws.Bool(true),
 				DeleteOnTermination:      aws.Bool(true),
 				SubnetId:                 aws.String(s.Conf.Subnet),
-				Groups:                   []*string{aws.String(s.Conf.SecurityGroup)},
+				Groups:                   aws.StringSlice([]string{s.Conf.SecurityGroup}),
 			},
 		},
 		IamInstanceProfile: &ec2.IamInstanceProfileSpecification{
@@ -206,9 +206,7 @@ func (s *service) stopInstance(ctx context.Context, InstanceId string) error {
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.TerminateInstancesInput{
-		InstanceIds: []*string{
-			aws.String(InstanceId),
-		},
+		InstanceIds: aws.StringSlice([]string{InstanceId}),
 	}
 
 	_, err := ec2Session.TerminateInstancesWithContext(ctx, &cfg)
@@ -220,9 +218,7 @@ func (s *service) stopSpotInstance(ctx context.Context, InstanceId string) error
 	ec2Session := ec2.New(s.session)
 
 	input := &ec2.CancelSpotInstanceRequestsInput{
-		SpotInstanceRequestIds: []*string{
-			aws.String(InstanceId),
-		},
+		SpotInstanceRequestIds: aws.StringSlice([]string{InstanceId}),
 	}
 
 	_, err := ec2Session.CancelSpotInstanceRequestsWithContext(ctx, input)
@@ -231,9 +227,7 @@ func (s *service) stopSpotInstance(ctx context.Context, InstanceId string) error
 	}
 
 	descInput := &ec2.DescribeSpotInstanceRequestsInput{
-		SpotInstanceRequestIds: []*string{
-			aws.String(InstanceId),
-		},
+		SpotInstanceRequestIds: aws.StringSlice([]string{InstanceId}),
 	}
 
 	result, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, descInput)
@@ -241,17 +235,17 @@ func (s *service) stopSpotInstance(ctx context.Context, InstanceId string) error
 		return err
 	}
 
-	instanceIds := []*string{}
+	instanceIds := []string{}
 
 	for _, req := range result.SpotInstanceRequests {
 		if req.InstanceId != nil {
-			instanceIds = append(instanceIds, req.InstanceId)
+			instanceIds = append(instanceIds, *req.InstanceId)
 		}
 	}
 
 	if len(instanceIds) > 0 {
 		cfg := ec2.TerminateInstancesInput{
-			InstanceIds: instanceIds,
+			InstanceIds: aws.StringSlice(instanceIds),
 		}
 
 		_, err = ec2Session.TerminateInstancesWithContext(ctx, &cfg)
@@ -316,13 +310,13 @@ func isNotFound(err error) bool {
 func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
 	ret := make(map[string]string)
 
-	var instanceids []*string
-	var spotInstanceIDs []*string
+	var instanceids []string
+	var spotInstanceIDs []string
 	for _, deployment := range deployments {
 		if deployment.SpotInstance {
-			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+			spotInstanceIDs = append(spotInstanceIDs, deployment.InstanceID)
 		} else {
-			instanceids = append(instanceids, &deployment.InstanceID)
+			instanceids = append(instanceids, deployment.InstanceID)
 		}
 
 	}
@@ -331,7 +325,7 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	if len(instanceids) > 0 {
 		// regular instances
 		cfg := ec2.DescribeInstancesInput{
-			InstanceIds: instanceids,
+			InstanceIds: aws.StringSlice(instanceids),
 		}
 
 		results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
@@ -351,7 +345,7 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 	if len(spotInstanceIDs) > 0 {
 		// spot instance
 		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
-			SpotInstanceRequestIds: spotInstanceIDs,
+			SpotInstanceRequestIds: aws.StringSlice(spotInstanceIDs),
 		}
 
 		spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
@@ -364,19 +358,19 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 
 		// A map for the spotinstance ec2 instances
 		spotInstanceMap := make(map[string]string)
-		spotInstanceIds := []*string{}
+		spotInstanceIds := []string{}
 
 		for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
 			instanceId := (*string)(spotInstanceRequest.InstanceId)
 			if instanceId != nil {
-				spotInstanceIds = append(spotInstanceIds, instanceId)
+				spotInstanceIds = append(spotInstanceIds, *instanceId)
 				spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
 				spotInstanceMap[*instanceId] = *spotId
 			}
 		}
 
 		spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
-			InstanceIds: spotInstanceIds,
+			InstanceIds: aws.StringSlice(spotInstanceIds),
 		})
 
 		if err != nil {
@@ -399,13 +393,13 @@ func (s *service) DescribeInstanceStatus(ctx context.Context, deployments []mode
 func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.Deployment) (map[string]string, error) {
 	ret := make(map[string]string)
 
-	var instanceids []*string
-	var spotInstanceIDs []*string
+	var instanceids []string
+	var spotInstanceIDs []string
 	for _, deployment := range deployments {
 		if deployment.SpotInstance {
-			spotInstanceIDs = append(spotInstanceIDs, &deployment.InstanceID)
+			spotInstanceIDs = append(spotInstanceIDs, deployment.InstanceID)
 		} else {
-			instanceids = append(instanceids, &deployment.InstanceID)
+			instanceids = append(instanceids, deployment.InstanceID)
 		}
 
 	}
@@ -414,7 +408,7 @@ func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.
 	if len(instanceids) > 0 {
 		// regular instances
 		cfg := ec2.DescribeInstancesInput{
-			InstanceIds: instanceids,
+			InstanceIds: aws.StringSlice(instanceids),
 		}
 
 		results, err := ec2Session.DescribeInstancesWithContext(ctx, &cfg)
@@ -434,7 +428,7 @@ func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.
 	if len(spotInstanceIDs) > 0 {
 		// spot instance
 		cfgSpot := ec2.DescribeSpotInstanceRequestsInput{
-			SpotInstanceRequestIds: spotInstanceIDs,
+			SpotInstanceRequestIds: aws.StringSlice(spotInstanceIDs),
 		}
 
 		spotResults, err := ec2Session.DescribeSpotInstanceRequestsWithContext(ctx, &cfgSpot)
@@ -447,19 +441,19 @@ func (s *service) DescribeInstanceIPs(ctx context.Context, deployments []models.
 
 		// A map for the spotinstance ec2 instances
 		spotInstanceMap := make(map[string]string)
-		spotInstanceIds := []*string{}
+		spotInstanceIds := []string{}
 
 		for _, spotInstanceRequest := range spotResults.SpotInstanceRequests {
 			instanceId := (*string)(spotInstanceRequest.InstanceId)
 			if instanceId != nil {
-				spotInstanceIds = append(spotInstanceIds, instanceId)
+				spotInstanceIds = append(spotInstanceIds, *instanceId)
 				spotId := (*string)(spotInstanceRequest.SpotInstanceRequestId)
 				spotInstanceMap[*instanceId] = *spotId
 			}
 		}
 
 		spotInstanceResults, err := ec2Session.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{
-			InstanceIds: spotInstanceIds,
+			InstanceIds: aws.StringSlice(spotInstanceIds),
 		})
 
 		if err != nil {

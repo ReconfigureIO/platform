@@ -140,9 +140,7 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
-			Command: []*string{
-				aws.String("/opt/simulate.sh"),
-			},
+			Command: aws.StringSlice([]string{"/opt/simulate.sh"}),
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
@@ -192,9 +190,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
-			Command: []*string{
-				aws.String("/opt/graph.sh"),
-			},
+			Command: aws.StringSlice([]string{"/opt/graph.sh"}),
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("INPUT_URL"),
@@ -234,7 +230,9 @@ func (s *service) RunDeployment(command string) (string, error) {
 
 func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
-	inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
+	inp := &batch.DescribeJobsInput{
+		Jobs: aws.StringSlice([]string{id}),
+	}
 	resp, err := batchSession.DescribeJobs(inp)
 	if err != nil {
 		return nil, err
