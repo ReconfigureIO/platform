@@ -14,11 +14,11 @@ func TestFindAFI(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	d := models.NewMockBuildRepo(mockCtrl)
-	b := models.NewMockBatchRepo(mockCtrl)
-	mockService := aws.NewMockService(mockCtrl)
+	buildRepo := models.NewMockBuildRepo(mockCtrl)
+	batchRepo := models.NewMockBatchRepo(mockCtrl)
+	describeAFIStatuser := aws.NewMockService(mockCtrl)
 
-	watcher := NewAFIWatcher(d, mockService, b)
+	watcher := NewAFIWatcher(buildRepo, describeAFIStatuser, batchRepo)
 
 	// the time.Now we return as part of afistatus comes back as
 	// part of the call to AddEvent
@@ -48,9 +48,9 @@ func TestFindAFI(t *testing.T) {
 		Code:      0,
 	}
 
-	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
-	b.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	batchRepo.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
 
 	err := watcher.FindAFI(ctx, limit)
 
@@ -63,11 +63,11 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	d := models.NewMockBuildRepo(mockCtrl)
-	b := models.NewMockBatchRepo(mockCtrl)
-	mockService := aws.NewMockService(mockCtrl)
+	buildRepo := models.NewMockBuildRepo(mockCtrl)
+	batchRepo := models.NewMockBatchRepo(mockCtrl)
+	describeAFIStatuser := aws.NewMockService(mockCtrl)
 
-	watcher := NewAFIWatcher(d, mockService, b)
+	watcher := NewAFIWatcher(buildRepo, describeAFIStatuser, batchRepo)
 
 	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"invalid-status", time.Now()}}
 
@@ -86,8 +86,8 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	ctx := context.Background()
 	limit := 100
 
-	d.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	mockService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
+	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
 
 	err := watcher.FindAFI(ctx, limit)
 
