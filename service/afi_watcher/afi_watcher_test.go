@@ -18,7 +18,11 @@ func TestFindAFI(t *testing.T) {
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
 	describeAFIStatuser := aws.NewMockService(mockCtrl)
 
-	watcher := NewAFIWatcher(buildRepo, describeAFIStatuser, batchRepo)
+	watcher := AFIWatcher{
+		BatchRepo:           batchRepo,
+		BuildRepo:           buildRepo,
+		DescribeAFIStatuser: describeAFIStatuser,
+	}
 
 	// the time.Now we return as part of afistatus comes back as
 	// part of the call to AddEvent
@@ -67,7 +71,11 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
 	describeAFIStatuser := aws.NewMockService(mockCtrl)
 
-	watcher := NewAFIWatcher(buildRepo, describeAFIStatuser, batchRepo)
+	watcher := AFIWatcher{
+		BatchRepo:           batchRepo,
+		BuildRepo:           buildRepo,
+		DescribeAFIStatuser: describeAFIStatuser,
+	}
 
 	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"invalid-status", time.Now()}}
 

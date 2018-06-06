@@ -20,15 +20,6 @@ type AFIWatcher struct {
 	}
 }
 
-func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
-	w := AFIWatcher{
-		BatchRepo:           batch,
-		BuildRepo:           d,
-		DescribeAFIStatuser: awsService,
-	}
-	return &w
-}
-
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
 	buildswaitingonafis, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
