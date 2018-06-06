@@ -53,7 +53,10 @@ func SetupRoutes(
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
 	billing := api.Billing{}
-	profile := profile.Profile{DB: db, Leads: leads}
+	profile := profile.Profile{
+		DB:    db,
+		Leads: leads,
+	}
 	billingRoutes := apiRoutes.Group("/user")
 	{
 		billingRoutes.GET("", profile.Get)
@@ -101,7 +104,10 @@ func SetupRoutes(
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
-	graph := api.Graph{Events: events, Storage: storage}
+	graph := api.Graph{
+		Events:  events,
+		Storage: storage,
+	}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
 		graphRoute.GET("", graph.List)
@@ -119,7 +125,6 @@ func SetupRoutes(
 		UseSpotInstances: config.FeatureUseSpotInstances,
 		PublicProjectID:  publicProjectID,
 	}
-
 	deploymentRoute := apiRoutes.Group("/deployments")
 	{
 		deploymentRoute.GET("", deployment.List)
