@@ -15,14 +15,14 @@ var (
 type AFIWatcher struct {
 	BuildRepo  models.BuildRepo
 	awsService aws.Service
-	batch      models.BatchRepo
+	BatchRepo  models.BatchRepo
 }
 
 func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
 	w := AFIWatcher{
 		BuildRepo:  d,
 		awsService: awsService,
-		batch:      batch,
+		BatchRepo:  batch,
 	}
 	return &w
 }
@@ -72,7 +72,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 			}
 
 			if event != nil {
-				err := watcher.batch.AddEvent(build.BatchJob, *event)
+				err := watcher.BatchRepo.AddEvent(build.BatchJob, *event)
 				if err != nil {
 					return err
 				}
