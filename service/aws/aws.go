@@ -23,13 +23,17 @@ type Service interface {
 	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
 	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
-	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
-	GetJobDetail(id string) (*batch.JobDetail, error)
+
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
+
+	HaltJob(batchID string) error
+	GetJobDetail(id string) (*batch.JobDetail, error)
+
+	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
 	GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
+
 	Conf() *ServiceConfig
 }
 
