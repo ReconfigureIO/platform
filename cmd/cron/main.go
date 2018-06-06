@@ -138,7 +138,11 @@ func findDeploymentIPs() {
 
 func generatedAFIs() {
 	log.Printf("checking afis")
-	watcher := afi_watcher.NewAFIWatcher(models.BuildDataSource(db), awsService, models.BatchDataSource(db))
+	watcher := afi_watcher.AFIWatcher{
+		BatchRepo:           models.BatchDataSource(db),
+		BuildRepo:           models.BuildDataSource(db),
+		DescribeAFIStatuser: awsService,
+	}
 
 	err := watcher.FindAFI(context.Background(), 100)
 	if err != nil {

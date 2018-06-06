@@ -23,13 +23,17 @@ type Service interface {
 	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
 	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
-	HaltJob(batchID string) error
 	RunDeployment(command string) (string, error)
-	GetJobDetail(id string) (*batch.JobDetail, error)
+
 	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
+
+	HaltJob(batchID string) error
+	GetJobDetail(id string) (*batch.JobDetail, error)
+
+	NewStream(stream cloudwatchlogs.LogStream) *Stream
 	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
 	GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
+
 	Conf() *ServiceConfig
 }
 
@@ -60,7 +64,7 @@ func (s *service) s3Url(key string) string {
 func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
-	debugArtifactUrl := s.s3Url(build.DebugUrl())
+	debugArtifactURL := s.s3Url(build.DebugUrl())
 	outputArtifactURL := s.s3Url(build.ArtifactUrl())
 	memory := int64(32000)
 
@@ -89,7 +93,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 				},
 				{
 					Name:  aws.String("DEBUG_URL"),
-					Value: aws.String(debugArtifactUrl),
+					Value: aws.String(debugArtifactURL),
 				},
 				{
 					Name:  aws.String("DEVICE"),

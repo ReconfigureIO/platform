@@ -13,23 +13,16 @@ var (
 )
 
 type AFIWatcher struct {
-	d          models.BuildRepo
-	awsService aws.Service
-	batch      models.BatchRepo
-}
-
-func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
-	w := AFIWatcher{
-		d:          d,
-		awsService: awsService,
-		batch:      batch,
+	BatchRepo           models.BatchRepo
+	BuildRepo           models.BuildRepo
+	DescribeAFIStatuser interface {
+		DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]aws.Status, error)
 	}
-	return &w
 }
 
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
-	buildswaitingonafis, err := watcher.d.GetBuildsWithStatus(creating_statuses, limit)
+	buildswaitingonafis, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
 	if err != nil {
 		return err
 	}
@@ -40,7 +33,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	}
 
 	// get the status of the associated AFIs
-	statuses, err := watcher.awsService.DescribeAFIStatus(ctx, buildswaitingonafis)
+	statuses, err := watcher.DescribeAFIStatuser.DescribeAFIStatus(ctx, buildswaitingonafis)
 	if err != nil {
 		return err
 	}
@@ -72,7 +65,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 			}
 
 			if event != nil {
-				err := watcher.batch.AddEvent(build.BatchJob, *event)
+				err := watcher.BatchRepo.AddEvent(build.BatchJob, *event)
 				if err != nil {
 					return err
 				}
