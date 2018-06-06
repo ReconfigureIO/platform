@@ -324,17 +324,18 @@ type Status struct {
 func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error) {
 	ret := make(map[string]Status)
 
-	var afiids []*string
+	var afiids []string
 	for _, build := range builds {
-		afiids = append(afiids, &build.FPGAImage)
+		afiids = append(afiids, build.FPGAImage)
 	}
+
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeFpgaImagesInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("fpga-image-global-id"),
-				Values: afiids,
+				Values: aws.StringSlice(afiids),
 			},
 		},
 	}
@@ -353,16 +354,11 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 
 func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
 	ret := make(map[string]string)
-	var jobIds []*string
-
-	for _, id := range batchJobIDs {
-		jobIds = append(jobIds, &id)
-	}
 
 	batchSession := batch.New(s.session)
 
 	cfg := batch.DescribeJobsInput{
-		Jobs: jobIds,
+		Jobs: aws.StringSlice(batchJobIDs),
 	}
 
 	results, err := batchSession.DescribeJobsWithContext(ctx, &cfg)
