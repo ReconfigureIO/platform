@@ -11,7 +11,8 @@ import (
 
 // Project handles project requests.
 type Project struct {
-	Events events.EventService
+	Events          events.EventService
+	PublicProjectID string
 }
 
 // PostProject is post request for new project.

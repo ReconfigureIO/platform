@@ -27,6 +27,7 @@ type RecoConfig struct {
 	FeatureIntercom         bool   `env:"RECO_FEATURE_INTERCOM"`
 	FeatureDepQueue         bool   `env:"RECO_FEATURE_DEP_QUEUE"`
 	FeatureUseSpotInstances bool   `env:"RECO_FEATURE_USE_SPOT_INSTANCES"`
+	StorageBucket           string `env:"RECO_AWS_BUCKET" envDefault:"reconfigureio-builds"`
 	AWS                     aws.ServiceConfig
 	Deploy                  deployment.ServiceConfig
 	Intercom                events.IntercomConfig

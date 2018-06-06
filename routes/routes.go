@@ -7,15 +7,31 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/auth"
+	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
 
 // SetupRoutes sets up api routes.
-func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *gorm.DB, events events.EventService, leads leads.Leads, authService auth.Service) *gin.Engine {
+func SetupRoutes(
+	config config.RecoConfig,
+	secretKey string,
+	r *gin.Engine,
+	db *gorm.DB,
+	awsService aws.Service,
+	events events.EventService,
+	leads leads.Leads,
+	storage storage.Service,
+	deploy deployment.Service,
+	publicProjectID string,
+	authService auth.Service,
+) *gin.Engine {
+
 	// setup common routes
 	store := sessions.NewCookieStore([]byte(secretKey))
 	r.Use(sessions.Sessions("paus", store))
@@ -47,7 +63,12 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		billingRoutes.GET("/hours-remaining", billing.RemainingHours)
 	}
 
-	build := api.Build{Events: events}
+	build := api.Build{
+		Events:          events,
+		Storage:         storage,
+		PublicProjectID: publicProjectID,
+		AWS:             awsService,
+	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
 		buildRoute.GET("", build.List)
@@ -59,7 +80,8 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 	}
 
 	project := api.Project{
-		Events: events,
+		Events:          events,
+		PublicProjectID: publicProjectID,
 	}
 	projectRoute := apiRoutes.Group("/projects")
 	{
@@ -69,7 +91,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events)
+	simulation := api.NewSimulation(events, storage, awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -79,7 +101,7 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 		simulationRoute.GET("/:id/logs", simulation.Logs)
 	}
 
-	graph := api.Graph{Events: events}
+	graph := api.Graph{Events: events, Storage: storage}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
 		graphRoute.GET("", graph.List)
@@ -91,7 +113,11 @@ func SetupRoutes(config config.RecoConfig, secretKey string, r *gin.Engine, db *
 
 	deployment := api.Deployment{
 		Events:           events,
+		Storage:          storage,
+		DeployService:    deploy,
+		AWS:              awsService,
 		UseSpotInstances: config.FeatureUseSpotInstances,
+		PublicProjectID:  publicProjectID,
 	}
 
 	deploymentRoute := apiRoutes.Group("/deployments")

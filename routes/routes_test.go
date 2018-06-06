@@ -43,7 +43,7 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, events, nil, &auth.NOPService{})
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, nil, events, nil, nil, nil, "foobar", &auth.NOPService{})
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

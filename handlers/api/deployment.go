@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/storage"
+
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
@@ -24,6 +28,10 @@ const (
 type Deployment struct {
 	Events           events.EventService
 	UseSpotInstances bool
+	Storage          storage.Service
+	DeployService    deployment.Service
+	AWS              aws.Service
+	PublicProjectID  string
 }
 
 func (d Deployment) Preload() *gorm.DB {
@@ -66,7 +74,7 @@ func (d Deployment) Create(c *gin.Context) {
 	// Ensure that the project exists, and the user has permissions for it
 	build := models.Build{}
 	user := middleware.GetUser(c)
-	err := Build{}.QueryWhere("projects.id=? OR projects.user_id=?", publicProjectID, user.ID).
+	err := Build{}.QueryWhere("projects.id=? OR projects.user_id=?", d.PublicProjectID, user.ID).
 		First(&build, "builds.id = ?", post.BuildID).Error
 	if err != nil {
 		sugar.NotFoundOrError(c, err)
@@ -85,7 +93,7 @@ func (d Deployment) Create(c *gin.Context) {
 	}
 
 	useSpotInstance := d.UseSpotInstances
-	if build.Project.ID == publicProjectID {
+	if build.Project.ID == d.PublicProjectID {
 		useSpotInstance = false
 	}
 
@@ -137,7 +145,7 @@ func (d Deployment) Create(c *gin.Context) {
 
 		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
 
-		instanceID, err := deploy.RunDeployment(context.Background(), newDep, callbackURL)
+		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, callbackURL)
 		if err != nil {
 			sugar.InternalError(c, err)
 			return
@@ -158,7 +166,7 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 	}
-	if build.ProjectID == publicProjectID {
+	if build.ProjectID == d.PublicProjectID {
 		sugar.EnqueueEvent(d.Events, c, "User used public build feature", user.ID, map[string]interface{}{})
 	}
 
@@ -175,8 +183,8 @@ func (d Deployment) List(c *gin.Context) {
 	deployments := []models.Deployment{}
 	q := d.Query(c)
 
-	if public == "true" && publicProjectID != "" {
-		q = q.Where("builds.project_id=?", publicProjectID)
+	if public == "true" && d.PublicProjectID != "" {
+		q = q.Where("builds.project_id=?", d.PublicProjectID)
 	}
 
 	if project != "" {
@@ -212,7 +220,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(deploy, c, &targetDep)
+	streamDeploymentLogs(d.DeployService, d.AWS, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
@@ -288,7 +296,7 @@ func (d Deployment) AddEvent(c *gin.Context, dep models.Deployment, event models
 	}
 
 	if event.Status == "TERMINATING" {
-		err = deploy.StopDeployment(c, dep)
+		err = d.DeployService.StopDeployment(c, dep)
 	}
 
 	return newEvent, err

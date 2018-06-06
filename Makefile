@@ -73,7 +73,7 @@ image: all
 	docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} dist-image
 
 push-image:
-	$$(aws ecr get-login --region us-east-1)
+	$$(aws ecr get-login --region us-east-1 --no-include-email)
 	docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
 
 migrate-production:

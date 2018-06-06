@@ -7,11 +7,14 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
+	"github.com/ReconfigureIO/platform/service/storage/s3"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -77,7 +80,15 @@ func main() {
 
 	leads := leads.New(conf.Reco.Intercom, db)
 
-	api.Configure(*conf)
+	//set up storage
+	configProvider := session.Must(session.NewSession())
+	storageService := &s3.Service{Bucket: conf.Reco.StorageBucket, ConfigProvider: configProvider}
+
+	awsSession := aws.New(conf.Reco.AWS)
+
+	deploy := deployment.New(conf.Reco.Deploy)
+
+	publicProjectID := conf.Reco.PublicProjectID
 
 	// ping test
 	r.GET("/ping", func(c *gin.Context) {
@@ -116,7 +127,7 @@ func main() {
 	authService := github.New(db)
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, events, leads, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue

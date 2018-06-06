@@ -1,20 +1,26 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // Graph handles requests for graphs.
 type Graph struct {
-	Events events.EventService
+	Events  events.EventService
+	Storage storage.Service
+	AWS     aws.Service
 }
 
 // Common preload functionality.
@@ -128,20 +134,20 @@ func (g Graph) Input(c *gin.Context) {
 		return
 	}
 
-	_, err = awsSession.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
+	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
-	graphID, err := awsSession.RunGraph(graph, callbackURL)
+	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{}.New(graphID)
+		batchJob := BatchService{AWS: g.AWS}.New(graphID)
 		return tx.Model(&graph).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -164,14 +170,29 @@ func (g Graph) Download(c *gin.Context) {
 		return
 	}
 
-	object, err := awsSession.Download(c, graph.ArtifactUrl())
+	object, err := g.Storage.Download(graph.ArtifactUrl())
+	if object != nil {
+		defer func() {
+			err := object.Close()
+			if err != nil {
+				log.WithError(err).Error("Failed to close g.Storage.Download")
+			}
+		}()
+	}
+	if err != nil {
+		sugar.ErrResponse(c, 500, err)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(object)
 	if err != nil {
 		sugar.ErrResponse(c, 500, err)
 		return
 	}
 
 	c.Header("Content-Encoding", "gzip")
-	c.Data(200, "application/pdf", object)
+	c.Data(200, "application/pdf", buf.Bytes())
 }
 
 func (g Graph) canPostEvent(c *gin.Context, graph models.Graph) bool {
@@ -217,7 +238,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{}.AddEvent(&graph.BatchJob, event)
+	newEvent, err := BatchService{AWS: g.AWS}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
 		c.Error(err)

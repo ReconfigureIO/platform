@@ -10,6 +10,7 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
       - RECO_INTERCOM_ACCESS_TOKEN
       - LOGZIO_TOKEN
       - GITHUB_CLIENT_ID=c405f7d899fa411aaa69
