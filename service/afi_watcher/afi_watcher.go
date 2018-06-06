@@ -15,7 +15,7 @@ var (
 type AFIWatcher struct {
 	BatchRepo           models.BatchRepo
 	BuildRepo           models.BuildRepo
-	describeAFIStatuser interface {
+	DescribeAFIStatuser interface {
 		DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]aws.Status, error)
 	}
 }
@@ -24,7 +24,7 @@ func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.Batc
 	w := AFIWatcher{
 		BatchRepo:           batch,
 		BuildRepo:           d,
-		describeAFIStatuser: awsService,
+		DescribeAFIStatuser: awsService,
 	}
 	return &w
 }
@@ -42,7 +42,7 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	}
 
 	// get the status of the associated AFIs
-	statuses, err := watcher.describeAFIStatuser.DescribeAFIStatus(ctx, buildswaitingonafis)
+	statuses, err := watcher.DescribeAFIStatuser.DescribeAFIStatus(ctx, buildswaitingonafis)
 	if err != nil {
 		return err
 	}
