@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/fpgaimage"
 	"github.com/golang/mock/gomock"
 )
@@ -17,7 +16,7 @@ func TestFindAFI(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := aws.NewMockService(mockCtrl)
+	describeAFIStatuser := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
 		BatchRepo:           batchRepo,
@@ -70,7 +69,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := aws.NewMockService(mockCtrl)
+	describeAFIStatuser := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
 		BatchRepo:           batchRepo,
