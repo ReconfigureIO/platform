@@ -46,35 +46,37 @@ func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// for each build check associated AFI, if done, post event
 	for _, build := range buildsWaitingOnAFIs {
 		status, found := statuses[build.FPGAImage]
-		if found {
-			var event *models.BatchJobEvent
-			switch status.Status {
-			case "available":
-				event = &models.BatchJobEvent{
-					Timestamp: status.UpdatedAt,
-					Status:    models.StatusCompleted,
-					Message:   "Image generation succeeded",
-					Code:      0,
-				}
-			case "failed":
-				event = &models.BatchJobEvent{
-					Timestamp: status.UpdatedAt,
-					Status:    models.StatusErrored,
-					Message:   "Image generation failed",
-					Code:      0,
-				}
-			default:
-			}
-
-			if event != nil {
-				err := watcher.BatchRepo.AddEvent(build.BatchJob, *event)
-				if err != nil {
-					return err
-				}
-			}
-
-			afiGenerated++
+		if !found {
+			continue
 		}
+
+		var event *models.BatchJobEvent
+		switch status.Status {
+		case "available":
+			event = &models.BatchJobEvent{
+				Timestamp: status.UpdatedAt,
+				Status:    models.StatusCompleted,
+				Message:   "Image generation succeeded",
+				Code:      0,
+			}
+		case "failed":
+			event = &models.BatchJobEvent{
+				Timestamp: status.UpdatedAt,
+				Status:    models.StatusErrored,
+				Message:   "Image generation failed",
+				Code:      0,
+			}
+		default:
+		}
+
+		if event != nil {
+			err := watcher.BatchRepo.AddEvent(build.BatchJob, *event)
+			if err != nil {
+				return err
+			}
+		}
+
+		afiGenerated++
 	}
 
 	log.Printf("%d builds have finished generating AFIs", afiGenerated)
