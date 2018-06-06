@@ -13,14 +13,14 @@ var (
 )
 
 type AFIWatcher struct {
-	d          models.BuildRepo
+	BuildRepo  models.BuildRepo
 	awsService aws.Service
 	batch      models.BatchRepo
 }
 
 func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
 	w := AFIWatcher{
-		d:          d,
+		BuildRepo:  d,
 		awsService: awsService,
 		batch:      batch,
 	}
@@ -29,7 +29,7 @@ func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.Batc
 
 func (watcher *AFIWatcher) FindAFI(ctx context.Context, limit int) error {
 	// get list of builds waiting for AFI generation to finish
-	buildswaitingonafis, err := watcher.d.GetBuildsWithStatus(creating_statuses, limit)
+	buildswaitingonafis, err := watcher.BuildRepo.GetBuildsWithStatus(creating_statuses, limit)
 	if err != nil {
 		return err
 	}
