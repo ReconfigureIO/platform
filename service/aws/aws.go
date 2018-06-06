@@ -140,9 +140,7 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
-			Command: []*string{
-				aws.String("/opt/simulate.sh"),
-			},
+			Command: aws.StringSlice([]string{"/opt/simulate.sh"}),
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("PART"),
@@ -192,9 +190,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 		JobName:       aws.String("example"),            // Required
 		JobQueue:      aws.String(s.conf.Queue),         // Required
 		ContainerOverrides: &batch.ContainerOverrides{
-			Command: []*string{
-				aws.String("/opt/graph.sh"),
-			},
+			Command: aws.StringSlice([]string{"/opt/graph.sh"}),
 			Environment: []*batch.KeyValuePair{
 				{
 					Name:  aws.String("INPUT_URL"),
@@ -234,7 +230,9 @@ func (s *service) RunDeployment(command string) (string, error) {
 
 func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
-	inp := &batch.DescribeJobsInput{Jobs: []*string{&id}}
+	inp := &batch.DescribeJobsInput{
+		Jobs: aws.StringSlice([]string{id}),
+	}
 	resp, err := batchSession.DescribeJobs(inp)
 	if err != nil {
 		return nil, err
@@ -324,17 +322,18 @@ type Status struct {
 func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error) {
 	ret := make(map[string]Status)
 
-	var afiids []*string
+	var afiids []string
 	for _, build := range builds {
-		afiids = append(afiids, &build.FPGAImage)
+		afiids = append(afiids, build.FPGAImage)
 	}
+
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.DescribeFpgaImagesInput{
 		Filters: []*ec2.Filter{
 			{
 				Name:   aws.String("fpga-image-global-id"),
-				Values: afiids,
+				Values: aws.StringSlice(afiids),
 			},
 		},
 	}
@@ -353,16 +352,11 @@ func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) 
 
 func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
 	ret := make(map[string]string)
-	var jobIds []*string
-
-	for _, id := range batchJobIDs {
-		jobIds = append(jobIds, &id)
-	}
 
 	batchSession := batch.New(s.session)
 
 	cfg := batch.DescribeJobsInput{
-		Jobs: jobIds,
+		Jobs: aws.StringSlice(batchJobIDs),
 	}
 
 	results, err := batchSession.DescribeJobsWithContext(ctx, &cfg)
