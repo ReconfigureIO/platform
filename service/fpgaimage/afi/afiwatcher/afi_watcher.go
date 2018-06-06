@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/fpgaimage"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,7 +16,7 @@ type AFIWatcher struct {
 	BatchRepo           models.BatchRepo
 	BuildRepo           models.BuildRepo
 	DescribeAFIStatuser interface {
-		DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]aws.Status, error)
+		DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]fpgaimage.Status, error)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/fpgaimage"
 	"github.com/golang/mock/gomock"
 )
 
@@ -27,7 +28,7 @@ func TestFindAFI(t *testing.T) {
 	// the time.Now we return as part of afistatus comes back as
 	// part of the call to AddEvent
 	timeNow := time.Now()
-	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"available", timeNow}}
+	afistatus := map[string]fpgaimage.Status{"agfi-foobar": {"available", timeNow}}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
@@ -77,7 +78,7 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 		DescribeAFIStatuser: describeAFIStatuser,
 	}
 
-	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"invalid-status", time.Now()}}
+	afistatus := map[string]fpgaimage.Status{"agfi-foobar": {"invalid-status", time.Now()}}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
