@@ -1,4 +1,4 @@
-package afi_watcher
+package afiwatcher
 
 import (
 	"context"
