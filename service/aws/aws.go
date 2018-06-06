@@ -225,7 +225,6 @@ func (s *service) HaltJob(batchID string) error {
 }
 
 func (s *service) RunDeployment(command string) (string, error) {
-
 	return "This function does nothing yet", nil
 }
 

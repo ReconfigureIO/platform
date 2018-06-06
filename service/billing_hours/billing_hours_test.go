@@ -51,7 +51,6 @@ func TestCheckUserHours(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in TestCheckUserHours function: %s", err)
 	}
-
 }
 
 type billingHours struct {
@@ -66,7 +65,6 @@ func (b billingHours) Used() (int, error) {
 }
 
 func (s fake_SubscriptionRepo) Current(user models.User) (sub models.SubscriptionInfo, err error) {
-
 	sub = models.SubscriptionInfo{}
 	return sub, nil
 }

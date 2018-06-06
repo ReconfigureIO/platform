@@ -282,7 +282,6 @@ func (b Build) CreateEvent(c *gin.Context) {
 	eventMessage := "Build entered state:" + event.Status
 	sugar.EnqueueEvent(b.Events, c, eventMessage, build.Project.UserID, map[string]interface{}{"build_id": build.ID, "project_name": build.Project.Name, "message": event.Message})
 	sugar.SuccessResponse(c, 200, newEvent)
-
 }
 
 // CreateReport creates build report.
@@ -309,5 +308,4 @@ func (b Build) CreateReport(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, nil)
-
 }

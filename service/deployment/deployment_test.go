@@ -65,7 +65,6 @@ func TestRoundTripEncode(t *testing.T) {
 	}
 
 	roundTrip := func(dep Deployment) Deployment {
-
 		s, err := dep.String()
 		if err != nil {
 			t.Fatal(err)
