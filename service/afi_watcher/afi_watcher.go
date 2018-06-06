@@ -13,16 +13,16 @@ var (
 )
 
 type AFIWatcher struct {
+	BatchRepo  models.BatchRepo
 	BuildRepo  models.BuildRepo
 	awsService aws.Service
-	BatchRepo  models.BatchRepo
 }
 
 func NewAFIWatcher(d models.BuildRepo, awsService aws.Service, batch models.BatchRepo) *AFIWatcher {
 	w := AFIWatcher{
+		BatchRepo:  batch,
 		BuildRepo:  d,
 		awsService: awsService,
-		BatchRepo:  batch,
 	}
 	return &w
 }
