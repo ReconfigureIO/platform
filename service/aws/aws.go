@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go/service/ec2"
 )
 
 // ErrNotFound is not found error.
@@ -24,8 +23,6 @@ type Service interface {
 	RunGraph(graph models.Graph, callbackURL string) (string, error)
 	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
 	RunDeployment(command string) (string, error)
-
-	DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error)
 
 	HaltJob(batchID string) error
 	GetJobDetail(id string) (*batch.JobDetail, error)
@@ -312,42 +309,6 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 		}
 	})
 	return err
-}
-
-type Status struct {
-	Status    string
-	UpdatedAt time.Time
-}
-
-func (s *service) DescribeAFIStatus(ctx context.Context, builds []models.Build) (map[string]Status, error) {
-	ret := make(map[string]Status)
-
-	var afiids []string
-	for _, build := range builds {
-		afiids = append(afiids, build.FPGAImage)
-	}
-
-	ec2Session := ec2.New(s.session)
-
-	cfg := ec2.DescribeFpgaImagesInput{
-		Filters: []*ec2.Filter{
-			{
-				Name:   aws.String("fpga-image-global-id"),
-				Values: aws.StringSlice(afiids),
-			},
-		},
-	}
-
-	results, err := ec2Session.DescribeFpgaImagesWithContext(ctx, &cfg)
-	if err != nil {
-		return ret, err
-	}
-
-	for _, image := range results.FpgaImages {
-		ret[*image.FpgaImageGlobalId] = Status{*image.State.Code, *image.UpdateTime}
-	}
-
-	return ret, nil
 }
 
 func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {

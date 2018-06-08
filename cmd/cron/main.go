@@ -8,11 +8,12 @@ import (
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/afi_watcher"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
+	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/robfig/cron"
@@ -53,10 +54,6 @@ func setup(*cobra.Command, []string) {
 
 	db = config.SetupDB(conf)
 	api.DB(db)
-
-	if err != nil {
-		log.Fatalf("failed to connect to database: %s", err.Error())
-	}
 }
 
 // add commands to root command
@@ -138,10 +135,10 @@ func findDeploymentIPs() {
 
 func generatedAFIs() {
 	log.Printf("checking afis")
-	watcher := afi_watcher.AFIWatcher{
-		BatchRepo:           models.BatchDataSource(db),
-		BuildRepo:           models.BuildDataSource(db),
-		DescribeAFIStatuser: awsService,
+	watcher := afiwatcher.AFIWatcher{
+		BatchRepo:        models.BatchDataSource(db),
+		BuildRepo:        models.BuildDataSource(db),
+		FPGAImageService: &afi.Service{},
 	}
 
 	err := watcher.FindAFI(context.Background(), 100)

@@ -1,4 +1,4 @@
-package afi_watcher
+package afiwatcher
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/fpgaimage"
 	"github.com/golang/mock/gomock"
 )
 
@@ -16,18 +16,24 @@ func TestFindAFI(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := aws.NewMockService(mockCtrl)
+	fpgaImageService := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
-		BatchRepo:           batchRepo,
-		BuildRepo:           buildRepo,
-		DescribeAFIStatuser: describeAFIStatuser,
+		BatchRepo:        batchRepo,
+		BuildRepo:        buildRepo,
+		FPGAImageService: fpgaImageService,
 	}
 
-	// the time.Now we return as part of afistatus comes back as
-	// part of the call to AddEvent
+	// The time.Now we return as part of afiStatus comes back as part of the
+	// call to AddEvent.
 	timeNow := time.Now()
-	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"available", timeNow}}
+
+	afiStatus := map[string]fpgaimage.Status{
+		"agfi-foobar": {
+			Status:    "available",
+			UpdatedAt: timeNow,
+		},
+	}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
@@ -52,8 +58,8 @@ func TestFindAFI(t *testing.T) {
 		Code:      0,
 	}
 
-	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(statusCreating, limit).Return(builds, nil)
+	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afiStatus, nil)
 	batchRepo.EXPECT().AddEvent(build.BatchJob, *event).Return(nil)
 
 	err := watcher.FindAFI(ctx, limit)
@@ -69,15 +75,20 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 
 	buildRepo := models.NewMockBuildRepo(mockCtrl)
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	describeAFIStatuser := aws.NewMockService(mockCtrl)
+	fpgaImageService := fpgaimage.NewMockService(mockCtrl)
 
 	watcher := AFIWatcher{
-		BatchRepo:           batchRepo,
-		BuildRepo:           buildRepo,
-		DescribeAFIStatuser: describeAFIStatuser,
+		BatchRepo:        batchRepo,
+		BuildRepo:        buildRepo,
+		FPGAImageService: fpgaImageService,
 	}
 
-	afistatus := map[string]aws.Status{"agfi-foobar": aws.Status{"invalid-status", time.Now()}}
+	afiStatus := map[string]fpgaimage.Status{
+		"agfi-foobar": {
+			Status:    "invalid-status",
+			UpdatedAt: time.Now(),
+		},
+	}
 
 	build := models.Build{
 		FPGAImage: "agfi-foobar",
@@ -94,8 +105,8 @@ func TestFindAFISkipsInvalidStatus(t *testing.T) {
 	ctx := context.Background()
 	limit := 100
 
-	buildRepo.EXPECT().GetBuildsWithStatus(creating_statuses, limit).Return(builds, nil)
-	describeAFIStatuser.EXPECT().DescribeAFIStatus(ctx, builds).Return(afistatus, nil)
+	buildRepo.EXPECT().GetBuildsWithStatus(statusCreating, limit).Return(builds, nil)
+	fpgaImageService.EXPECT().DescribeAFIStatus(ctx, builds).Return(afiStatus, nil)
 
 	err := watcher.FindAFI(ctx, limit)
 
