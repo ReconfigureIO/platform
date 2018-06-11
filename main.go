@@ -7,14 +7,16 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/auth/github"
+	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
-	"github.com/ReconfigureIO/platform/service/storage/s3"
+	s3reco "github.com/ReconfigureIO/platform/service/storage/s3"
 	"github.com/aws/aws-sdk-go/aws/session"
+	s3aws "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/ginrus"
 	"github.com/gin-gonic/gin"
@@ -80,9 +82,13 @@ func main() {
 
 	leads := leads.New(conf.Reco.Intercom, db)
 
-	//set up storage
-	configProvider := session.Must(session.NewSession())
-	storageService := &s3.Service{Bucket: conf.Reco.StorageBucket, ConfigProvider: configProvider}
+	// set up storage
+	session := session.Must(session.NewSession())
+	storageService := &s3reco.Service{
+		Bucket:      conf.Reco.StorageBucket,
+		UploaderAPI: s3manager.NewUploader(session),
+		S3API:       s3aws.New(session),
+	}
 
 	awsSession := aws.New(conf.Reco.AWS)
 
