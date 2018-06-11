@@ -192,14 +192,14 @@ func (b Build) Input(c *gin.Context) {
 
 	_, err = b.Storage.Upload(build.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
 	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
 	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -276,7 +276,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.InternalError(c, nil)
 		return
 	}
 	eventMessage := "Build entered state:" + event.Status

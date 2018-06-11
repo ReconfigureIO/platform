@@ -38,7 +38,7 @@ func Transaction(c *gin.Context, ops func(db *gorm.DB) error) error {
 	if err != nil {
 		tx.Rollback()
 		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.InternalError(c, nil)
 	} else {
 		tx.Commit()
 	}

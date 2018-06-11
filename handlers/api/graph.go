@@ -180,14 +180,14 @@ func (g Graph) Download(c *gin.Context) {
 		}()
 	}
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(object)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -242,7 +242,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 
 	if err != nil {
 		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.InternalError(c, nil)
 		return
 	}
 

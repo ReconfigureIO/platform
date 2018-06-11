@@ -58,18 +58,18 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	if b.LogName != "" {
 		logStream, err = awsSession.GetJobStream(b.LogName)
 		if err != nil {
-			sugar.ErrResponse(c, 500, err)
+			sugar.InternalError(c, err)
 			return
 		}
 	} else {
 		jobDetail, err := awsSession.GetJobDetail(b.BatchID)
 		if err != nil {
-			sugar.ErrResponse(c, 500, err)
+			sugar.InternalError(c, err)
 			return
 		}
 		logStream, err = awsSession.GetJobStream(*jobDetail.Container.LogStreamName)
 		if err != nil {
-			sugar.ErrResponse(c, 500, err)
+			sugar.InternalError(c, err)
 			return
 		}
 	}
