@@ -136,13 +136,13 @@ func (g Graph) Input(c *gin.Context) {
 
 	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
 	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
