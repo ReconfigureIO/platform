@@ -105,6 +105,7 @@ func SetupRoutes(
 	}
 
 	graph := api.Graph{
+		AWS:     awsService,
 		Events:  events,
 		Storage: storage,
 	}
