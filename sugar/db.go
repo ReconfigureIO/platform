@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 	stripe "github.com/stripe/stripe-go"
 	validator "gopkg.in/validator.v2"
 )
@@ -28,6 +29,7 @@ func ErrResponse(c *gin.Context, code int, err interface{}) {
 	if err == nil {
 		err = http.StatusText(code)
 	}
+	log.Error(err)
 	c.JSON(code, apiError{Error: fmt.Sprint(err)})
 }
 
