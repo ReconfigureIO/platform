@@ -96,11 +96,6 @@ func (h *handler) enqueuePreexistingContainers() {
 	}
 }
 
-type containerQueues struct {
-	id    string
-	queue Q
-}
-
 func (h *handler) listStatus(status string) []types.Container {
 	containers, err := h.dockerClient.ContainerList(
 		context.Background(),
