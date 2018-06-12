@@ -17,6 +17,9 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/kr/pretty"
+
+	"github.com/ReconfigureIO/platform/service/storage"
+	"github.com/ReconfigureIO/platform/service/storage/localfile"
 )
 
 func main() {
@@ -37,6 +40,8 @@ func main() {
 			"graph": 2,
 			"sim":   2,
 		}),
+
+		storage: localfile.Service("./logs/"),
 	}
 
 	// We just started, but we should deal with the case that docker was running
@@ -52,19 +57,32 @@ type handler struct {
 	defaultImage          string
 	onlyJobDefinitionName string
 	jobQueueSemaphores    jobQueueSemaphores
+
+	storage storage.Service
 }
 
 // enqueuePreexistingContainers discovers previously submitted work, ensuring
 // that running work takes up slots in the queue, and submitted but not started
 // work is eventually started.
 func (h *handler) enqueuePreexistingContainers() {
+	// Before everything else, do cleanup of old containers. These have exited,
+	// we just want to go through our wait procedure for the container (which
+	// will also move the logs to long term storage and delete the container).
+	for _, c := range h.listStatus("exited") {
+		h.jobQueueSemaphores.Enqueue(
+			Q(c.Labels["job-queue"]),
+			// Wait until done.
+			dockerHelper{h.dockerClient, c.ID, h.storage}.Wait,
+		)
+	}
+
 	// First, anything which is already running needs to take up slots in the
 	// queue.
 	for _, c := range h.listStatus("running") {
 		h.jobQueueSemaphores.Enqueue(
 			Q(c.Labels["job-queue"]),
 			// Wait until done.
-			dockerHelper{h.dockerClient, c.ID}.Wait,
+			dockerHelper{h.dockerClient, c.ID, h.storage}.Wait,
 		)
 	}
 	// Second, anything hanging around in the created state has been submitted.
@@ -73,7 +91,7 @@ func (h *handler) enqueuePreexistingContainers() {
 		h.jobQueueSemaphores.Enqueue(
 			Q(c.Labels["job-queue"]),
 			// Start and then wait.
-			dockerHelper{h.dockerClient, c.ID}.Run,
+			dockerHelper{h.dockerClient, c.ID, h.storage}.Run,
 		)
 	}
 }
@@ -211,7 +229,7 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	h.jobQueueSemaphores.Enqueue(
 		Q(*input.JobQueue),
-		dockerHelper{h.dockerClient, jobID}.Run,
+		dockerHelper{h.dockerClient, jobID, h.storage}.Run,
 	)
 
 	output, err := jsonutil.BuildJSON(
@@ -308,15 +326,10 @@ func (h *handler) Logs(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	rc, err := h.dockerClient.ContainerLogs(
-		context.Background(), // TODO(pwaller): Do we need context cancellation?
-		jobID,
-		types.ContainerLogsOptions{
-			Follow:     true,
-			ShowStderr: true,
-			ShowStdout: true,
-		},
-	)
+	rc, err := dockerHelper{
+		client: h.dockerClient,
+		id:     jobID,
+	}.Logs(context.Background())
 	if err != nil {
 		log.Printf("Logs: ContainerLogs: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
