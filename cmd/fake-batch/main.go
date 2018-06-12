@@ -311,15 +311,16 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 func (h *handler) Logs(w http.ResponseWriter, r *http.Request) {
 	jobID := strings.TrimPrefix(r.URL.Path, "/v1/logs/")
 
-	// TODO(pwaller): Check to see if the log is in long term storage, grab it from there if possible.
-	// if reader, ok := h.storage.Get("/logs/"+jobID); ok {
-	// 	_, err := io.Copy(w, reader)
-	// 	if err != nil {
-	// 		log.Printf("Logs: io.Copy(w, r): %v", err)
-	// 		return
-	// 	}
-	// 	return
-	// }
+	// Check to see if the log is in long term storage, grab it from there if
+	// possible.
+	if reader, err := h.storage.Download(jobID); err == nil {
+		_, err := io.Copy(w, reader)
+		if err != nil {
+			log.Printf("Logs: io.Copy(w, r): %v", err)
+			return
+		}
+		return
+	}
 
 	rc, err := dockerHelper{
 		client: h.dockerClient,
