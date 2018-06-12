@@ -107,12 +107,6 @@ func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c 
 	w.Header().Set("Connection", "Keep-Alive")
 	w.Header().Set("Transfer-Encoding", "chunked")
 
-	// cancel whenever we get a close
-	go func() {
-		<-w.CloseNotify()
-		cancel()
-	}()
-
 	refresh := func() error {
 		return db.Model(&deployment).Association("Events").Find(&deployment.Events).Error
 	}
