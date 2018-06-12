@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -103,9 +104,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		msg := fmt.Sprintf("Only v1 endpoint supported: %q", left)
 		http.Error(w, msg, http.StatusNotImplemented)
 		return
+
 	}
 
-	switch path {
+	left, path = lpartition(path, "/")
+
+	switch left {
 	case "submitjob":
 		h.SubmitJob(w, r)
 
@@ -114,6 +118,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	case "terminatejob":
 		h.TerminateJob(w, r)
+
+	case "logs":
+		h.Logs(w, r)
 
 	default:
 		log.Printf("Unsupported request: %q", path)
@@ -280,6 +287,77 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 	pretty.Print(input)
 
 	panic("TODO(pwaller): Implement this.")
+}
+
+func (h *handler) Logs(w http.ResponseWriter, r *http.Request) {
+	jobID := strings.TrimPrefix(r.URL.Path, "/v1/logs/")
+
+	// TODO(pwaller): Check to see if the log is in long term storage, grab it from there if possible.
+	// if reader, ok := h.storage.Get("/logs/"+jobID); ok {
+	// 	_, err := io.Copy(w, reader)
+	// 	if err != nil {
+	// 		log.Printf("Logs: io.Copy(w, r): %v", err)
+	// 		return
+	// 	}
+	// 	return
+	// }
+
+	rc, err := h.dockerClient.ContainerLogs(
+		context.Background(), // TODO(pwaller): Do we need context cancellation?
+		jobID,
+		types.ContainerLogsOptions{
+			Follow:     true,
+			ShowStderr: true,
+			ShowStdout: true,
+		},
+	)
+	if err != nil {
+		log.Printf("Logs: ContainerLogs: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		closeErr := rc.Close()
+		if closeErr != nil {
+			log.Printf("Logs: rc.Close: %v", closeErr)
+		}
+	}()
+
+	fw := newFlushWriter(w)
+	_, err = io.Copy(fw, rc)
+	if err != nil {
+		log.Printf("Logs: io.Copy: %v", err)
+	}
+
+}
+
+func newFlushWriter(w http.ResponseWriter) io.Writer {
+	var (
+		fw flushWriter
+		ok bool
+	)
+
+	fw.w, ok = w.(interface {
+		Write([]byte) (int, error)
+		Flush()
+	})
+	if !ok {
+		return w // Flushing not available.
+	}
+	return fw
+}
+
+type flushWriter struct {
+	w interface {
+		Write([]byte) (int, error)
+		Flush()
+	}
+}
+
+func (fw flushWriter) Write(p []byte) (int, error) {
+	n, err := fw.w.Write(p)
+	fw.w.Flush()
+	return n, err
 }
 
 func lpartition(s, sep string) (string, string) {
