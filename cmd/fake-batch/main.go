@@ -171,6 +171,7 @@ func (h *handler) submitJobInputToContainerConfig(
 			"responsible":    "fake-batch",
 			"job-name":       *input.JobName,
 			"job-definition": *input.JobDefinition,
+			"job-queue":      *input.JobQueue,
 		},
 	}
 }
