@@ -269,7 +269,6 @@ func (d Deployment) CreateEvent(c *gin.Context) {
 	newEvent, err := d.AddEvent(c, dep, event)
 
 	if err != nil {
-		c.Error(err)
 		sugar.InternalError(c, nil)
 		return
 	}

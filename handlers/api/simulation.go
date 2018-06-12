@@ -226,7 +226,6 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
-		c.Error(err)
 		sugar.InternalError(c, nil)
 		return
 	}

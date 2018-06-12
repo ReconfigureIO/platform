@@ -275,7 +275,6 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.Error(err)
 		sugar.InternalError(c, nil)
 		return
 	}

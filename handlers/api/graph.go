@@ -241,7 +241,6 @@ func (g Graph) CreateEvent(c *gin.Context) {
 	newEvent, err := BatchService{AWS: g.AWS}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
-		c.Error(err)
 		sugar.InternalError(c, nil)
 		return
 	}
