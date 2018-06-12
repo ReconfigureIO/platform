@@ -33,7 +33,7 @@ func testJobQueueSemaphoresFIFOOne(t *testing.T) {
 	t.Parallel()
 
 	// Check that jobs run in the order they are given; assuming there is a long
-	// enough gap between them being scheduled. NOTE: This test is racy and
+	// enough gap between them being Enqueued. NOTE: This test is racy and
 	// could fail under adverse conditions. It has been carefully stress tested
 	// with thousands of runs to make sure that it doesn't give false positives,
 	// but you could encounter them if you are unlucky.
@@ -50,7 +50,7 @@ func testJobQueueSemaphoresFIFOOne(t *testing.T) {
 		i := i
 
 		wg.Add(1)
-		jq.Schedule("testqueuename", func() {
+		jq.Enqueue("testqueuename", func() {
 			defer wg.Done()
 
 			if i != iPrime {
@@ -63,7 +63,7 @@ func testJobQueueSemaphoresFIFOOne(t *testing.T) {
 			time.Sleep(1000 * time.Microsecond)
 		})
 
-		// Schedule jobs at 0.5ms intervals, twice the rate they complete at, so
+		// Enqueue jobs at 0.5ms intervals, twice the rate they complete at, so
 		// that they "pile up" in the queue.
 		time.Sleep(500 * time.Microsecond)
 	}
@@ -74,9 +74,9 @@ func testJobQueueSemaphoresFIFOOne(t *testing.T) {
 func (nAllowed nAllowed) run(t *testing.T) {
 	t.Parallel()
 
-	// Check that we can schedule 10,000 jobs, with nAllowed max in flight, and
+	// Check that we can Enqueue 10,000 jobs, with nAllowed max in flight, and
 	// that this maximum is not exceeded. Also implicitly checks that all 10,000 run.
-	const nSchedule = 10000
+	const nEnqueue = 10000
 
 	jq := newJobQueueSemaphores(map[Q]int{
 		"testqueuename": int(nAllowed),
@@ -89,9 +89,9 @@ func (nAllowed nAllowed) run(t *testing.T) {
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < nSchedule; i++ {
+	for i := 0; i < nEnqueue; i++ {
 		wg.Add(1)
-		jq.Schedule("testqueuename", func() {
+		jq.Enqueue("testqueuename", func() {
 			defer wg.Done()
 
 			v := atomic.AddInt32(&nInFlight, 1)
@@ -104,7 +104,7 @@ func (nAllowed nAllowed) run(t *testing.T) {
 				vMax = atomic.LoadInt32(&highWaterMark)
 			}
 
-			// Required to allow other stuff to get scheduled.
+			// Required to allow other stuff to get Enqueued.
 			time.Sleep(1 * time.Microsecond)
 
 			v = atomic.AddInt32(&nInFlight, -1)
