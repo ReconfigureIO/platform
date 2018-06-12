@@ -85,7 +85,7 @@ func (dh dockerHelper) Start() {
 	if err != nil {
 		// TODO(pwaller) IMPORTANT: Can we put this error somewhere it can be found by
 		// ContainerList()?
-		log.Printf("	: ContainerStart: %v", err)
+		log.Printf("ContainerStart: %v", err)
 	}
 }
 
