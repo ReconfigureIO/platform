@@ -209,7 +209,7 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	jobID := createOutput.ID
 
-	h.jobQueueSemaphores.Schedule(
+	h.jobQueueSemaphores.Enqueue(
 		Q(*input.JobQueue),
 		dockerHelper{h.dockerClient, jobID}.Run,
 	)
