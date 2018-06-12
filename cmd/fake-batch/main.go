@@ -42,10 +42,7 @@ func main() {
 	// We just started, but we should deal with the case that docker was running
 	// before we got here (e.g, our process crashed and restarted).
 	// Fill queue slots with whatever is currently running in docker.
-	handler.fillAlreadyRunning()
-
-	// TODO(pwaller): Reschedule jobs which are in the created state.
-	// (note that those can be errored, but if we try to start them a second time we'll simply get the error again.)
+	handler.enqueuePreexistingContainers()
 
 	log.Fatal(http.ListenAndServe(":9090", handler))
 }
@@ -57,13 +54,26 @@ type handler struct {
 	jobQueueSemaphores    jobQueueSemaphores
 }
 
-// fillAlreadyRunning discovers previously running work and ensures that the
-// queue is blocked until it
-func (h *handler) fillAlreadyRunning() {
-	for _, j := range h.listRunning() {
-		h.jobQueueSemaphores.Schedule(
-			Q(j.queue),
-			dockerHelper{h.dockerClient, j.id}.Wait,
+// enqueuePreexistingContainers discovers previously submitted work, ensuring
+// that running work takes up slots in the queue, and submitted but not started
+// work is eventually started.
+func (h *handler) enqueuePreexistingContainers() {
+	// First, anything which is already running needs to take up slots in the
+	// queue.
+	for _, c := range h.listStatus("running") {
+		h.jobQueueSemaphores.Enqueue(
+			Q(c.Labels["job-queue"]),
+			// Wait until done.
+			dockerHelper{h.dockerClient, c.ID}.Wait,
+		)
+	}
+	// Second, anything hanging around in the created state has been submitted.
+	// Those should be started.
+	for _, c := range h.listStatus("created") {
+		h.jobQueueSemaphores.Enqueue(
+			Q(c.Labels["job-queue"]),
+			// Start and then wait.
+			dockerHelper{h.dockerClient, c.ID}.Run,
 		)
 	}
 }
@@ -73,27 +83,22 @@ type containerQueues struct {
 	queue Q
 }
 
-func (h *handler) listRunning() []containerQueues {
+func (h *handler) listStatus(status string) []types.Container {
 	containers, err := h.dockerClient.ContainerList(
 		context.Background(),
 		types.ContainerListOptions{
 			// Select containers started by fake-batch.
 			Filters: filters.NewArgs(
 				filters.Arg("label", "responsible=fake-batch"),
-				filters.Arg("status", "running"),
+				filters.Arg("status", status),
 			),
 		},
 	)
-
 	if err != nil {
+		// TODO(pwaller): Hm, propagate instead?
 		log.Panicln("ContainerList failed. Is docker running?", err)
 	}
-
-	out := make([]containerQueues, len(containers))
-	for i, c := range containers {
-		out[i] = containerQueues{c.ID, Q(c.Labels["job-queue"])}
-	}
-	return out
+	return containers
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
