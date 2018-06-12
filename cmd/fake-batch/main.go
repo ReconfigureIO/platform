@@ -30,6 +30,7 @@ func main() {
 		dockerClient:          dockerClient,
 		defaultImage:          "ubuntu:latest",             // TODO(pwaller): Configurability?
 		onlyJobDefinitionName: "fake-batch-job-definition", // TODO(pwaller): Support for job defs?
+
 		jobQueueSemaphores: newJobQueueSemaphores(map[Q]int{
 			"build": 1,
 			"graph": 2,
@@ -37,14 +38,55 @@ func main() {
 		}),
 	}
 
+	handler.fillAlreadyRunning()
+
 	log.Fatal(http.ListenAndServe(":9090", handler))
 }
 
 type handler struct {
-	dockerClient          *client.Client
+	dockerClient          dockerClient
 	defaultImage          string
 	onlyJobDefinitionName string
 	jobQueueSemaphores    jobQueueSemaphores
+}
+
+// fillAlreadyRunning discovers previously running work and ensures that the
+// queue is blocked until it
+func (h *handler) fillAlreadyRunning() {
+	for _, j := range h.listRunning() {
+		h.jobQueueSemaphores.Schedule(
+			Q(j.queue),
+			dockerHelper{h.dockerClient, j.id}.Wait,
+		)
+	}
+}
+
+type containerQueues struct {
+	id    string
+	queue Q
+}
+
+func (h *handler) listRunning() []containerQueues {
+	containers, err := h.dockerClient.ContainerList(
+		context.Background(),
+		types.ContainerListOptions{
+			// Select containers started by fake-batch.
+			Filters: filters.NewArgs(
+				filters.Arg("label", "responsible=fake-batch"),
+				filters.Arg("status", "running"),
+			),
+		},
+	)
+
+	if err != nil {
+		log.Panicln("TODO(pwaller)", err)
+	}
+
+	out := make([]containerQueues, len(containers))
+	for i, c := range containers {
+		out[i] = containerQueues{c.ID, Q(c.Labels["job-queue"])}
+	}
+	return out
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -148,12 +190,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	jobID := createOutput.ID
 
-	err = h.dockerClient.ContainerStart(ctx, jobID, types.ContainerStartOptions{})
-	if err != nil {
-		log.Printf("ContainerStart: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+	h.jobQueueSemaphores.Schedule(
+		Q(*input.JobQueue),
+		dockerHelper{h.dockerClient, jobID}.Run,
+	)
 
 	output, err := jsonutil.BuildJSON(
 		(&batch.SubmitJobOutput{}).
