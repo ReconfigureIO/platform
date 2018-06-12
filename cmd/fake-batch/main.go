@@ -38,7 +38,13 @@ func main() {
 		}),
 	}
 
+	// We just started, but we should deal with the case that docker was running
+	// before we got here (e.g, our process crashed and restarted).
+	// Fill queue slots with whatever is currently running in docker.
 	handler.fillAlreadyRunning()
+
+	// TODO(pwaller): Reschedule jobs which are in the created state.
+	// (note that those can be errored, but if we try to start them a second time we'll simply get the error again.)
 
 	log.Fatal(http.ListenAndServe(":9090", handler))
 }
@@ -79,7 +85,7 @@ func (h *handler) listRunning() []containerQueues {
 	)
 
 	if err != nil {
-		log.Panicln("TODO(pwaller)", err)
+		log.Panicln("ContainerList failed. Is docker running?", err)
 	}
 
 	out := make([]containerQueues, len(containers))
@@ -309,7 +315,13 @@ func dockerStatusToBatchStatus(dockerStatus string) string {
 	//   Exited (0) 16 minutes ago
 	//   Exited (1) 1 minute ago
 	//
+	// Note: we considered using 'State' field of the container struct but this
+	// does not contain the exit status, so we use the human readable status
+	// instead.
+	//
 	switch {
+	case strings.HasPrefix(dockerStatus, "Creating "):
+		return batch.JobStatusRunnable
 	case strings.HasPrefix(dockerStatus, "Up "):
 		return batch.JobStatusRunning
 	case strings.HasPrefix(dockerStatus, "Exited (0)"):
