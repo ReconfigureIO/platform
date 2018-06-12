@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -38,6 +40,12 @@ type dockerClient interface {
 		<-chan container.ContainerWaitOKBody,
 		<-chan error,
 	)
+
+	ContainerRemove(
+		ctx context.Context,
+		containerID string,
+		options types.ContainerRemoveOptions,
+	) error
 
 	ContainerList(
 		ctx context.Context,
@@ -75,6 +83,16 @@ func (dh dockerHelper) Wait() {
 	case <-errored:
 	}
 
+	dh.ArchiveLogAndRemoveContainer(nil)
+}
+
+// ArchiveLogAndRemoveContainer grabs logs out of Docker and puts them into long
+// term storage. You would think it would be better for this to be two
+// functions, but it is important that a container is only deleted if the log
+// archival succeeds. If it does not succeed, it is better for the container to
+// hang around since it is the only place the logs exist.
+func (dh dockerHelper) ArchiveLogAndRemoveContainer(extra io.Reader) {
+	// Grab log, shove in S3.
 	rc, err := dh.Logs(context.Background())
 	if err != nil {
 		log.Printf("dockerHelper.Wait: dh.Logs: %v", err)
@@ -87,14 +105,25 @@ func (dh dockerHelper) Wait() {
 		}
 	}()
 
-	_, err = dh.storage.Upload(dh.id, rc)
+	if extra == nil {
+		extra = bytes.NewReader(nil)
+	}
+
+	_, err = dh.storage.Upload(dh.id, io.MultiReader(rc, extra))
 	if err != nil {
 		log.Printf("dockerHelper.Wait: dh.storage.Upload: %v", err)
 		return
 	}
 
-	// TODO(pwaller): Grab log, shove in S3.
-	// TODO(pwaller): Delete container.
+	// Now that the log is in long term storage, the container can be deleted.
+	err = dh.client.ContainerRemove(
+		context.Background(),
+		dh.id,
+		types.ContainerRemoveOptions{},
+	)
+	if err != nil {
+		log.Printf("dockerHelper.Wait: ContainerRemove: %v", err)
+	}
 }
 
 func (dh dockerHelper) Start() {
@@ -104,9 +133,10 @@ func (dh dockerHelper) Start() {
 		types.ContainerStartOptions{},
 	)
 	if err != nil {
-		// TODO(pwaller) IMPORTANT: Can we put this error somewhere it can be found by
-		// ContainerList()?
 		log.Printf("ContainerStart: %v", err)
+		dh.ArchiveLogAndRemoveContainer(
+			strings.NewReader(err.Error()),
+		)
 	}
 }
 
