@@ -57,14 +57,13 @@ func (test s3Test) TestS3Upload(t *testing.T) {
 
 	randomReader := rand.New(rand.NewSource(0))
 	random10Meg := io.LimitReader(randomReader, test.Size)
-	missingLength := int64(-1)
 
 	hasher := sha1.New()
 
 	// Hash the contents as they are read by the uploader.
 	random10Meg = io.TeeReader(random10Meg, hasher)
 
-	s3key, err := storage.Upload(key, random10Meg, missingLength)
+	s3key, err := storage.Upload(key, random10Meg)
 	if err != nil {
 		t.Fatalf("storage.Upload: %v", err)
 	}
