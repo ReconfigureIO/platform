@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
 	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 	intercom "gopkg.in/intercom/intercom-go.v2"

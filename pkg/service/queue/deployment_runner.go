@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/pkg/service/deployment"
 	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"
 )

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	"github.com/ReconfigureIO/platform/service/events"
-	"github.com/ReconfigureIO/platform/service/leads"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
+	"github.com/ReconfigureIO/platform/pkg/service/leads"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"

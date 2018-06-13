@@ -2,8 +2,8 @@ package admin
 
 import (
 	"github.com/ReconfigureIO/platform/pkg/models"
+	"github.com/ReconfigureIO/platform/pkg/service/leads"
 	"github.com/ReconfigureIO/platform/pkg/sugar"
-	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )

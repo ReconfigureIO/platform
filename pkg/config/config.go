@@ -3,9 +3,9 @@ package config
 import (
 	"github.com/caarlos0/env"
 
-	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/deployment"
-	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/pkg/service/aws"
+	"github.com/ReconfigureIO/platform/pkg/service/deployment"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
 	stripe "github.com/stripe/stripe-go"
 )
 

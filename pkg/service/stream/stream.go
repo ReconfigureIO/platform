@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/pkg/service/aws"
 	"github.com/gin-gonic/gin"
 )
 

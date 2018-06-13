@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	awsservice "github.com/ReconfigureIO/platform/service/aws"
+	awsservice "github.com/ReconfigureIO/platform/pkg/service/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"

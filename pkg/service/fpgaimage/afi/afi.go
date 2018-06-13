@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/fpgaimage"
+	"github.com/ReconfigureIO/platform/pkg/service/fpgaimage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"

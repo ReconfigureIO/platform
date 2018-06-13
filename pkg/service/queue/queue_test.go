@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/ReconfigureIO/platform/models"
+	_ "github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/jinzhu/gorm"
 )
 

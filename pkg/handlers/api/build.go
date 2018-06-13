@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/storage"
+	"github.com/ReconfigureIO/platform/pkg/service/aws"
+	"github.com/ReconfigureIO/platform/pkg/service/storage"
 
 	"github.com/ReconfigureIO/platform/pkg/middleware"
 	"github.com/ReconfigureIO/platform/pkg/models"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
 	"github.com/ReconfigureIO/platform/pkg/sugar"
-	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"

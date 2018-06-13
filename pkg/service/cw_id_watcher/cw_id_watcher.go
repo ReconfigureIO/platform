@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/pkg/service/aws"
 	log "github.com/sirupsen/logrus"
 )
 

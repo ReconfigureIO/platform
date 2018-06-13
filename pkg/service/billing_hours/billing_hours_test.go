@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/pkg/service/deployment"
 	"github.com/golang/mock/gomock"
 )
 

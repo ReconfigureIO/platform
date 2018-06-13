@@ -6,8 +6,8 @@ import (
 	"github.com/ReconfigureIO/platform/pkg/handlers/auth"
 	"github.com/ReconfigureIO/platform/pkg/middleware"
 	"github.com/ReconfigureIO/platform/pkg/models"
-	svcauth "github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/leads"
+	svcauth "github.com/ReconfigureIO/platform/pkg/service/auth"
+	"github.com/ReconfigureIO/platform/pkg/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )

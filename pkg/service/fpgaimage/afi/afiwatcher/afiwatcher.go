@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/fpgaimage"
+	"github.com/ReconfigureIO/platform/pkg/service/fpgaimage"
 	log "github.com/sirupsen/logrus"
 )
 

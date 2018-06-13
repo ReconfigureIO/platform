@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/caarlos0/env"
 )

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/fpgaimage"
+	"github.com/ReconfigureIO/platform/pkg/service/fpgaimage"
 	"github.com/golang/mock/gomock"
 )
 
