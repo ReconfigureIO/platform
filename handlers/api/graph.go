@@ -134,7 +134,7 @@ func (g Graph) Input(c *gin.Context) {
 		return
 	}
 
-	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body, c.Request.ContentLength)
+	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

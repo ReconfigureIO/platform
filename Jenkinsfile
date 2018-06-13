@@ -1,7 +1,7 @@
 pipeline {
     agent { label "master" }
     environment {
-        AWS_DEFAULT_REGION = "us-east-1"
+        AWS_REGION = "us-east-1"
         KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
         RECO_INTERCOM_ACCESS_TOKEN = credentials('intercom_token')
     }

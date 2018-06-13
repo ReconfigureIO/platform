@@ -115,7 +115,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	key := fmt.Sprintf("simulation/%s/simulation.tar.gz", sim.ID)
 
-	s3Url, err := s.Storage.Upload(key, c.Request.Body, c.Request.ContentLength)
+	s3Url, err := s.Storage.Upload(key, c.Request.Body)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

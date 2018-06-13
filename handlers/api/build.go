@@ -190,7 +190,7 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	_, err = b.Storage.Upload(build.InputUrl(), c.Request.Body, c.Request.ContentLength)
+	_, err = b.Storage.Upload(build.InputUrl(), c.Request.Body)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
