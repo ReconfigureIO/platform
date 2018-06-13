@@ -136,13 +136,13 @@ func (g Graph) Input(c *gin.Context) {
 
 	_, err = g.Storage.Upload(graph.InputUrl(), c.Request.Body)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
 	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -180,14 +180,14 @@ func (g Graph) Download(c *gin.Context) {
 		}()
 	}
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(object)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -241,8 +241,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 	newEvent, err := BatchService{AWS: g.AWS}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
-		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.InternalError(c, nil)
 		return
 	}
 

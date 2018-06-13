@@ -117,7 +117,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	s3Url, err := s.Storage.Upload(key, c.Request.Body)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (s Simulation) Input(c *gin.Context) {
 
 	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -226,8 +226,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
-		c.Error(err)
-		sugar.ErrResponse(c, 500, nil)
+		sugar.InternalError(c, nil)
 		return
 	}
 

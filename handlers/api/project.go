@@ -52,7 +52,8 @@ func (p Project) Create(c *gin.Context) {
 	user := middleware.GetUser(c)
 	newProject := models.Project{UserID: user.ID, Name: post.Name}
 	if err := db.Create(&newProject).Error; err != nil {
-		sugar.ErrResponse(c, 500, err)
+		sugar.InternalError(c, err)
+		return
 	}
 
 	sugar.EnqueueEvent(p.Events, c, "Created Project", user.ID, map[string]interface{}{"id": newProject.ID, "name": newProject.Name})
