@@ -17,7 +17,7 @@ type Service struct {
 	UploaderAPI s3manageriface.UploaderAPI
 }
 
-func (s *Service) Upload(key string, r io.Reader, length int64) (string, error) {
+func (s *Service) Upload(key string, r io.Reader) (string, error) {
 	_, err := s.UploaderAPI.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(s.Bucket),
 		Key:    aws.String(key),
