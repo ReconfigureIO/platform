@@ -8,9 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ReconfigureIO/platform/config"
-	"github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/pkg/config"
+	"github.com/ReconfigureIO/platform/pkg/service/auth"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"

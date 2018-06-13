@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/ReconfigureIO/platform/pkg/models"
-	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/pkg/service/events"
 	"github.com/jinzhu/gorm"
 	intercom "gopkg.in/intercom/intercom-go.v2"
 )
