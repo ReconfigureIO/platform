@@ -6,11 +6,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
+	"github.com/ReconfigureIO/platform/pkg/sugar"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/stream"
-	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"

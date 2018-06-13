@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ReconfigureIO/platform/migration/migration1"
-	"github.com/ReconfigureIO/platform/migration/migration201711131234"
-	"github.com/ReconfigureIO/platform/migration/migration201801260948"
-	"github.com/ReconfigureIO/platform/migration/migration201801260952"
-	"github.com/ReconfigureIO/platform/migration/migration201802231224"
+	"github.com/ReconfigureIO/platform/pkg/migration/migration1"
+	"github.com/ReconfigureIO/platform/pkg/migration/migration201711131234"
+	"github.com/ReconfigureIO/platform/pkg/migration/migration201801260948"
+	"github.com/ReconfigureIO/platform/pkg/migration/migration201801260952"
+	"github.com/ReconfigureIO/platform/pkg/migration/migration201802231224"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"

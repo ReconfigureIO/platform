@@ -1,7 +1,7 @@
 package migration201801260952
 
 import (
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"

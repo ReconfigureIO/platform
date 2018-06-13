@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"

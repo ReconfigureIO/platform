@@ -3,9 +3,9 @@ package routes
 import (
 	"net/http"
 
-	"github.com/ReconfigureIO/platform/handlers/auth"
-	"github.com/ReconfigureIO/platform/middleware"
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/handlers/auth"
+	"github.com/ReconfigureIO/platform/pkg/middleware"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	svcauth "github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"

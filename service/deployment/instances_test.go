@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/golang/mock/gomock"
 )

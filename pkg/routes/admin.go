@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/ReconfigureIO/platform/handlers/admin"
+	"github.com/ReconfigureIO/platform/pkg/handlers/admin"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"

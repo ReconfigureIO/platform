@@ -3,7 +3,7 @@ package queue
 import (
 	"time"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/jinzhu/gorm"
 )
 

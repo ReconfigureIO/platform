@@ -1,11 +1,11 @@
 package routes
 
 import (
-	"github.com/ReconfigureIO/platform/config"
-	"github.com/ReconfigureIO/platform/handlers"
-	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/handlers/profile"
-	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/pkg/config"
+	"github.com/ReconfigureIO/platform/pkg/handlers"
+	"github.com/ReconfigureIO/platform/pkg/handlers/api"
+	"github.com/ReconfigureIO/platform/pkg/handlers/profile"
+	"github.com/ReconfigureIO/platform/pkg/middleware"
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"

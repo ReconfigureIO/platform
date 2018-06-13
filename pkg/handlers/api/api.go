@@ -3,8 +3,8 @@ package api
 import (
 	"errors"
 
+	"github.com/ReconfigureIO/platform/pkg/sugar"
 	"github.com/ReconfigureIO/platform/service/queue"
-	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )

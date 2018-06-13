@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
+	"github.com/ReconfigureIO/platform/pkg/sugar"
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/leads"
-	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"

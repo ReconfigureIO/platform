@@ -3,7 +3,7 @@ package leads
 import (
 	"errors"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"

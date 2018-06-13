@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/pkg/middleware"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )

@@ -3,10 +3,10 @@ package main
 import (
 	"time"
 
-	"github.com/ReconfigureIO/platform/config"
-	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/migration"
-	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/pkg/config"
+	"github.com/ReconfigureIO/platform/pkg/handlers/api"
+	"github.com/ReconfigureIO/platform/pkg/migration"
+	"github.com/ReconfigureIO/platform/pkg/routes"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"

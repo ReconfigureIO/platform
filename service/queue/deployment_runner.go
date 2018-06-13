@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/jinzhu/gorm"
 	log "github.com/sirupsen/logrus"

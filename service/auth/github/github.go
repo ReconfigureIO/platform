@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/models"
 	"github.com/google/go-github/github"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/oauth2"

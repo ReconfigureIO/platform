@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/ReconfigureIO/platform/middleware"
-	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/pkg/middleware"
+	"github.com/ReconfigureIO/platform/pkg/models"
+	"github.com/ReconfigureIO/platform/pkg/sugar"
 	"github.com/ReconfigureIO/platform/service/events"
-	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 )
