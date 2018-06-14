@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/ReconfigureIO/platform/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
 	s3reco "github.com/ReconfigureIO/platform/service/storage/s3"
+	awsaws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	s3aws "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -83,7 +85,10 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	// set up storage
-	session := session.Must(session.NewSession())
+	session := session.New(&awsaws.Config{
+		Endpoint: awsaws.String(os.Getenv("S3_ENDPOINT")),
+		Region:   awsaws.String("foobar"),
+	})
 	storageService := &s3reco.Service{
 		Bucket:      conf.Reco.StorageBucket,
 		UploaderAPI: s3manager.NewUploader(session),
