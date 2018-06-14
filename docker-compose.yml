@@ -2,14 +2,27 @@ version: '2'
 services:
   db:
     image: postgres:alpine
+
+  minio:
+    image: minio/minio
+    entrypoint: sh
+    command: -c 'mkdir -p /buckets/reconfigureio-builds && mkdir -p /buckets/testbucket.reconfigure.io && /usr/bin/minio server /buckets'
+    environment:
+      - MINIO_ACCESS_KEY=foo
+      - MINIO_SECRET_KEY=foobarbaz
+      - MINIO_DOMAIN=minio
+    ports:
+      - "9000:9000"
+
   web-base:
     build: build
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
     environment:
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=foobarbaz
+      - S3_ENDPOINT=http://minio:9000/
       - AWS_REGION
       - RECO_INTERCOM_ACCESS_TOKEN
       - LOGZIO_TOKEN
@@ -33,8 +46,11 @@ services:
     extends: web-base
     depends_on:
       - db
+      - minio
     links:
       - db
+      - minio:reconfigureio-builds.minio
+      - minio:testbucket.minio
   web:
     command: bash -c "glide install && fresh"
     extends: web-base
@@ -42,8 +58,10 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - minio
     links:
       - db
+      - minio:reconfigureio-builds.minio
 
   cron:
     extends: web-base
