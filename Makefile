@@ -120,3 +120,8 @@ deploy-staging:
 
 compose-test:
 	(docker-compose rm -f -s db || 0) && docker-compose run --rm test bash -c "go test -v ${ARGS}"
+
+up:
+	docker-compose build
+	docker-compose run --rm web-base make install all
+	docker-compose up -d

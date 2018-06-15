@@ -35,8 +35,9 @@ services:
       - db
     links:
       - db
+
   web:
-    command: bash -c "glide install && fresh"
+    command: bash -c "fresh"
     extends: web-base
     ports:
       - "8080:8080"
@@ -48,10 +49,10 @@ services:
   cron:
     extends: web-base
     ports:
-      - "8000:8080"
+      - "8000:8000"
     depends_on:
       - db
       - web
     links:
       - db
-    command: bash -c "glide install && make clean all && ./dist-image/dist/worker"
+    command: bash -c "./dist-image/dist/worker"
