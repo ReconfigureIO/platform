@@ -84,6 +84,8 @@ imports:
   - tlsconfig
 - name: github.com/docker/go-units
   version: 47565b4f722fb6ceae66b95f853feed578a4a51c
+- name: github.com/fortytw2/leaktest
+  version: a5ef70473c97b71626b9abeda80ee92ba2a7de9e
 - name: github.com/garyburd/redigo
   version: d1ed5c67e5794de818ea85e6b522fda02623a484
   subpackages:
