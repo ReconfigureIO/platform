@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -215,9 +216,34 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 		ctx, &containerConfig, nil, nil, "",
 	)
 	if err != nil {
-		log.Printf("ContainerCreate: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		if client.IsErrNotFound(err) {
+			resp, err := h.dockerClient.ImagePull(ctx, containerConfig.Image, types.ImagePullOptions{
+				All:           false,
+				RegistryAuth:  "",
+				PrivilegeFunc: nil,
+				Platform:      ""},
+			)
+			if err != nil {
+				log.Printf("ContainerCreate: PullImage: %v", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				if resp.Close() != nil {
+					log.Printf("ContainerCreate: PullImage: Close: %v", err)
+				}
+			}
+			io.Copy(ioutil.Discard, resp)
+			if resp.Close() != nil {
+				log.Printf("ContainerCreate: PullImage: Close: %v", err)
+			}
+			log.Printf("I just finished pulling an image")
+			createOutput, err = h.dockerClient.ContainerCreate(
+				ctx, &containerConfig, nil, nil, "",
+			)
+			if err != nil {
+				log.Printf("ContainerCreate: Attempt 2: %v", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	jobID := createOutput.ID
