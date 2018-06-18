@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/caarlos0/env"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	stripe "github.com/stripe/stripe-go"

@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/golang/mock/gomock"
 )
 

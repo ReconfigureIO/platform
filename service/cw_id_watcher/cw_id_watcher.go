@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	log "github.com/sirupsen/logrus"
 )
 
