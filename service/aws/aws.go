@@ -5,6 +5,7 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -45,12 +46,13 @@ type ServiceConfig struct {
 	Bucket        string `env:"RECO_AWS_BUCKET" envDefault:"reconfigureio-builds"`
 	Queue         string `env:"RECO_AWS_QUEUE" envDefault:"build-jobs"`
 	JobDefinition string `env:"RECO_AWS_JOB" envDefault:"sdaccel-builder-build"`
+	EndPoint      string `env:"RECO_AWS_ENDPOINT" envDefault:""` // AWS SDK uses endpoint generated from region when this value is an empty string
 }
 
 // New creates a new service with conf.
 func New(conf ServiceConfig) Service {
 	s := service{conf: conf}
-	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1")))
+	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }
 
@@ -206,6 +208,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 	}
 	resp, err := batchSession.SubmitJob(params)
 	if err != nil {
+		fmt.Printf("RunGraph: SubmitJob: %v", err)
 		return "", err
 	}
 	return *resp.JobId, nil

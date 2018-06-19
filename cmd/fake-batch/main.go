@@ -204,6 +204,7 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 			"Bad Request, only %q supported as job definition",
 			h.onlyJobDefinitionName,
 		)
+		fmt.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}

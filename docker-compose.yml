@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 services:
   db:
     image: postgres:alpine
@@ -12,7 +12,7 @@ services:
       - MINIO_SECRET_KEY=foobarbaz
       - MINIO_DOMAIN=minio
     ports:
-      - "9000:9000"
+      - "9000:9000" 
 
   web-base:
     build: build
@@ -23,6 +23,8 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
       - S3_ENDPOINT=http://minio:9000/
+      - RECO_AWS_ENDPOINT=http://fake-batch:9090
+      - RECO_AWS_JOB=fake-batch-job-definition
       - AWS_REGION
       - RECO_INTERCOM_ACCESS_TOKEN
       - LOGZIO_TOKEN
@@ -41,26 +43,52 @@ services:
       - RECO_DEPLOY_SUBNET=subnet-b0ca3aed
       - RECO_DEPLOY_SG=sg-b03e38c2
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
+    command: bash -c "make dependencies"
+    healthcheck:
+      test: "exit 0"
+
+  fake-batch:
+    extends: web-base
+    ports:
+      - "9090:9090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      web-base:
+        condition: service_healthy
+    depends_on:
+      - minio
+    links:
+      - minio:reconfigureio-builds.minio
+    command: bash -c "make clean fake-batch && ./dist-image/dist/fake-batch"
 
   test:
     extends: web-base
     depends_on:
       - db
       - minio
+    depends_on:
+      web-base:
+        condition: service_healthy
     links:
       - db
       - minio:reconfigureio-builds.minio
       - minio:testbucket.minio
   web:
-    command: bash -c "glide install && fresh"
+    command: bash -c "fresh"
     extends: web-base
     ports:
       - "8080:8080"
     depends_on:
       - db
       - minio
+      - fake-batch
+    depends_on:
+      web-base:
+        condition: service_healthy
     links:
       - db
+      - fake-batch
       - minio:reconfigureio-builds.minio
 
   cron:
@@ -70,6 +98,9 @@ services:
     depends_on:
       - db
       - web
+    depends_on:
+      web-base:
+        condition: service_healthy
     links:
       - db
-    command: bash -c "glide install && make clean all && ./dist-image/dist/worker"
+    command: bash -c "make clean cron && ./dist-image/dist/worker"

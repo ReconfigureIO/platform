@@ -14,7 +14,9 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.builder=$(BUILDER)' \
            -X 'main.goversion=$(GOVERSION)'
 
-.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests
+.PHONY: test install clean all generate deploy-production deploy-staging push-image image vet integration-tests build
+
+SRCDIR ?= .
 
 CMD_SOURCES := $(shell find cmd -name main.go)
 TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
@@ -25,7 +27,29 @@ TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLAT
 DOCKER_TAG := ${VERSION}
 DOCKER_IMAGE := 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api
 
-all: ${TARGETS} ${TEMPLATE_TARGETS} dist-image/dist/main
+all: ${TARGETS} ${TEMPLATE_TARGETS} cron fake-batch
+
+# Determine commands by looking into cmd/*
+COMMANDS=$(wildcard ${SRCDIR}/cmd/*)
+
+# Determine binary names by stripping out the dir names
+BINS=$(foreach cmd,${COMMANDS},$(notdir ${cmd}))
+
+cron: ${SRCDIR}/cmd/cron/main.go ${SRCDIR}/*.go
+	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/cron ./$(<D) 
+
+fake-batch: ${SRCDIR}/cmd/fake-batch/main.go ${SRCDIR}/*.go
+	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-batch ./$(<D)
+
+deploy_schema: ${SRCDIR}/cmd/deploy_schema/main.go ${SRCDIR}/*.go
+	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/deploy_schema ./$(<D)
+
+fake-cloudwatchlogs: ${SRCDIR}/cmd/fake-cloud/main.go ${SRCDIR}/*.go
+	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-batch ./$(<D)
+
+build:
+	# Run parallel builds in sub-make
+	$(MAKE) -C ${SRCDIR} ${BINS}
 
 vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
@@ -52,9 +76,6 @@ install: generate
 
 dist-image/dist:
 	@mkdir -p $@
-
-dist-image/dist/%: cmd/%/main.go | dist-image/dist
-	go build -ldflags "$(LDFLAGS)" -o $@ $<
 
 dist-image/dist/main: main.go | dist-image/dist
 	go build -ldflags "$(LDFLAGS)" -o $@ $<
