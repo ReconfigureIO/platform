@@ -142,7 +142,6 @@ func (g Graph) Input(c *gin.Context) {
 	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
 	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
-		log.WithError(err).Printf("RunGraph failed")
 		sugar.InternalError(c, err)
 		return
 	}
