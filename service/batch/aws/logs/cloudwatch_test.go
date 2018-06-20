@@ -41,7 +41,7 @@ func (testCase testCasePages) run(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	s := Service{
-		cw: &fakeCloudWatchLogsPages{
+		CloudWatchLogsAPI: &fakeCloudWatchLogsPages{
 			pageToOutputLogEvents: stringsToPageToOutputLogEvents([][]string(testCase)),
 		},
 		_pollPeriod: 250 * time.Microsecond,
@@ -112,7 +112,7 @@ func TestCloudWatchError(t *testing.T) {
 	errTest := errors.New("errTest")
 
 	s := Service{
-		cw: &fakeCloudWatchLogsError{
+		CloudWatchLogsAPI: &fakeCloudWatchLogsError{
 			// GetLogEventsPagesWithContext returns errTest.
 			err: errTest,
 		},
@@ -145,7 +145,7 @@ func TestCloudWatchTermination(t *testing.T) {
 
 	s := Service{
 		// Infinite stream of empty pages.
-		cw: &fakeCloudWatchLogInfinite{},
+		CloudWatchLogsAPI: &fakeCloudWatchLogInfinite{},
 		// Poll at an extremely high frequency.
 		_pollPeriod: 1 * time.Microsecond,
 	}

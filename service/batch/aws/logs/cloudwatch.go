@@ -16,9 +16,10 @@ import (
 // Service implements Stream(logStreamName string) io.ReadCloser.
 // It polls the CloudWatchLogs API at a period defined by defaultPollPeriod.
 type Service struct {
-	cw          cloudwatchlogsiface.CloudWatchLogsAPI
+	CloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
+	LogGroup          string
+
 	_pollPeriod time.Duration // for tests only.
-	logGroup    string
 }
 
 const defaultPollPeriod = 10 * time.Second
@@ -53,13 +54,13 @@ func (s *Service) pollCloudWatch(ctx context.Context, w *io.PipeWriter, logStrea
 	)
 
 	req := (&cloudwatchlogs.GetLogEventsInput{}).
-		SetLogGroupName(s.logGroup).
+		SetLogGroupName(s.LogGroup).
 		SetLogStreamName(logStreamName).
 		SetStartFromHead(true)
 
 	err := getLogEvents(
 		ctx,
-		s.cw,
+		s.CloudWatchLogsAPI,
 		req,
 		func(resp *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 			err2 = writeEvents(&scratchBuf, w, resp)
