@@ -37,8 +37,6 @@ import:
   version: ^1.0.0
 - package: github.com/spf13/cobra
 - package: gopkg.in/gormigrate.v1
-- package: github.com/kr/pretty
-  version: ~0.1.0
 - package: github.com/docker/docker
   version: 3f405c48fff297ae6ddeed58363b904d2d8e94f9
   subpackages:

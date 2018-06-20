@@ -17,7 +17,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/kr/pretty"
 
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/service/storage/localfile"
@@ -340,8 +339,6 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-
-	pretty.Print(input)
 
 	panic("TODO(pwaller): Implement this.")
 }

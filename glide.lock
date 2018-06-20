@@ -1,10 +1,10 @@
-hash: d6396071bf59ea6a64de0ba922fb11e71509ff20a44fba305463f4eca6360845
-updated: 2018-06-15T11:48:59.449326056+01:00
+hash: f58dde53c978d2d33ccc0c8e2333720b0b754fe76669799422d20f73894b27d4
+updated: 2018-06-20T11:23:41.299456701+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
 - name: github.com/aws/aws-sdk-go
-  version: 2fa5290a6a8f6a664f2dab5337d5f64d0cfd8f68
+  version: f0bbc646e13bfc451409e960cf33239aabb8671a
   subpackages:
   - aws
   - aws/awserr
@@ -147,10 +147,6 @@ imports:
   version: dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b
 - name: github.com/json-iterator/go
   version: c3ed5e85e01b662dce06b590ba4262266acbc73a
-- name: github.com/kr/pretty
-  version: 73f6ac0b30a98e433b289500d779f50c1a6f0712
-- name: github.com/kr/text
-  version: e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f
 - name: github.com/lib/pq
   version: 83612a56d3dd153a94a629cd64925371c9adad78
   subpackages:
