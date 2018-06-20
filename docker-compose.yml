@@ -66,7 +66,7 @@ services:
     links:
       - db
       - minio:reconfigureio-builds.minio
-      - minio:testbucket.minio
+      - minio:testbucket.reconfigure.io.minio
   web:
     command: bash -c "fresh"
     extends: web-base
