@@ -18,16 +18,13 @@ LDFLAGS := -X 'main.version=$(VERSION)' \
 
 SRCDIR ?= .
 
-CMD_SOURCES := $(shell find cmd -name main.go)
-TARGETS := $(patsubst cmd/%/main.go,dist-image/dist/%,$(CMD_SOURCES))
-
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
 
 DOCKER_TAG := ${VERSION}
 DOCKER_IMAGE := 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api
 
-all: ${TARGETS} ${TEMPLATE_TARGETS} cron fake-batch
+all: ${TEMPLATE_TARGETS} dist-image/dist/main cron fake-batch deploy_schema
 
 # Determine commands by looking into cmd/*
 COMMANDS=$(wildcard ${SRCDIR}/cmd/*)
@@ -44,8 +41,8 @@ fake-batch: ${SRCDIR}/cmd/fake-batch/main.go ${SRCDIR}/*.go
 deploy_schema: ${SRCDIR}/cmd/deploy_schema/main.go ${SRCDIR}/*.go
 	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/deploy_schema ./$(<D)
 
-fake-cloudwatchlogs: ${SRCDIR}/cmd/fake-cloud/main.go ${SRCDIR}/*.go
-	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-batch ./$(<D)
+# fake-cloudwatchlogs: ${SRCDIR}/cmd/fake-cloud/main.go ${SRCDIR}/*.go
+# 	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-batch ./$(<D)
 
 build:
 	$(MAKE) -C ${SRCDIR} ${BINS}
