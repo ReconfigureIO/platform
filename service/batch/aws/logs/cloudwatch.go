@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 )
@@ -29,8 +30,10 @@ func (s *Service) pollPeriod() time.Duration {
 	return s._pollPeriod
 }
 
-// Stream returns an io.ReadCloser containing the logs for the given logStreamName.
-// Under the hood, it polls CloudWatchLogs.
+// Stream returns an io.ReadCloser containing the logs for the given
+// logStreamName. Under the hood, it polls CloudWatchLogs. It is valid to call
+// Stream on a logStreamName which does not yet exist, in that case, Stream will
+// wait for it to exist, or for the context to be canceled.
 func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadCloser {
 	r, w := io.Pipe()
 	go s.pollCloudWatch(ctx, w, logStreamName)
@@ -54,7 +57,10 @@ func (s *Service) pollCloudWatch(ctx context.Context, w *io.PipeWriter, logStrea
 		SetLogStreamName(logStreamName).
 		SetStartFromHead(true)
 
-	err := s.cw.GetLogEventsPagesWithContext(ctx, req,
+	err := getLogEvents(
+		ctx,
+		s.cw,
+		req,
 		func(resp *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
 			err2 = writeEvents(&scratchBuf, w, resp)
 			if err2 != nil {
@@ -100,4 +106,39 @@ func writeEvents(
 	}
 
 	return nil
+}
+
+// getLogEvents calls cw.GetLogEvents, except that instead of returning
+// ResourceNotFound in case of a missing stream, it simply returns an empty
+// page.
+func getLogEvents(
+	ctx context.Context,
+	cw cloudwatchlogsiface.CloudWatchLogsAPI,
+	input *cloudwatchlogs.GetLogEventsInput,
+	fn func(resp *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool,
+) error {
+	var emptyPage cloudwatchlogs.GetLogEventsOutput
+
+again:
+	err := cw.GetLogEventsPagesWithContext(ctx, input, fn)
+
+	if isResourceNotFound(err) {
+		// Call fn with an empty page so that it can handle poll logic.
+		if keepGoing := fn(&emptyPage, false); keepGoing {
+			goto again
+		}
+		err = nil // Suppress not found error.
+	}
+
+	return err
+}
+
+func isResourceNotFound(err error) bool {
+	aerr, ok := err.(awserr.Error)
+	if !ok {
+		return false
+	}
+
+	const notFound = cloudwatchlogs.ErrCodeResourceNotFoundException
+	return aerr.Code() == notFound
 }

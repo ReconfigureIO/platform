@@ -5,11 +5,13 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
@@ -267,4 +269,82 @@ func linesToString(lines []string) string {
 		return ""
 	}
 	return strings.Join(lines, "\n") + "\n"
+}
+
+func TestGetLogEvents(t *testing.T) {
+	// TestGetLogEvents checks that getLogEvents() behaves correctly in the case
+	// that the log stream doesn't exist until some time after streaming has
+	// started.
+
+	cw := &fakeCloudWatchLogsDelayedLogStreamExistence{
+		nCallsUntilExisting: 5,
+		onceExisting: &fakeCloudWatchLogsPages{
+			pageToOutputLogEvents: stringsToPageToOutputLogEvents(
+				[][]string{{"Hello"}, {"World"}},
+			),
+		},
+	}
+	ctx := context.Background()
+
+	var gotPages [][]string
+	err := getLogEvents(
+		ctx,
+		cw,
+		&cloudwatchlogs.GetLogEventsInput{},
+		func(resp *cloudwatchlogs.GetLogEventsOutput, lastPage bool) bool {
+			var page []string
+			for _, ev := range resp.Events {
+				page = append(page, *ev.Message)
+			}
+			gotPages = append(gotPages, page)
+			return true
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedPages := [][]string{
+		// Number of nils (empty pages) corresponding to nCallsUntilExisting.
+		nil, nil, nil, nil, nil,
+		// Output corresponding to onceExisting.
+		{"Hello"}, {"World"},
+	}
+
+	if !reflect.DeepEqual(expectedPages, gotPages) {
+		t.Fatalf("expectedPages != gotPages (%q != %q)", expectedPages, gotPages)
+	}
+}
+
+// fakeCloudWatchLogsDelayedLogStreamExistence returns a ResourceNotFound
+// exception for the first nCallsUntilExisting calls to GetLogEventsPagesWithContext.
+// Then it fowards calls to the underlying `onceExisting` API.
+type fakeCloudWatchLogsDelayedLogStreamExistence struct {
+	cloudwatchlogsiface.CloudWatchLogsAPI
+
+	onceExisting                cloudwatchlogsiface.CloudWatchLogsAPI
+	nCalls, nCallsUntilExisting int
+}
+
+func (
+	cw *fakeCloudWatchLogsDelayedLogStreamExistence,
+) GetLogEventsPagesWithContext(
+	ctx aws.Context,
+	req *cloudwatchlogs.GetLogEventsInput,
+	fn func(*cloudwatchlogs.GetLogEventsOutput, bool) bool,
+	opts ...request.Option,
+) error {
+	defer func() { cw.nCalls++ }()
+
+	// First nCallsUntilExisting pages don't exist.
+	if cw.nCalls < cw.nCallsUntilExisting {
+		return awserr.New(
+			cloudwatchlogs.ErrCodeResourceNotFoundException,
+			"test error",
+			nil,
+		)
+	}
+
+	return cw.onceExisting.
+		GetLogEventsPagesWithContext(ctx, req, fn, opts...)
 }
