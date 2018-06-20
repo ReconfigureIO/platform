@@ -48,7 +48,6 @@ fake-cloudwatchlogs: ${SRCDIR}/cmd/fake-cloud/main.go ${SRCDIR}/*.go
 	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-batch ./$(<D)
 
 build:
-	# Run parallel builds in sub-make
 	$(MAKE) -C ${SRCDIR} ${BINS}
 
 vet:
