@@ -24,7 +24,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=foobarbaz
       - S3_ENDPOINT=http://minio:9000/
       - RECO_AWS_ENDPOINT=http://fake-batch:9090
-      - RECO_AWS_JOB=fake-batch-job-definition
       - AWS_REGION
       - RECO_INTERCOM_ACCESS_TOKEN
       - LOGZIO_TOKEN

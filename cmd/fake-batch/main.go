@@ -31,10 +31,19 @@ func main() {
 		log.Fatalf("Unable to configure docker client: %v", err)
 	}
 
+	// Make a map of JobDefinitions to pass to handler
+	jobDefinitions := map[string]JobDefinition{
+		"fake-batch-job-definition": JobDefinition{
+			Image: "ubuntu:latest",
+		},
+		"sdaccel-builder-build": JobDefinition{
+			Image: "sdaccel-builder:v0.17.5",
+		},
+	}
+
 	handler := &handler{
-		dockerClient:          dockerClient,
-		defaultImage:          "ubuntu:latest",             // TODO(pwaller): Configurability?
-		onlyJobDefinitionName: "fake-batch-job-definition", // TODO(pwaller): Support for job defs?
+		dockerClient:   dockerClient,
+		jobDefinitions: jobDefinitions,
 
 		jobQueueSemaphores: newJobQueueSemaphores(map[Q]int{
 			"build": 1,
@@ -54,12 +63,16 @@ func main() {
 }
 
 type handler struct {
-	dockerClient          dockerClient
-	defaultImage          string
-	onlyJobDefinitionName string
-	jobQueueSemaphores    jobQueueSemaphores
+	dockerClient       dockerClient
+	jobDefinitions     map[string]JobDefinition
+	jobQueueSemaphores jobQueueSemaphores
 
 	storage storage.Service
+}
+
+// JobDefinition is a description of the default options of a job
+type JobDefinition struct {
+	Image string
 }
 
 // enqueuePreexistingContainers discovers previously submitted work, ensuring
@@ -178,7 +191,7 @@ func (h *handler) submitJobInputToContainerConfig(
 	}
 
 	return container.Config{
-		Image: h.defaultImage,
+		Image: h.jobDefinitions[*input.JobDefinition].Image,
 		Cmd:   cmd,
 		Env:   env,
 		Labels: map[string]string{
@@ -199,10 +212,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if *input.JobDefinition != h.onlyJobDefinitionName {
+	if _, ok := h.jobDefinitions[*input.JobDefinition]; ok != true {
 		msg := fmt.Sprintf(
-			"Bad Request, only %q supported as job definition",
-			h.onlyJobDefinitionName,
+			"Bad Request, only %q supported as job definitions",
+			h.jobDefinitions,
 		)
 		fmt.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
@@ -213,8 +226,12 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
+	hostConfig := container.HostConfig{
+		AutoRemove: false,
+	}
+
 	createOutput, err := h.dockerClient.ContainerCreate(
-		ctx, &containerConfig, nil, nil, "",
+		ctx, &containerConfig, &hostConfig, nil, "",
 	)
 	if err != nil {
 		if client.IsErrNotFound(err) {
