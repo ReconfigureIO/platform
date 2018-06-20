@@ -217,7 +217,6 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 			"Bad Request, only %q supported as job definitions",
 			h.jobDefinitions,
 		)
-		fmt.Println(msg)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -252,12 +251,11 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 			if resp.Close() != nil {
 				log.Printf("ContainerCreate: PullImage: Close: %v", err)
 			}
-			log.Printf("I just finished pulling an image")
 			createOutput, err = h.dockerClient.ContainerCreate(
 				ctx, &containerConfig, nil, nil, "",
 			)
 			if err != nil {
-				log.Printf("ContainerCreate: Attempt 2: %v", err)
+				log.Printf("ContainerCreate: Post PullImage: %v", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
