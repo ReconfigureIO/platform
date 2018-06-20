@@ -43,8 +43,6 @@ services:
       - RECO_DEPLOY_SG=sg-b03e38c2
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
     command: bash -c "make dependencies"
-    healthcheck:
-      test: "exit 0"
 
   fake-batch:
     extends: web-base
@@ -53,9 +51,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
-      web-base:
-        condition: service_healthy
-    depends_on:
+      - web-base
       - minio
     links:
       - minio:reconfigureio-builds.minio
@@ -66,9 +62,7 @@ services:
     depends_on:
       - db
       - minio
-    depends_on:
-      web-base:
-        condition: service_healthy
+      - web-base
     links:
       - db
       - minio:reconfigureio-builds.minio
@@ -82,9 +76,7 @@ services:
       - db
       - minio
       - fake-batch
-    depends_on:
-      web-base:
-        condition: service_healthy
+      - web-base
     links:
       - db
       - fake-batch
@@ -97,9 +89,7 @@ services:
     depends_on:
       - db
       - web
-    depends_on:
-      web-base:
-        condition: service_healthy
+      - web-base
     links:
       - db
     command: bash -c "make clean cron && ./dist-image/dist/worker"
