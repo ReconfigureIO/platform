@@ -5,7 +5,6 @@ package aws
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -208,7 +207,6 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 	}
 	resp, err := batchSession.SubmitJob(params)
 	if err != nil {
-		fmt.Printf("RunGraph: SubmitJob: %v", err)
 		return "", err
 	}
 	return *resp.JobId, nil
