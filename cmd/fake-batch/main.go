@@ -225,12 +225,8 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
-	hostConfig := container.HostConfig{
-		AutoRemove: false,
-	}
-
 	createOutput, err := h.dockerClient.ContainerCreate(
-		ctx, &containerConfig, &hostConfig, nil, "",
+		ctx, &containerConfig, nil, nil, "",
 	)
 	if err != nil {
 		if client.IsErrNotFound(err) {
