@@ -6,6 +6,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -34,7 +35,8 @@ func (s *Service) pollPeriod() time.Duration {
 // Stream returns an io.ReadCloser containing the logs for the given
 // logStreamName. Under the hood, it polls CloudWatchLogs. It is valid to call
 // Stream on a logStreamName which does not yet exist, in that case, Stream will
-// wait for it to exist, or for the context to be canceled.
+// wait for it to exist, or for the context to be canceled. Context cancelation
+// is treated as the end of the stream, causing the ReadCloser to return io.EOF.
 func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadCloser {
 	r, w := io.Pipe()
 	go s.pollCloudWatch(ctx, w, logStreamName)
@@ -79,6 +81,11 @@ func (s *Service) pollCloudWatch(ctx context.Context, w *io.PipeWriter, logStrea
 
 			return true // Continue.
 		})
+
+	if isContextCancelation(err) {
+		// Treat context cancelation as the end of the stream.
+		err = io.EOF
+	}
 
 	if err == nil {
 		err = err2
@@ -142,4 +149,13 @@ func isResourceNotFound(err error) bool {
 
 	const notFound = cloudwatchlogs.ErrCodeResourceNotFoundException
 	return aerr.Code() == notFound
+}
+
+func isContextCancelation(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.HasSuffix(err.Error(), context.DeadlineExceeded.Error()) ||
+		strings.HasSuffix(err.Error(), context.Canceled.Error())
 }
