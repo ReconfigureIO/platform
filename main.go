@@ -87,7 +87,6 @@ func main() {
 	// set up storage
 	session := session.New(&awsaws.Config{
 		Endpoint: awsaws.String(os.Getenv("S3_ENDPOINT")),
-		Region:   awsaws.String("foobar"),
 	})
 	storageService := &s3reco.Service{
 		Bucket:      conf.Reco.StorageBucket,

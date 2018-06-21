@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func (test s3Test) TestS3Upload(t *testing.T) {
 	// Try uploading some random data to S3 and, download and
 	// check equivalence.
 
-	sess := session.Must(session.NewSession())
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(os.Getenv("S3_ENDPOINT"))))
 	storage := &Service{
 		Bucket:      "testbucket.reconfigure.io",
 		S3API:       s3.New(sess),
@@ -57,14 +58,13 @@ func (test s3Test) TestS3Upload(t *testing.T) {
 
 	randomReader := rand.New(rand.NewSource(0))
 	random10Meg := io.LimitReader(randomReader, test.Size)
-	missingLength := int64(-1)
 
 	hasher := sha1.New()
 
 	// Hash the contents as they are read by the uploader.
 	random10Meg = io.TeeReader(random10Meg, hasher)
 
-	s3key, err := storage.Upload(key, random10Meg, missingLength)
+	s3key, err := storage.Upload(key, random10Meg)
 	if err != nil {
 		t.Fatalf("storage.Upload: %v", err)
 	}

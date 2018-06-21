@@ -9,7 +9,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/private/protocol/json/jsonutil"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/kr/pretty"
 )
 
 func main() {
@@ -63,6 +62,4 @@ func (h *handler) PutLogEvents(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-
-	pretty.Print(payload)
 }

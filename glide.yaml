@@ -32,8 +32,13 @@ import:
 - package: github.com/sirupsen/logrus
   version: ^1.0.2
 - package: gopkg.in/intercom/intercom-go.v2
-- package: github.com/ReconfigureIO/logruzio 
+- package: github.com/ReconfigureIO/logruzio
 - package: github.com/robfig/cron
   version: ^1.0.0
 - package: github.com/spf13/cobra
 - package: gopkg.in/gormigrate.v1
+- package: github.com/docker/docker
+  version: 3f405c48fff297ae6ddeed58363b904d2d8e94f9
+  subpackages:
+  - api
+  - api/types/container
