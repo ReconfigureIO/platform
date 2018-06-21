@@ -54,7 +54,7 @@ services:
   #     - minio
   #   links:
   #     - minio:reconfigureio-builds.minio
-  #   command: bash -c "make clean fake-batch && ./dist-image/dist/fake-batch"
+  #   command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   test:
     extends: web-base
