@@ -37,6 +37,9 @@ func main() {
 		},
 		"sdaccel-builder-build": JobDefinition{
 			Image: "sdaccel-builder:v0.17.5",
+			MountPoints: []string{
+				"/opt/Xilinx:/opt/Xilinx",
+			},
 		},
 	}
 
@@ -71,7 +74,8 @@ type handler struct {
 
 // JobDefinition is a description of the default options of a job
 type JobDefinition struct {
-	Image string
+	Image       string
+	MountPoints []string
 }
 
 // enqueuePreexistingContainers discovers previously submitted work, ensuring
@@ -224,8 +228,12 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
+	hostConfig := container.HostConfig{
+		Binds: h.jobDefinitions[*input.JobDefinition].MountPoints,
+	}
+
 	createOutput, err := h.dockerClient.ContainerCreate(
-		ctx, &containerConfig, nil, nil, "",
+		ctx, &containerConfig, &hostConfig, nil, "",
 	)
 	if err != nil {
 		if client.IsErrNotFound(err) {
