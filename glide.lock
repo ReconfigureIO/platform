@@ -51,6 +51,39 @@ imports:
   version: 2ea60e5f094469f9e65adb9cd103795b73ae743e
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
+- name: github.com/docker/distribution
+  version: f0cc927784781fa395c06317c58dea2841ece3a9
+  subpackages:
+  - digestset
+  - reference
+- name: github.com/docker/docker
+  version: 3f405c48fff297ae6ddeed58363b904d2d8e94f9
+  subpackages:
+  - api
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/image
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/swarm/runtime
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+- name: github.com/docker/go-connections
+  version: 7395e3f8aa162843a74ed6d48e79627d9792ac55
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 47565b4f722fb6ceae66b95f853feed578a4a51c
 - name: github.com/garyburd/redigo
   version: d1ed5c67e5794de818ea85e6b522fda02623a484
   subpackages:
@@ -73,6 +106,10 @@ imports:
   - render
 - name: github.com/go-ini/ini
   version: 32e4c1e6bc4e7d0d8451aa6b75200d19e37a536a
+- name: github.com/gogo/protobuf
+  version: 30cf7ac33676b5786e78c746683f0d4cd64fa75b
+  subpackages:
+  - proto
 - name: github.com/golang/mock
   version: b3e60bcdc577185fce3cf625fc96b62857ce5574
   subpackages:
@@ -114,6 +151,17 @@ imports:
   - oid
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+- name: github.com/Microsoft/go-winio
+  version: ab35fc04b6365e8fcb18e6e9e41ea4a02b10b175
+- name: github.com/opencontainers/go-digest
+  version: c9281466c8b2f606084ac71339773efd177436e7
+- name: github.com/opencontainers/image-spec
+  version: e562b04403929d582d449ae5386ff79dd7961a11
+  subpackages:
+  - specs-go
+  - specs-go/v1
+- name: github.com/pkg/errors
+  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/ReconfigureIO/logruzio
   version: cd769a9cbdfa4f9d890e88600e87fe868c08e4ac
 - name: github.com/robfig/cron
@@ -145,6 +193,7 @@ imports:
   subpackages:
   - context
   - context/ctxhttp
+  - proxy
 - name: golang.org/x/oauth2
   version: 30785a2c434e431ef7c507b54617d6a951d5f2b4
   subpackages:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/kr/pretty"
 
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/service/storage/localfile"
@@ -30,10 +30,19 @@ func main() {
 		log.Fatalf("Unable to configure docker client: %v", err)
 	}
 
+	// Make a map of JobDefinitions to pass to handler
+	jobDefinitions := map[string]JobDefinition{
+		"fake-batch-job-definition": JobDefinition{
+			Image: "ubuntu:latest",
+		},
+		"sdaccel-builder-build": JobDefinition{
+			Image: "sdaccel-builder:v0.17.5",
+		},
+	}
+
 	handler := &handler{
-		dockerClient:          dockerClient,
-		defaultImage:          "ubuntu:latest",             // TODO(pwaller): Configurability?
-		onlyJobDefinitionName: "fake-batch-job-definition", // TODO(pwaller): Support for job defs?
+		dockerClient:   dockerClient,
+		jobDefinitions: jobDefinitions,
 
 		jobQueueSemaphores: newJobQueueSemaphores(map[Q]int{
 			"build": 1,
@@ -53,12 +62,16 @@ func main() {
 }
 
 type handler struct {
-	dockerClient          dockerClient
-	defaultImage          string
-	onlyJobDefinitionName string
-	jobQueueSemaphores    jobQueueSemaphores
+	dockerClient       dockerClient
+	jobDefinitions     map[string]JobDefinition
+	jobQueueSemaphores jobQueueSemaphores
 
 	storage storage.Service
+}
+
+// JobDefinition is a description of the default options of a job
+type JobDefinition struct {
+	Image string
 }
 
 // enqueuePreexistingContainers discovers previously submitted work, ensuring
@@ -177,7 +190,7 @@ func (h *handler) submitJobInputToContainerConfig(
 	}
 
 	return container.Config{
-		Image: h.defaultImage,
+		Image: h.jobDefinitions[*input.JobDefinition].Image,
 		Cmd:   cmd,
 		Env:   env,
 		Labels: map[string]string{
@@ -198,10 +211,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if *input.JobDefinition != h.onlyJobDefinitionName {
+	if _, ok := h.jobDefinitions[*input.JobDefinition]; ok != true {
 		msg := fmt.Sprintf(
-			"Bad Request, only %q supported as job definition",
-			h.onlyJobDefinitionName,
+			"Bad Request, only %q supported as job definitions",
+			h.jobDefinitions,
 		)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
@@ -215,9 +228,33 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 		ctx, &containerConfig, nil, nil, "",
 	)
 	if err != nil {
-		log.Printf("ContainerCreate: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		if client.IsErrNotFound(err) {
+			resp, err := h.dockerClient.ImagePull(ctx, containerConfig.Image, types.ImagePullOptions{
+				All:           false,
+				RegistryAuth:  "",
+				PrivilegeFunc: nil,
+				Platform:      ""},
+			)
+			if err != nil {
+				log.Printf("ContainerCreate: PullImage: %v", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				if resp.Close() != nil {
+					log.Printf("ContainerCreate: PullImage: Close: %v", err)
+				}
+			}
+			io.Copy(ioutil.Discard, resp)
+			if resp.Close() != nil {
+				log.Printf("ContainerCreate: PullImage: Close: %v", err)
+			}
+			createOutput, err = h.dockerClient.ContainerCreate(
+				ctx, &containerConfig, nil, nil, "",
+			)
+			if err != nil {
+				log.Printf("ContainerCreate: Post PullImage: %v", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
 	}
 
 	jobID := createOutput.ID
@@ -302,8 +339,6 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
-
-	pretty.Print(input)
 
 	panic("TODO(pwaller): Implement this.")
 }

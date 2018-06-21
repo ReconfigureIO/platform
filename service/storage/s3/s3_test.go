@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func (test s3Test) TestS3Upload(t *testing.T) {
 	// Try uploading some random data to S3 and, download and
 	// check equivalence.
 
-	sess := session.Must(session.NewSession())
+	sess := session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(os.Getenv("S3_ENDPOINT"))))
 	storage := &Service{
 		Bucket:      "testbucket.reconfigure.io",
 		S3API:       s3.New(sess),

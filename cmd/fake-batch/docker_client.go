@@ -63,6 +63,15 @@ type dockerClient interface {
 		io.ReadCloser,
 		error,
 	)
+
+	ImagePull(
+		ctx context.Context,
+		refStr string,
+		options types.ImagePullOptions,
+	) (
+		io.ReadCloser,
+		error,
+	)
 }
 
 type dockerHelper struct {
