@@ -22,6 +22,12 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 	ctx, cancel := WithClose(c)
 	defer cancel()
 
+	w := c.Writer
+
+	// set necessary headers to inform client of streaming connection
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
+
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -94,6 +100,12 @@ func StreamBatchLogs(awsSession aws.Service, c *gin.Context, b *models.BatchJob)
 func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c *gin.Context, deployment *models.Deployment) {
 	ctx, cancel := WithClose(c)
 	defer cancel()
+
+	w := c.Writer
+
+	// set necessary headers to inform client of streaming connection
+	w.Header().Set("Connection", "Keep-Alive")
+	w.Header().Set("Transfer-Encoding", "chunked")
 
 	refresh := func() error {
 		return db.Model(&deployment).Association("Events").Find(&deployment.Events).Error
