@@ -46,7 +46,7 @@ imports:
 - name: github.com/boj/redistore
   version: 4562487a4bee9a7c272b72bfaeda4917d0a47ab9
 - name: github.com/caarlos0/env
-  version: 7cd7992b3bc86f920394f8de92c13900da1a46b7
+  version: 1cddc31c48c56ecd700d873edb9fd5b6f5df922a
 - name: github.com/cenkalti/backoff
   version: 2ea60e5f094469f9e65adb9cd103795b73ae743e
 - name: github.com/dchest/uniuri
@@ -117,11 +117,11 @@ imports:
 - name: github.com/ReconfigureIO/logruzio
   version: cd769a9cbdfa4f9d890e88600e87fe868c08e4ac
 - name: github.com/robfig/cron
-  version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
+  version: b41be1df696709bb6395fe435af20370037c0b4c
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
-  version: d682213848ed68c0a260ca37d6dd5ace8423f5ba
+  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
 - name: github.com/spf13/cobra
   version: b95ab734e27d33e0d8fbabf71ca990568d4e2020
 - name: github.com/spf13/pflag
