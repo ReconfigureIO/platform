@@ -8,6 +8,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -134,7 +135,12 @@ func main() {
 	r.Use(cors.New(corsConfig))
 	r.LoadHTMLGlob("templates/*")
 
-	authService := github.New(db)
+	var authService auth.Service
+	if conf.Reco.Env == "development-on-prem" {
+		authService = &auth.NOPService{DB: db}
+	} else {
+		authService = github.New(db)
+	}
 
 	// routes
 	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)

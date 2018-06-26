@@ -72,7 +72,7 @@ services:
       - RECO_PLATFORM_MIGRATE=1
       - RECO_FEATURE_BILLING=1
       - RECO_FEATURE_DEPLOY=0
-      - RECO_ENV=development
+      - RECO_ENV=development-on-prem
       - RECO_HOST_NAME=local.reconfigure.io
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
