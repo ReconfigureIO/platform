@@ -25,7 +25,7 @@ type NOPService struct {
 // RedirectURL generates a URL to be handed to a client. In the case of
 // NOPService, cut out the middle man and go straight to /oauth/callback, which
 // ordinarily the 3rd party would be responsible for directing the user to.s
-func (NOPService) RedirectURL(state string) string {
+func (s *NOPService) RedirectURL(state string) string {
 	return "/oauth/callback?state=" + state
 }
 
@@ -33,7 +33,7 @@ func (NOPService) RedirectURL(state string) string {
 // to us by the service via the user, and then make a call to the server to
 // exchange this code for an OAuth2 access token.
 // For the NOPService, we just return the code as the access token.
-func (NOPService) Exchange(ctx context.Context, code string) (string, error) {
+func (s *NOPService) Exchange(ctx context.Context, code string) (string, error) {
 	return code, nil
 }
 
