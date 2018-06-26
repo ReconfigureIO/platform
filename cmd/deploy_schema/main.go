@@ -1,6 +1,6 @@
 package main
 
-import "github.com/ReconfigureIO/platform/migration"
+import "github.com/ReconfigureIO/platform/pkg/migration"
 
 func main() {
 	migration.MigrateSchema()
