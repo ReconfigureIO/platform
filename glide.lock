@@ -1,10 +1,10 @@
-hash: d38fe0576eaac20629b19c6a51995baa9145fc104bee0df8e96e2f6ec0ba77d5
-updated: 2018-01-10T16:18:16.232237969Z
+hash: 440b48ab17d57c1effbe726e4471162408dd39f8c2c01754b9328e9b28d65e5e
+updated: 2018-06-26T09:56:22.364363+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
 - name: github.com/aws/aws-sdk-go
-  version: 3c754f1d340244540350f0a00b940781bae9c905
+  version: fad131ddc707880428615dc8bc1587b55fb46d74
   subpackages:
   - aws
   - aws/awserr
@@ -22,6 +22,8 @@ imports:
   - aws/request
   - aws/session
   - aws/signer/v4
+  - internal/sdkio
+  - internal/sdkrand
   - internal/shareddefaults
   - private/protocol
   - private/protocol/ec2query
@@ -37,6 +39,9 @@ imports:
   - service/cloudwatchlogs
   - service/ec2
   - service/s3
+  - service/s3/s3iface
+  - service/s3/s3manager
+  - service/s3/s3manager/s3manageriface
   - service/sts
 - name: github.com/boj/redistore
   version: 4562487a4bee9a7c272b72bfaeda4917d0a47ab9
