@@ -6,7 +6,9 @@ import:
   subpackages:
   - dialects/postgres
 - package: github.com/aws/aws-sdk-go
-  version: ^1.10.30
+  # See https://github.com/ReconfigureIO/platform/issues/243
+  # Requires a refactor, see https://github.com/aws/aws-sdk-go/pull/1945#issuecomment-400029919
+  version: <1.13.55
 - package: github.com/google/go-github
   subpackages:
   - github
