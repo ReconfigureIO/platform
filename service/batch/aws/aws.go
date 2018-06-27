@@ -17,26 +17,33 @@ import (
 // ErrNotFound is not found error.
 var ErrNotFound = errors.New("Not Found")
 
-// Service is an AWS service.
-type Service interface {
-	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
-	RunGraph(graph models.Graph, callbackURL string) (string, error)
-	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
-	RunDeployment(command string) (string, error)
-
-	HaltJob(batchID string) error
-	GetJobDetail(id string) (*batch.JobDetail, error)
-
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
-	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
-	GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error)
-
-	Conf() *ServiceConfig
-}
-
-type service struct {
+// Service implements batch.Service.
+type Service struct {
 	session *session.Session
 	conf    ServiceConfig
+
+	// TODO(pwaller): Initialize this during construction by passing in a batch/aws/logs.Service instance.
+	streamService StreamService
+}
+
+type StreamService interface {
+	Stream(ctx context.Context, logStreamName string) io.ReadCloser
+}
+
+func (s *service) Logs(ctx context.Context, batchJob *models.BatchJob) io.ReadCloser {
+	logName := batchJob.LogName
+	if logName == "" {
+		logName = s.batchIDToLogName(batchJob.BatchID)
+	}
+	return s.streamService.Stream(ctx, logName)
+}
+
+func (s *service) batchIDToLogName(batchID string) (logName string, err error) {
+		jobDetail, err := s.GetJobDetail(b.BatchID)
+		if err != nil {
+			return "", err
+		}
+		return *jobDetail.Container.LogStreamName
 }
 
 // ServiceConfig holds configuration for service.
