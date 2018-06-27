@@ -1,4 +1,9 @@
 version: '2'
+
+volumes:
+  glide-cache: {}
+
+
 services:
   db:
     image: postgres:alpine
@@ -8,6 +13,7 @@ services:
     working_dir: /go/src/github.com/ReconfigureIO/platform
     volumes:
       - .:/go/src/github.com/ReconfigureIO/platform
+      - glide-cache:/root/.glide
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
