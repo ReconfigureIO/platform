@@ -1,5 +1,5 @@
-hash: 97e828b116bbeb67518906d5cb7705de15d1dc87b5947a6396ce0e4d3d00ed2f
-updated: 2018-06-27T15:00:53.043411+01:00
+hash: 279e67b6886066da95cb92fb168aa3876424f0e058143c7f99aefc95e0eec6a4
+updated: 2018-06-27T15:04:33.197726+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
@@ -167,6 +167,8 @@ imports:
   version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/ReconfigureIO/logruzio
   version: cd769a9cbdfa4f9d890e88600e87fe868c08e4ac
+- name: github.com/ReconfigureIO/pingproto
+  version: 46a79c15445cde40f953f8dfaad4009fb8b21c39
 - name: github.com/robfig/cron
   version: b41be1df696709bb6395fe435af20370037c0b4c
 - name: github.com/satori/go.uuid
