@@ -41,9 +41,6 @@ dist-image/dist/fake-batch: ${SRCDIR}/cmd/fake-batch/main.go ${SRCDIR}/*.go
 dist-image/dist/deploy_schema: ${SRCDIR}/cmd/deploy_schema/main.go ${SRCDIR}/*.go
 	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/deploy_schema ./$(<D)
 
-# dist-image/dist/fake-cloudwatchlogs: ${SRCDIR}/cmd/fake-cloud/main.go ${SRCDIR}/*.go
-# 	go build ${GCFLAGS} -ldflags "${LDFLAGS}" -o dist-image/dist/fake-cloudwatchlogs ./$(<D)
-
 build:
 	$(MAKE) -C ${SRCDIR} ${BINS}
 
