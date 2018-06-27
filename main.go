@@ -1,12 +1,14 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
 	"github.com/ReconfigureIO/platform/routes"
+	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -14,6 +16,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
 	s3reco "github.com/ReconfigureIO/platform/service/storage/s3"
+	awsaws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	s3aws "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -83,7 +86,9 @@ func main() {
 	leads := leads.New(conf.Reco.Intercom, db)
 
 	// set up storage
-	session := session.Must(session.NewSession())
+	session := session.New(&awsaws.Config{
+		Endpoint: awsaws.String(os.Getenv("S3_ENDPOINT")),
+	})
 	storageService := &s3reco.Service{
 		Bucket:      conf.Reco.StorageBucket,
 		UploaderAPI: s3manager.NewUploader(session),
@@ -130,7 +135,12 @@ func main() {
 	r.Use(cors.New(corsConfig))
 	r.LoadHTMLGlob("templates/*")
 
-	authService := github.New(db)
+	var authService auth.Service
+	if conf.Reco.Env == "development-on-prem" {
+		authService = &auth.NOPService{DB: db}
+	} else {
+		authService = github.New(db)
+	}
 
 	// routes
 	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)

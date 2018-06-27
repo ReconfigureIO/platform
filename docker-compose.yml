@@ -2,6 +2,7 @@ version: '2'
 services:
   db:
     image: postgres:alpine
+
   web-base:
     build: build
     working_dir: /go/src/github.com/ReconfigureIO/platform
@@ -33,15 +34,17 @@ services:
     extends: web-base
     depends_on:
       - db
+      - web-base
     links:
       - db
   web:
-    command: bash -c "glide install && fresh"
+    command: bash -c "fresh"
     extends: web-base
     ports:
       - "8080:8080"
     depends_on:
       - db
+      - web-base
     links:
       - db
 
@@ -52,6 +55,7 @@ services:
     depends_on:
       - db
       - web
+      - web-base
     links:
       - db
-    command: bash -c "glide install && make clean all && ./dist-image/dist/worker"
+    command: bash -c "make clean dist-image/dist/cron && ./dist-image/dist/cron cron"
