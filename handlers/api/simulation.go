@@ -12,6 +12,7 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // Simulation handles simulation requests.
@@ -177,7 +178,16 @@ func (s Simulation) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(s.AWS, c, &sim.BatchJob)
+	err := batch.CopyLogs(
+		c,
+		s.BatchSvc,
+		c.Writer,
+		c.Request,
+		&sim.BatchJob,
+	)
+	if err != nil {
+		log.WithError(err).Warnln("batch.CopyLogs error")
+	}
 }
 
 func (s Simulation) canPostEvent(c *gin.Context, sim models.Simulation) bool {
