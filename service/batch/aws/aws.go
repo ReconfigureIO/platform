@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"time"
+	"io"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/aws"
