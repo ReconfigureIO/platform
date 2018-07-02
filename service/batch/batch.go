@@ -20,7 +20,7 @@ type Service interface {
 
 	HaltJob(batchID string) error
 
-	Logs(ctx context.Context, batchJob *models.BatchJob) io.ReadCloser
+	Logs(ctx context.Context, batchJob *models.BatchJob) (io.ReadCloser, error)
 }
 
 // CopyLogs live-streams the logs from batchJob to http.ResponseWriter.
@@ -43,7 +43,9 @@ func CopyLogs(
 
 	closeNotify(w, cancel) // Cancel if downstream goes away.
 
-	started, finished := await(ctx, b)
+	started, finished := await(ctx, batchJob, func() {
+		// this function needs to update the batch job 
+	}) // TODO campgareth: figure out what's going on here, b should be a models BatchJob but there's also an update function required
 	<-started
 	go func() {
 		<-finished
@@ -118,11 +120,11 @@ func await(
 
 			update()
 
-			if started != nil hasStartFinisher.HasStarted() && {
+			if started != nil && hasStartFinisher.HasStarted() {
 				close(started)
 				started = nil
 			}
-			if finished != nil hasStartFinisher.HasFinished() && {
+			if finished != nil && hasStartFinisher.HasFinished() {
 				close(finished)
 				finished = nil
 			}

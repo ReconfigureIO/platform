@@ -5,8 +5,9 @@ package aws
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,24 +28,32 @@ type Service struct {
 	streamService StreamService
 }
 
+// StreamService contains functions for streaming logs from a batch job
 type StreamService interface {
 	Stream(ctx context.Context, logStreamName string) io.ReadCloser
 }
 
-func (s *service) Logs(ctx context.Context, batchJob *models.BatchJob) io.ReadCloser {
+// Logs converts a batchID to a cloudwatch log name then begins streaming
+func (s *Service) Logs(ctx context.Context, batchJob *models.BatchJob) (io.ReadCloser, error) {
 	logName := batchJob.LogName
 	if logName == "" {
-		logName = s.batchIDToLogName(batchJob.BatchID)
+		logName, err := s.batchIDToLogName(batchJob.BatchID)
+		if err != nil {
+			return nil, err
+		}
+		if logName == "" {
+			return nil, fmt.Errorf("Logs: Could not determine logName with batchIDToLogName for BatchJob %v", batchJob.ID)
+		}
 	}
-	return s.streamService.Stream(ctx, logName)
+	return s.streamService.Stream(ctx, logName), nil
 }
 
-func (s *service) batchIDToLogName(batchID string) (logName string, err error) {
-		jobDetail, err := s.GetJobDetail(b.BatchID)
-		if err != nil {
-			return "", err
-		}
-		return *jobDetail.Container.LogStreamName
+func (s *Service) batchIDToLogName(batchID string) (logName string, err error) {
+	jobDetail, err := s.GetJobDetail(batchID)
+	if err != nil {
+		return "", err
+	}
+	return "", errors.New(*jobDetail.Container.LogStreamName)
 }
 
 // ServiceConfig holds configuration for service.
@@ -57,17 +66,18 @@ type ServiceConfig struct {
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig) Service {
-	s := service{conf: conf}
+func New(conf ServiceConfig) *Service {
+	s := Service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }
 
-func (s *service) s3Url(key string) string {
+func (s *Service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
 }
 
-func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
+// RunBuild creates an AWS Batch Job that runs our build process
+func (s *Service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	debugArtifactURL := s.s3Url(build.DebugUrl())
@@ -139,7 +149,8 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 	return *resp.JobId, nil
 }
 
-func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
+// RunSimulation creates an AWS Batch Job that runs our simulation process
+func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -186,7 +197,8 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 	return *resp.JobId, nil
 }
 
-func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
+// RunGraph creates an AWS Batch Job that runs our graph process
+func (s *Service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(graph.InputUrl())
 	outputArtifactURL := s.s3Url(graph.ArtifactUrl())
@@ -220,7 +232,8 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 	return *resp.JobId, nil
 }
 
-func (s *service) HaltJob(batchID string) error {
+// HaltJob TODO campgareth: write proper comment
+func (s *Service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
 		JobId:  aws.String(batchID),        // Required
@@ -230,11 +243,13 @@ func (s *service) HaltJob(batchID string) error {
 	return err
 }
 
-func (s *service) RunDeployment(command string) (string, error) {
+// RunDeployment TODO campgareth: write proper comment
+func (s *Service) RunDeployment(command string) (string, error) {
 	return "This function does nothing yet", nil
 }
 
-func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
+// GetJobDetail TODO campgareth: write proper comment
+func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{
 		Jobs: aws.StringSlice([]string{id}),
@@ -249,7 +264,8 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	return resp.Jobs[0], nil
 }
 
-func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
+// GetJobStream TODO campgareth: write proper comment
+func (s *Service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
@@ -269,19 +285,21 @@ func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream,
 	return resp.LogStreams[0], nil
 }
 
-func (s *service) Conf() *ServiceConfig {
+// Conf TODO campgareth: write proper comment
+func (s *Service) Conf() *ServiceConfig {
 	return &s.conf
 }
 
 // Stream is log stream.
 type Stream struct {
-	session *service
+	session *Service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
 	Ended   bool
 }
 
-func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
+// NewStream TODO campgareth: write proper comment
+func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
 	return &Stream{
@@ -320,7 +338,8 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	return err
 }
 
-func (s *service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
+// GetLogNames TODO campgareth: write proper comment
+func (s *Service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
 	ret := make(map[string]string)
 
 	batchSession := batch.New(s.session)
