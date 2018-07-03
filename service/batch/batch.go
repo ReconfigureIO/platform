@@ -32,11 +32,7 @@ func CopyLogs(
 	svc Service,
 	w http.ResponseWriter,
 	r *http.Request,
-	batchJob interface {
-		HasStarted() bool
-		HasFinished() bool
-		GetLogName() string
-	},
+	batchJob *models.BatchJob,
 ) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel() // Need this cancel in case closeNotify not supported.
@@ -44,7 +40,7 @@ func CopyLogs(
 	closeNotify(w, cancel) // Cancel if downstream goes away.
 
 	started, finished := await(ctx, batchJob, func() {
-		// this function needs to update the batch job 
+		// this function needs to update the batch job
 	}) // TODO campgareth: figure out what's going on here, b should be a models BatchJob but there's also an update function required
 	<-started
 	go func() {
@@ -52,7 +48,10 @@ func CopyLogs(
 		cancel()
 	}()
 
-	rc := svc.Logs(ctx, batchJob)
+	rc, err := svc.Logs(ctx, batchJob)
+	if err != nil {
+		return err
+	}
 	defer func() {
 		err2 := rc.Close()
 		if err == nil {
@@ -93,7 +92,7 @@ func await(
 	},
 	update func(),
 ) (
-	started, finished <-chan struct{},
+	started, finished chan struct{},
 ) {
 	started = make(chan struct{})
 	finished = make(chan struct{})
