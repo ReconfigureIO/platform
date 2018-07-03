@@ -23,7 +23,7 @@ func SetupRoutes(
 	secretKey string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService aws.Service,
+	awsService *aws.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,
@@ -70,7 +70,7 @@ func SetupRoutes(
 		Events:          events,
 		Storage:         storage,
 		PublicProjectID: publicProjectID,
-		AWS:             awsService,
+		AWS:             *awsService,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
@@ -94,7 +94,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage, awsService)
+	simulation := api.NewSimulation(events, storage, *awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -105,7 +105,7 @@ func SetupRoutes(
 	}
 
 	graph := api.Graph{
-		AWS:     awsService,
+		AWS:     *awsService,
 		Events:  events,
 		Storage: storage,
 	}
@@ -122,7 +122,7 @@ func SetupRoutes(
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,
-		AWS:              awsService,
+		AWS:              *awsService,
 		UseSpotInstances: config.FeatureUseSpotInstances,
 		PublicProjectID:  publicProjectID,
 	}

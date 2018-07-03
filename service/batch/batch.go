@@ -1,5 +1,7 @@
 package batch
 
+//go:generate mockgen -source=batch.go -package=batch -destination=batch_mock.go
+
 import (
 	"context"
 	"io"

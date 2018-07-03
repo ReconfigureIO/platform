@@ -179,9 +179,9 @@ func (s Simulation) Logs(c *gin.Context) {
 		return
 	}
 
-	err := batch.CopyLogs(
+	err = batch.CopyLogs(
 		c,
-		s.BatchSvc,
+		&s.AWS,
 		c.Writer,
 		c.Request,
 		&sim.BatchJob,
