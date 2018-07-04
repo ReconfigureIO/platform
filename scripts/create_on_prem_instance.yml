@@ -2,7 +2,7 @@
   gather_facts: False
   
   vars:
-    ami_id: ami-9cf451e1
+    ami_id: ami-9cf451e1 # This is a centos image, SSH as user centos
 
   tasks:
     - name: Provision on-prem instance

@@ -3,7 +3,7 @@
 
   post_tasks:
     - name: install docker-compose
-      command: 'curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose'
+      shell: curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
       args:
         creates: /usr/local/bin/docker-compose
 
@@ -13,18 +13,18 @@
         mode: 0777
 
     - name: docker login to ECR
-      command: 'aws ecr get-login --region us-east-1 --no-include-email | bash'
+      shell: aws ecr get-login --region us-east-1 --no-include-email | bash
 
     - name: docker pull compiler image from ECR
-      command: 'docker image pull 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5' 
+      command: docker image pull 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5 
 
     - name: copy platform directory to test machine
-      copy: src=../../platform dest=~/
+      copy: src=../../platform dest=/home/centos/
 
     - name: docker-compose up (leave that running)
-      shell: cd ~/platform/; nohup docker-compose -f docker-compose.on-prem.yml up </dev/null >/dev/null 2>&1 &
+      shell: cd /home/centos/platform/; nohup /usr/local/bin/docker-compose -f docker-compose.on-prem.yml up </dev/null >/dev/null 2>&1 &
 
     - name: print instance IP and command for SSH-ing
       debug:
-      msg: 'Instance ready, connect and port-forward by running ssh -L 8080:localhost:8080 centos@hostname' 
+      msg: Instance ready, connect and port-forward by running ssh -L 8080:localhost:8080 centos@hostname
 
