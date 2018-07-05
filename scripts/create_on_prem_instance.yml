@@ -25,6 +25,7 @@
              delete_on_termination: true
              volume_type: gp2
          instance_profile_name: ecsInstanceRole
+         instance_initiated_shutdown_behavior: terminate
       register: ec2
 
     - name: Wait for SSH to come up
