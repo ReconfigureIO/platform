@@ -1,7 +1,9 @@
-version: '2'
+version: '2.1'
 services:
   db:
     image: postgres:alpine
+    networks:
+      - platform
 
   minio:
     image: minio/minio
@@ -12,7 +14,12 @@ services:
       - MINIO_SECRET_KEY=foobarbaz
       - MINIO_DOMAIN=minio
     ports:
-      - "9000:9000" 
+      - "9000:9000"
+    networks:
+      platform:
+        aliases:
+          - reconfigureio-builds.minio
+          - testbucket.reconfigure.io.minio
 
   web-base:
     build: build
@@ -44,8 +51,10 @@ services:
     depends_on:
       - web-base
       - minio
-    links:
-      - minio:reconfigureio-builds.minio
+    networks:
+      - platform
+    environment:
+      - WORKER_NETWORK=platform_platform
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   web:
@@ -57,10 +66,10 @@ services:
       - db
       - minio
       - fake-batch
-    links:
-      - db
-      - fake-batch
-      - minio:reconfigureio-builds.minio
+    networks:
+      platform:
+        aliases:
+          - local.reconfigure.io
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
@@ -76,3 +85,9 @@ services:
       - RECO_HOST_NAME=local.reconfigure.io
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
+
+networks:
+  platform:
+    driver: bridge
+    driver_opts:
+      name: "platform"

@@ -7,6 +7,8 @@ volumes:
 services:
   db:
     image: postgres:alpine
+    networks:
+      - platform
 
   web-base:
     build: build
@@ -41,8 +43,9 @@ services:
     depends_on:
       - db
       - web-base
-    links:
-      - db
+    networks:
+      - platform
+
   web:
     command: bash -c "fresh"
     extends: web-base
@@ -51,8 +54,10 @@ services:
     depends_on:
       - db
       - web-base
-    links:
-      - db
+    networks:
+      platform:
+        aliases:
+          - local.reconfigure.io
 
   cron:
     extends: web-base
@@ -62,6 +67,13 @@ services:
       - db
       - web
       - web-base
-    links:
-      - db
+    networks:
+      - platform
     command: bash -c "make clean dist-image/dist/cron && ./dist-image/dist/cron cron"
+
+
+networks:
+  platform:
+    driver: bridge
+    driver_opts:
+      name: "platform"
