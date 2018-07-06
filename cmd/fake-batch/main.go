@@ -229,7 +229,8 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
 	hostConfig := container.HostConfig{
-		Binds: h.jobDefinitions[*input.JobDefinition].MountPoints,
+		Binds:       h.jobDefinitions[*input.JobDefinition].MountPoints,
+		NetworkMode: container.NetworkMode(os.Getenv("WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
 	}
 
 	createOutput, err := h.dockerClient.ContainerCreate(
