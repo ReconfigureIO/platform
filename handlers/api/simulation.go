@@ -16,17 +16,19 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	AWS     aws.Service
-	Events  events.EventService
-	Storage storage.Service
+	HostName string
+	AWS      aws.Service
+	Events   events.EventService
+	Storage  storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(hostName string, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
 	return Simulation{
-		AWS:     awsSession,
-		Events:  events,
-		Storage: storageService,
+		HostName: hostName,
+		AWS:      awsSession,
+		Events:   events,
+		Storage:  storageService,
 	}
 }
 
@@ -121,7 +123,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
+	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", s.HostName, sim.ID, sim.Token)
 
 	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {

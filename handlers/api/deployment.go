@@ -26,6 +26,7 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
+	HostName         string
 	Events           events.EventService
 	UseSpotInstances bool
 	Storage          storage.Service
@@ -143,7 +144,7 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 
-		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", d.HostName, newDep.ID, newDep.Token)
 
 		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, callbackURL)
 		if err != nil {

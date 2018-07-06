@@ -18,6 +18,7 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
+	HostName        string
 	Events          events.EventService
 	Storage         storage.Service
 	AWS             aws.Service
@@ -195,8 +196,8 @@ func (b Build) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", b.HostName, build.ID, build.Token)
+	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", b.HostName, build.ID, build.Token)
 	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.InternalError(c, err)

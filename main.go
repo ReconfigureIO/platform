@@ -143,7 +143,7 @@ func main() {
 	}
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, conf.Host, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue
