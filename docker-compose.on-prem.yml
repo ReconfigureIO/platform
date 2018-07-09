@@ -61,7 +61,7 @@ services:
     command: bash -c "fresh"
     extends: web-base
     ports:
-      - "8080:8080"
+      - "8080:80"
     depends_on:
       - db
       - minio
@@ -77,7 +77,7 @@ services:
       - RECO_AWS_ENDPOINT=http://fake-batch:9090
       - AWS_REGION=us-east-1
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
-      - PORT=8080
+      - PORT=80
       - RECO_PLATFORM_MIGRATE=1
       - RECO_FEATURE_BILLING=1
       - RECO_FEATURE_DEPLOY=0
