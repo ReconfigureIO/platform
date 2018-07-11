@@ -61,11 +61,27 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 }
 
 func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, deploy deployment.Service) error {
-	deployments, err := deploymentsDB.GetWithStatusForUser(user.ID, []string{"started"})
+	deployments, err := deploymentsDB.GetWithStatusForUser(user.ID, []string{models.StatusStarted, models.StatusQueued, models.StatusTerminating})
 	if err != nil {
+		log.WithError(err).WithFields(log.Fields{
+			"user":     user.ID,
+			"function": "Billing_hours: terminateUserDeployments",
+		}).Error("Couldn't get deployments for user")
 		return err
 	}
+
+	log.WithFields(log.Fields{
+		"user":                  user.ID,
+		"number-of-deployments": len(deployments),
+		"function":              "Billing_hours: terminateUserDeployments",
+	}).Info("Stopping deployments")
+
 	for _, deployment := range deployments {
+		log.WithFields(log.Fields{
+			"user":       user.ID,
+			"deployment": deployment.ID,
+			"function":   "Billing_hours: terminateUserDeployments",
+		}).Info("Stopping deployment")
 		err = deploy.StopDeployment(context.Background(), deployment)
 		if err != nil {
 			log.Printf("Error while terminating deployment: %+v", deployment)
