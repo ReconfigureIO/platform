@@ -60,10 +60,14 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 	return nil
 }
 
-// terminateUserDeployments finds all deployments that are owned by a specified user and are in a state where they could have a running instance.
-// It then stops each of those deployments, which also terminates the instance.
+// terminateUserDeployments finds all deployments that are owned by a specified
+// user and are in a state where they could have a running instance. It then
+// stops each of those deployments, which also terminates the instance.
 func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, deploy deployment.Service) error {
-	deployments, err := deploymentsDB.GetWithStatusForUser(user.ID, []string{models.StatusStarted, models.StatusQueued, models.StatusTerminating})
+	deployments, err := deploymentsDB.GetWithStatusForUser(
+		user.ID,
+		[]string{models.StatusStarted, models.StatusQueued, models.StatusTerminating}
+	)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
 			"user": user.ID,
