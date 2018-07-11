@@ -41,7 +41,7 @@ func TestCheckUserHours(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	deploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
-	deploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{"started"}).Return(deployments, nil)
+	deploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{models.StatusStarted, models.StatusQueued, models.StatusTerminating}).Return(deployments, nil)
 	deploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
 
 	deploymentService := deployment.NewMockService(mockCtrl)
