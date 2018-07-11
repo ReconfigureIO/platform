@@ -185,6 +185,13 @@ func (h *handler) submitJobInputToContainerConfig(
 		env []string
 	)
 
+	env = []string{
+		"AWS_DEFAULT_REGION=us-east-1",
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", os.Getenv("AWS_ACCESS_KEY_ID")),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+		fmt.Sprintf("S3_ENDPOINT=%s", os.Getenv("S3_ENDPOINT")),
+	}
+
 	co := input.ContainerOverrides
 	if co != nil {
 		if co.Command != nil {

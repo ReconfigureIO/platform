@@ -55,6 +55,9 @@ services:
       - platform
     environment:
       - WORKER_NETWORK=platform_platform
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=foobarbaz
+      - S3_ENDPOINT=http://minio:9000/
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   web:
