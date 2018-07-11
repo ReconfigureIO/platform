@@ -66,7 +66,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 func terminateUserDeployments(user models.User, deploymentsDB models.DeploymentRepo, deploy deployment.Service) error {
 	deployments, err := deploymentsDB.GetWithStatusForUser(
 		user.ID,
-		[]string{models.StatusStarted, models.StatusQueued, models.StatusTerminating}
+		[]string{models.StatusStarted, models.StatusQueued, models.StatusTerminating},
 	)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
