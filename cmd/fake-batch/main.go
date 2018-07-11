@@ -190,6 +190,14 @@ func (h *handler) submitJobInputToContainerConfig(
 		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", os.Getenv("AWS_ACCESS_KEY_ID")),
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", os.Getenv("AWS_SECRET_ACCESS_KEY")),
 		fmt.Sprintf("S3_ENDPOINT=%s", os.Getenv("S3_ENDPOINT")),
+		"LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/SDK/lib/lnx64.o",
+		"XILINX_SDX=/opt/Xilinx/SDx/2017.1.op",
+		"XILINX_SDACCEL=/opt/Xilinx/SDx/2017.1.op",
+		"LD_LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/Vivado/lib/lnx64.o",
+		"XILINX_VIVADO=/opt/Xilinx/SDx/2017.1.op/Vivado",
+		"LOG_BUCKET=reconfigureio-builds",
+		"XILINXD_LICENSE_FILE=/opt/Xilinx/license/XilinxAWS.lic",
+		"DCP_BUCKET=reconfigureio-builds",
 	}
 
 	co := input.ContainerOverrides
