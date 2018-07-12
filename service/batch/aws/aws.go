@@ -66,8 +66,11 @@ type ServiceConfig struct {
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig) *Service {
-	s := Service{conf: conf}
+func New(conf ServiceConfig, streamService StreamService) *Service {
+	s := Service{
+		conf:          conf,
+		streamService: streamService,
+	}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }

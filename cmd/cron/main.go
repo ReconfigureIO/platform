@@ -9,6 +9,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/batch/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/cloudwatch"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -50,7 +51,9 @@ func setup(*cobra.Command, []string) {
 	}
 
 	deploy = deployment.New(conf.Reco.Deploy)
-	awsService = aws.New(conf.Reco.AWS)
+	awsService = *aws.New(conf.Reco.AWS, &cloudwatch.Service{
+		LogGroup: "foobar",
+	})
 
 	db = config.SetupDB(conf)
 	api.DB(db)

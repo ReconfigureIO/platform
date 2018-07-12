@@ -1,5 +1,5 @@
 // Package logs implements (*logs.Service).Stream(ctx, logStreamName) io.ReadCloser backed by polling CloudWatchLogs.
-package logs
+package cloudwatch
 
 import (
 	"bytes"

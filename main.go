@@ -11,6 +11,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/batch/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/cloudwatch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -95,7 +96,9 @@ func main() {
 		S3API:       s3aws.New(session),
 	}
 
-	awsSession := aws.New(conf.Reco.AWS)
+	awsSession := aws.New(conf.Reco.AWS, &cloudwatch.Service{
+		LogGroup: "foobar",
+	})
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
