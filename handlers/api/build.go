@@ -20,10 +20,12 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	Events          events.EventService
-	Storage         storage.Service
-	AWS             aws.Service
-	PublicProjectID string
+	HostName         string
+	CallbackProtocol string
+	Events           events.EventService
+	Storage          storage.Service
+	AWS              aws.Service
+	PublicProjectID  string
 }
 
 // Common preload functionality.
@@ -197,8 +199,8 @@ func (b Build) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	callbackURL := fmt.Sprintf("%s://%s/builds/%s/events?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
+	reportsURL := fmt.Sprintf("%s://%s/builds/%s/reports?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
 	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.InternalError(c, err)

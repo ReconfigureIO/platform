@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	os.Setenv("DOCKER_API_VERSION", "1.37") // Hmm.
+	os.Setenv("DOCKER_API_VERSION", "1.26") // 1.26 is in use on our ECS Vivado images.
 
 	dockerClient, err := client.NewEnvClient()
 	if err != nil {
@@ -36,7 +36,7 @@ func main() {
 			Image: "ubuntu:latest",
 		},
 		"sdaccel-builder-build": JobDefinition{
-			Image: "sdaccel-builder:v0.17.5",
+			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
 			MountPoints: []string{
 				"/opt/Xilinx:/opt/Xilinx",
 			},
@@ -185,6 +185,21 @@ func (h *handler) submitJobInputToContainerConfig(
 		env []string
 	)
 
+	env = []string{
+		"AWS_DEFAULT_REGION=us-east-1",
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", os.Getenv("AWS_ACCESS_KEY_ID")),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+		fmt.Sprintf("S3_ENDPOINT=%s", os.Getenv("S3_ENDPOINT")),
+		"LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/SDK/lib/lnx64.o",
+		"XILINX_SDX=/opt/Xilinx/SDx/2017.1.op",
+		"XILINX_SDACCEL=/opt/Xilinx/SDx/2017.1.op",
+		"LD_LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/Vivado/lib/lnx64.o",
+		"XILINX_VIVADO=/opt/Xilinx/SDx/2017.1.op/Vivado",
+		"LOG_BUCKET=reconfigureio-builds",
+		"XILINXD_LICENSE_FILE=/opt/Xilinx/license/XilinxAWS.lic",
+		"DCP_BUCKET=reconfigureio-builds",
+	}
+
 	co := input.ContainerOverrides
 	if co != nil {
 		if co.Command != nil {
@@ -229,7 +244,8 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
 	hostConfig := container.HostConfig{
-		Binds: h.jobDefinitions[*input.JobDefinition].MountPoints,
+		Binds:       h.jobDefinitions[*input.JobDefinition].MountPoints,
+		NetworkMode: container.NetworkMode(os.Getenv("WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
 	}
 
 	createOutput, err := h.dockerClient.ContainerCreate(
@@ -262,6 +278,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
+		} else {
+			log.Printf("ContainerCreate: Unknown Error: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 
