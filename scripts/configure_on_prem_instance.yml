@@ -31,7 +31,9 @@
     - name: docker-compose up (leave that running)
       shell: cd /home/centos/platform/; nohup /usr/local/bin/docker-compose -f docker-compose.on-prem.yml up </dev/null >/dev/null 2>&1 &
 
+    - name: gather facts about EC2 instance
+      ec2_facts:
+
     - name: print instance IP and command for SSH-ing
       debug:
-        msg: "Instance ready, connect and port-forward by running ssh -L 8080:localhost:8080 centos@{{ ansible_fqdn }}"
-
+        msg: "Instance ready, connect and port-forward by running ssh -L 8080:localhost:8080 centos@{{ ansible_ec2_public_hostname }}"
