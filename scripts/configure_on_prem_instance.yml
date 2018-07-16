@@ -37,4 +37,3 @@
     - name: print instance IP and command for SSH-ing
       debug:
         msg: "Instance ready, connect and port-forward by running ssh -L 8080:localhost:8080 centos@{{ ansible_ec2_public_hostname }}"
-

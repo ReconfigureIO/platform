@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	os.Setenv("DOCKER_API_VERSION", "1.37") // Hmm.
+	os.Setenv("DOCKER_API_VERSION", "1.26") // 1.26 is in use on our ECS Vivado images.
 
 	dockerClient, err := client.NewEnvClient()
 	if err != nil {
@@ -36,7 +36,7 @@ func main() {
 			Image: "ubuntu:latest",
 		},
 		"sdaccel-builder-build": JobDefinition{
-			Image: "sdaccel-builder:v0.17.5",
+			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
 			MountPoints: []string{
 				"/opt/Xilinx:/opt/Xilinx",
 			},
@@ -278,6 +278,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
+		} else {
+			log.Printf("ContainerCreate: Unknown Error: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 
