@@ -185,6 +185,21 @@ func (h *handler) submitJobInputToContainerConfig(
 		env []string
 	)
 
+	env = []string{
+		"AWS_DEFAULT_REGION=us-east-1",
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", os.Getenv("AWS_ACCESS_KEY_ID")),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+		fmt.Sprintf("S3_ENDPOINT=%s", os.Getenv("S3_ENDPOINT")),
+		"LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/SDK/lib/lnx64.o",
+		"XILINX_SDX=/opt/Xilinx/SDx/2017.1.op",
+		"XILINX_SDACCEL=/opt/Xilinx/SDx/2017.1.op",
+		"LD_LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/Vivado/lib/lnx64.o",
+		"XILINX_VIVADO=/opt/Xilinx/SDx/2017.1.op/Vivado",
+		"LOG_BUCKET=reconfigureio-builds",
+		"XILINXD_LICENSE_FILE=/opt/Xilinx/license/XilinxAWS.lic",
+		"DCP_BUCKET=reconfigureio-builds",
+	}
+
 	co := input.ContainerOverrides
 	if co != nil {
 		if co.Command != nil {
@@ -229,7 +244,8 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
 	hostConfig := container.HostConfig{
-		Binds: h.jobDefinitions[*input.JobDefinition].MountPoints,
+		Binds:       h.jobDefinitions[*input.JobDefinition].MountPoints,
+		NetworkMode: container.NetworkMode(os.Getenv("WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
 	}
 
 	createOutput, err := h.dockerClient.ContainerCreate(

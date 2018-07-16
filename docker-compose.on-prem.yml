@@ -1,7 +1,9 @@
-version: '2'
+version: '2.1'
 services:
   db:
     image: postgres:alpine
+    networks:
+      - platform
 
   minio:
     image: minio/minio
@@ -12,7 +14,12 @@ services:
       - MINIO_SECRET_KEY=foobarbaz
       - MINIO_DOMAIN=minio
     ports:
-      - "9000:9000" 
+      - "9000:9000"
+    networks:
+      platform:
+        aliases:
+          - reconfigureio-builds.minio
+          - testbucket.reconfigure.io.minio
 
   web-base:
     build: build
@@ -44,9 +51,13 @@ services:
     depends_on:
       - web-base
       - minio
-    links:
-      - minio:reconfigureio-builds.minio
+    networks:
+      - platform
     environment:
+      - WORKER_NETWORK=platform_platform
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=foobarbaz
+      - S3_ENDPOINT=http://minio:9000/
       - FAKE_BATCH_DEBUGGING=true
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
@@ -54,15 +65,15 @@ services:
     command: bash -c "fresh"
     extends: web-base
     ports:
-      - "8080:8080"
+      - "8080:80"
     depends_on:
       - db
       - minio
       - fake-batch
-    links:
-      - db
-      - fake-batch
-      - minio:reconfigureio-builds.minio
+    networks:
+      platform:
+        aliases:
+          - local.reconfigure.io
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
@@ -70,7 +81,7 @@ services:
       - RECO_AWS_ENDPOINT=http://fake-batch:9090
       - AWS_REGION=us-east-1
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
-      - PORT=8080
+      - PORT=80
       - RECO_PLATFORM_MIGRATE=1
       - RECO_FEATURE_BILLING=1
       - RECO_FEATURE_DEPLOY=0
@@ -78,3 +89,9 @@ services:
       - RECO_HOST_NAME=local.reconfigure.io
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
+
+networks:
+  platform:
+    driver: bridge
+    driver_opts:
+      name: "platform"
