@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	os.Setenv("DOCKER_API_VERSION", "1.26") // Hmm. 1.26 is in use on our ECS Vivado images.
+	os.Setenv("DOCKER_API_VERSION", "1.26") // 1.26 is in use on our ECS Vivado images.
 
 	dockerClient, err := client.NewEnvClient()
 	if err != nil {
@@ -38,7 +38,7 @@ func main() {
 		"sdaccel-builder-build": JobDefinition{
 			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
 			MountPoints: []string{
-				"/opt/Xilinx/:/opt/Xilinx",
+				"/opt/Xilinx:/opt/Xilinx",
 			},
 		},
 	}
