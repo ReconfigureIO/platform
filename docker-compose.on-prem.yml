@@ -46,6 +46,8 @@ services:
       - minio
     links:
       - minio:reconfigureio-builds.minio
+    environment:
+      - FAKE_BATCH_DEBUGGING=true
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   web:
