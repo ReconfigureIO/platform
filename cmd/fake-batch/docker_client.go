@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -92,7 +93,9 @@ func (dh dockerHelper) Wait() {
 	case <-errored:
 	}
 
-	dh.ArchiveLogAndRemoveContainer(nil)
+	if os.Getenv("FAKE_BATCH_DEBUGGING") == "" {
+		dh.ArchiveLogAndRemoveContainer(nil)
+	}
 }
 
 // ArchiveLogAndRemoveContainer grabs logs out of Docker and puts them into long
