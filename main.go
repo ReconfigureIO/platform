@@ -12,6 +12,7 @@ import (
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/batch/aws/logs/cloudwatch"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/fakebatch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -141,6 +142,9 @@ func main() {
 	var authService auth.Service
 	if conf.Reco.Env == "development-on-prem" {
 		authService = &auth.NOPService{DB: db}
+		awsSession = aws.New(conf.Reco.AWS, &fakebatch.Service{
+			Endpoint: os.Getenv("RECO_AWS_ENDPOINT"),
+		})
 	} else {
 		authService = github.New(db)
 	}
