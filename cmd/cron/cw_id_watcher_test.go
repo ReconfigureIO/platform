@@ -1,4 +1,4 @@
-package cw_id_watcher
+package main
 
 import (
 	"context"
@@ -15,9 +15,9 @@ func TestFindLogNames(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	b := models.NewMockBatchRepo(mockCtrl)
-	a := aws.NewMockService(mockCtrl)
+	a := aws.New(aws.ServiceConfig{}, aws.NewMockStreamService(mockCtrl))
 
-	watcher := NewLogWatcher(a, b)
+	watcher := NewLogWatcher(*a, b)
 
 	batchJobs := []models.BatchJob{
 		models.BatchJob{
@@ -35,8 +35,6 @@ func TestFindLogNames(t *testing.T) {
 			},
 		},
 	}
-	batchJobIDs := []string{batchJobs[0].BatchID}
-
 	LogNames := map[string]string{batchJobs[0].BatchID: "LogName"}
 
 	ctx := context.Background()
@@ -44,7 +42,6 @@ func TestFindLogNames(t *testing.T) {
 	sinceTime := time.Unix(0, 0)
 
 	b.EXPECT().ActiveJobsWithoutLogs(sinceTime).Return(batchJobs, nil)
-	a.EXPECT().GetLogNames(ctx, batchJobIDs).Return(LogNames, nil)
 	b.EXPECT().SetLogName(batchJobs[0].BatchID, LogNames[batchJobs[0].BatchID]).Return(nil)
 
 	err := watcher.FindLogNames(ctx, limit, sinceTime)

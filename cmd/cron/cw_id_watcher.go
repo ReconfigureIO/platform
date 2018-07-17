@@ -1,4 +1,4 @@
-package cw_id_watcher
+package main
 
 import (
 	"context"

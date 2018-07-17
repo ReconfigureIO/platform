@@ -11,7 +11,6 @@ import (
 	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/batch/aws/logs/cloudwatch"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
-	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
 	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
@@ -152,7 +151,7 @@ func generatedAFIs() {
 
 func getBatchJobLogNames() {
 	log.Printf("Getting log names")
-	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
+	watcher := NewLogWatcher(awsService, models.BatchDataSource(db))
 
 	// find batch jobs that've become active in the last hour
 	sinceTime := time.Now().Add(-1 * time.Hour)
