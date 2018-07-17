@@ -20,13 +20,13 @@ import (
 type Simulation struct {
 	HostName         string
 	CallbackProtocol string
-	AWS              aws.Service
+	AWS              *aws.Service
 	Events           events.EventService
 	Storage          storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(hostName string, callbackProtocol string, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(hostName string, callbackProtocol string, events events.EventService, storageService storage.Service, awsSession *aws.Service) Simulation {
 	return Simulation{
 		HostName:         hostName,
 		CallbackProtocol: callbackProtocol,
@@ -136,7 +136,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{AWS: s.AWS}.New(simID)
+		batchJob := BatchService{AWS: *s.AWS}.New(simID)
 		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -185,7 +185,7 @@ func (s Simulation) Logs(c *gin.Context) {
 
 	err = batch.CopyLogs(
 		c,
-		&s.AWS,
+		s.AWS,
 		c.Writer,
 		c.Request,
 		&sim.BatchJob,
@@ -238,7 +238,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
+	newEvent, err := BatchService{AWS: *s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
 		sugar.InternalError(c, nil)

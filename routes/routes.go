@@ -98,7 +98,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(hostName, callbackProtocol, events, storage, *awsService)
+	simulation := api.NewSimulation(hostName, callbackProtocol, events, storage, awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -111,7 +111,7 @@ func SetupRoutes(
 	graph := api.Graph{
 		HostName:         hostName,
 		CallbackProtocol: callbackProtocol,
-		AWS:              *awsService,
+		AWS:              awsService,
 		Events:           events,
 		Storage:          storage,
 	}
@@ -130,7 +130,7 @@ func SetupRoutes(
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,
-		AWS:              *awsService,
+		AWS:              awsService,
 		UseSpotInstances: config.FeatureUseSpotInstances,
 		PublicProjectID:  publicProjectID,
 	}

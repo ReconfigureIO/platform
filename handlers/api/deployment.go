@@ -32,7 +32,7 @@ type Deployment struct {
 	UseSpotInstances bool
 	Storage          storage.Service
 	DeployService    deployment.Service
-	AWS              aws.Service
+	AWS              *aws.Service
 	PublicProjectID  string
 }
 
@@ -222,7 +222,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(d.DeployService, d.AWS, c, &targetDep)
+	streamDeploymentLogs(d.DeployService, *d.AWS, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {
