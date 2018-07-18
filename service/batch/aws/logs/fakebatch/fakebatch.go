@@ -15,26 +15,45 @@ type Service struct {
 }
 
 // Stream returns an io.ReadCloser containing the logs for the given
-// logStreamName. Under the hood, it polls CloudWatchLogs. It is valid to call
+// logStreamName. It is valid to call
 // Stream on a logStreamName which does not yet exist, in that case, Stream will
 // wait for it to exist, or for the context to be canceled. Context cancelation
 // is treated as the end of the stream, causing the ReadCloser to return io.EOF.
 func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadCloser {
 	r, w := io.Pipe()
-	defer w.Close()
 
-	URL := fmt.Sprintf("%s/logs/%s", s.Endpoint, logStreamName)
+	URL := fmt.Sprintf("%s/v1/logs/%s", s.Endpoint, logStreamName)
+	fmt.Printf("URL is: %s \n", URL)
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Printf("%s", err)
+		w.Close()
 		return r
-	} else {
-		defer response.Body.Close()
-		_, err = io.Copy(w, response.Body)
-		if err != nil {
-			fmt.Printf("%s", err)
-			return r
-		}
 	}
+	if response.StatusCode != 200 {
+		fmt.Printf("Expected status code 200, got %v \n", response.StatusCode)
+		w.Close()
+		return r
+	}
+	go watchForContextCancel(ctx, w)
+	go copy(response.Body, w)
 	return r
+}
+
+func watchForContextCancel(ctx context.Context, writer io.WriteCloser) {
+	select {
+	case <-ctx.Done():
+		fmt.Println("Hit a context cancel boss")
+		writer.Close()
+	}
+}
+
+func copy(body io.ReadCloser, writer io.WriteCloser) {
+	defer writer.Close()
+	defer body.Close()
+	fmt.Println("copying boss")
+	_, err := io.Copy(writer, body)
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
 }

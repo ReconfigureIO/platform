@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -40,15 +39,13 @@ func TestStream(t *testing.T) {
 	batchService := Service{Endpoint: fakebatchURL}
 
 	// Stream logs from that container
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	logs := batchService.Stream(ctx, *resp.JobId)
+	logs := batchService.Stream(context.Background(), *resp.JobId)
 	defer logs.Close()
 	bytes, err := ioutil.ReadAll(logs)
 	if err != nil {
 		t.Error(err)
 	}
-	if string(bytes) != "foobar" {
-		t.Errorf("Expected 'foobar', got %v", string(bytes))
+	if string(bytes) != "foobar\n" {
+		t.Errorf("Expected foobar, got %v", bytes)
 	}
 }
