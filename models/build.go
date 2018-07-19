@@ -73,7 +73,7 @@ type Build struct {
 	BatchJobID  int64        `json:"-"`
 	FPGAImage   string       `json:"-"`
 	Token       string       `json:"-"`
-	Comment     string       `json:"comment"`
+	Message     string       `json:"message"`
 	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
 
@@ -158,7 +158,7 @@ func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
 // PostBuild is post request body for a new build.
 type PostBuild struct {
 	ProjectID string `json:"project_id" validate:"nonzero"`
-	Comment   string `json:"comment"`
+	Message   string `json:"message"`
 }
 
 type ReportV1 struct {

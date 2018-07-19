@@ -11,17 +11,17 @@ import (
 var Migration = gormigrate.Migration{
 	ID: "201807191024",
 	Migrate: func(tx *gorm.DB) error {
-		err := tx.Exec(sqlAddBuildComment).Error
+		err := tx.Exec(sqlAddBuildMessage).Error
 		return err
 	},
 	Rollback: func(tx *gorm.DB) error {
-		return errors.New("Migration failed. Hit rollback conditions while adding comment field to builds")
+		return errors.New("Migration failed. Hit rollback conditions while adding message field to builds")
 	},
 }
 
 const (
-	sqlAddBuildComment = `
+	sqlAddBuildMessage = `
 ALTER TABLE builds
-ADD COLUMN comment text;
+ADD COLUMN message text;
 `
 )

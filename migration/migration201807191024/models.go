@@ -123,7 +123,7 @@ type Build struct {
 	BatchJobID  int64        `json:"-"`
 	FPGAImage   string       `json:"-"`
 	Token       string       `json:"-"`
-	Comment     string       `json:"comment"`
+	Message     string       `json:"message"`
 	Deployments []Deployment `json:"deployments,omitempty" gorm:"ForeignKey:BuildID"`
 }
 

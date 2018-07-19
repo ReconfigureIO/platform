@@ -169,7 +169,7 @@ func (b Build) Create(c *gin.Context) {
 		return
 	}
 
-	newBuild := models.Build{Project: project, Comment: post.Comment, Token: uniuri.NewLen(64)}
+	newBuild := models.Build{Project: project, Message: post.Message, Token: uniuri.NewLen(64)}
 	if err := db.Create(&newBuild).Error; err != nil {
 		sugar.InternalError(c, err)
 		return
