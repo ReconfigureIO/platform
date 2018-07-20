@@ -23,7 +23,6 @@ func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadClose
 	r, w := io.Pipe()
 
 	URL := fmt.Sprintf("%s/v1/logs/%s", s.Endpoint, logStreamName)
-	fmt.Printf("URL is: %s \n", URL)
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Printf("%s", err)
@@ -43,7 +42,6 @@ func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadClose
 func watchForContextCancel(ctx context.Context, writer io.WriteCloser) {
 	select {
 	case <-ctx.Done():
-		fmt.Println("Hit a context cancel boss")
 		writer.Close()
 	}
 }
@@ -51,7 +49,6 @@ func watchForContextCancel(ctx context.Context, writer io.WriteCloser) {
 func copy(body io.ReadCloser, writer io.WriteCloser) {
 	defer writer.Close()
 	defer body.Close()
-	fmt.Println("copying boss")
 	_, err := io.Copy(writer, body)
 	if err != nil {
 		fmt.Printf("%s", err)
