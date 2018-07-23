@@ -10,6 +10,8 @@ import (
 
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/service/auth"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/fakebatch"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -40,10 +42,12 @@ func TestIndexHandler(t *testing.T) {
 
 	events := events.NewIntercomEventService(icConf, 100)
 
+	awsSession := aws.New(aws.ServiceConfig{}, &fakebatch.Service{})
+
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", "foobar", "foobar", r, db, nil, events, nil, nil, nil, "foobar", &auth.NOPService{})
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", "foobar", "foobar", r, db, awsSession, events, nil, nil, nil, "foobar", &auth.NOPService{})
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)

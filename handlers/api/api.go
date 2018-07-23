@@ -9,10 +9,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const (
-	maxConcurrentJobs = 2
-)
-
 var (
 	errNotFound = errors.New("Not Found")
 

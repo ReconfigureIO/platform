@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/stream"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -95,10 +95,6 @@ func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c 
 	ctx, cancel := WithClose(c)
 	defer cancel()
 
-	refresh := func() error {
-		return db.Model(&deployment).Association("Events").Find(&deployment.Events).Error
-	}
-
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -115,7 +111,7 @@ func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c 
 		case <-ticker.C:
 			bytes.NewBuffer([]byte{0}).WriteTo(w)
 		case <-refreshTicker.C:
-			err := refresh()
+			err := refreshDeploymentEvents(deployment, db)
 			if err != nil {
 				sugar.InternalError(c, err)
 				return false
@@ -161,7 +157,7 @@ func streamDeploymentLogs(service deployment.Service, awsSession aws.Service, c 
 			case <-ctx.Done():
 				return
 			case <-refreshTicker.C:
-				err := refresh()
+				err := refreshDeploymentEvents(deployment, db)
 				if err != nil {
 					break
 				}

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 )
 
 // BatchService is aws batch job service.
@@ -37,15 +37,15 @@ func (b BatchService) AddEvent(batchJob *models.BatchJob, event models.PostBatch
 		err = b.AWS.HaltJob(batchJob.BatchID)
 		if err != nil {
 			return models.BatchJobEvent{}, err
-		} else {
-			terminated := models.BatchJobEvent{
-				Timestamp: time.Now(),
-				Status:    models.StatusTerminated,
-				Message:   event.Message,
-				Code:      event.Code,
-			}
-			_ = repo.AddEvent(*batchJob, terminated)
 		}
+
+		terminated := models.BatchJobEvent{
+			Timestamp: time.Now(),
+			Status:    models.StatusTerminated,
+			Message:   event.Message,
+			Code:      event.Code,
+		}
+		_ = repo.AddEvent(*batchJob, terminated)
 	}
 	return newEvent, nil
 }

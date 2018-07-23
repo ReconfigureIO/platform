@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/storage"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -224,7 +226,17 @@ func (b Build) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(b.AWS, c, &build.BatchJob)
+	err = batch.CopyLogs(
+		c,
+		&b.AWS,
+		c.Writer,
+		c.Request,
+		&build.BatchJob,
+	)
+	if err != nil {
+		log.WithError(err).Warnln("batch.CopyLogs error")
+	}
+
 }
 
 func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {

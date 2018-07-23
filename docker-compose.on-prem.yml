@@ -42,6 +42,16 @@ services:
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
 
+  test:
+    extends: web-base
+    depends_on:
+      - db
+      - web-base
+      - minio
+      - fake-batch
+    networks:
+      - platform
+
   fake-batch:
     extends: web-base
     ports:

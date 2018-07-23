@@ -10,7 +10,9 @@ import (
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/cloudwatch"
+	"github.com/ReconfigureIO/platform/service/batch/aws/logs/fakebatch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -95,7 +97,9 @@ func main() {
 		S3API:       s3aws.New(session),
 	}
 
-	awsSession := aws.New(conf.Reco.AWS)
+	awsSession := aws.New(conf.Reco.AWS, &cloudwatch.Service{
+		LogGroup: "foobar",
+	})
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
@@ -139,6 +143,9 @@ func main() {
 	callbackProtocol := "https"
 	if conf.Reco.Env == "development-on-prem" {
 		authService = &auth.NOPService{DB: db}
+		awsSession = aws.New(conf.Reco.AWS, &fakebatch.Service{
+			Endpoint: os.Getenv("RECO_AWS_ENDPOINT"),
+		})
 		callbackProtocol = "http"
 	} else {
 		authService = github.New(db)

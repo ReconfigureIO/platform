@@ -1,5 +1,5 @@
-hash: 440b48ab17d57c1effbe726e4471162408dd39f8c2c01754b9328e9b28d65e5e
-updated: 2018-06-26T09:56:22.364363+01:00
+hash: 279e67b6886066da95cb92fb168aa3876424f0e058143c7f99aefc95e0eec6a4
+updated: 2018-06-27T15:04:33.197726+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
@@ -37,6 +37,7 @@ imports:
   - private/protocol/xml/xmlutil
   - service/batch
   - service/cloudwatchlogs
+  - service/cloudwatchlogs/cloudwatchlogsiface
   - service/ec2
   - service/s3
   - service/s3/s3iface
@@ -52,7 +53,7 @@ imports:
 - name: github.com/dchest/uniuri
   version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
 - name: github.com/docker/distribution
-  version: f0cc927784781fa395c06317c58dea2841ece3a9
+  version: 749f6afb4572201e3c37325d0ffedb6f32be8950
   subpackages:
   - digestset
   - reference
@@ -84,6 +85,8 @@ imports:
   - tlsconfig
 - name: github.com/docker/go-units
   version: 47565b4f722fb6ceae66b95f853feed578a4a51c
+- name: github.com/fortytw2/leaktest
+  version: a5ef70473c97b71626b9abeda80ee92ba2a7de9e
 - name: github.com/garyburd/redigo
   version: d1ed5c67e5794de818ea85e6b522fda02623a484
   subpackages:
@@ -152,7 +155,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/Microsoft/go-winio
-  version: ab35fc04b6365e8fcb18e6e9e41ea4a02b10b175
+  version: 67921128fb397dd80339870d2193d6b1e6856fd4
 - name: github.com/opencontainers/go-digest
   version: c9281466c8b2f606084ac71339773efd177436e7
 - name: github.com/opencontainers/image-spec
@@ -164,6 +167,8 @@ imports:
   version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/ReconfigureIO/logruzio
   version: cd769a9cbdfa4f9d890e88600e87fe868c08e4ac
+- name: github.com/ReconfigureIO/pingproto
+  version: 46a79c15445cde40f953f8dfaad4009fb8b21c39
 - name: github.com/robfig/cron
   version: b41be1df696709bb6395fe435af20370037c0b4c
 - name: github.com/satori/go.uuid

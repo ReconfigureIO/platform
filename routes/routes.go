@@ -7,7 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -25,7 +25,7 @@ func SetupRoutes(
 	hostName string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService aws.Service,
+	awsService *aws.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,
@@ -74,7 +74,7 @@ func SetupRoutes(
 		Events:           events,
 		Storage:          storage,
 		PublicProjectID:  publicProjectID,
-		AWS:              awsService,
+		AWS:              *awsService,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
