@@ -341,24 +341,3 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	return err
 }
 
-// GetLogNames TODO campgareth: write proper comment
-func (s *Service) GetLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
-	ret := make(map[string]string)
-
-	batchSession := batch.New(s.session)
-
-	cfg := batch.DescribeJobsInput{
-		Jobs: aws.StringSlice(batchJobIDs),
-	}
-
-	results, err := batchSession.DescribeJobsWithContext(ctx, &cfg)
-	if err != nil {
-		return ret, err
-	}
-
-	for _, job := range results.Jobs {
-		ret[*job.JobId] = *job.Container.LogStreamName
-	}
-
-	return ret, nil
-}

@@ -5,25 +5,27 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/batch/aws"
+	awsaws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/batch"
+	"github.com/aws/aws-sdk-go/service/batch/batchiface"
 	log "github.com/sirupsen/logrus"
 )
 
 type LogWatcher struct {
-	awsService aws.Service
-	batch      models.BatchRepo
+	batchRepo    models.BatchRepo
+	batchSession batchiface.BatchAPI
 }
 
-func NewLogWatcher(awsService aws.Service, batch models.BatchRepo) *LogWatcher {
+func NewLogWatcher(batchRepo models.BatchRepo, batchSession batchiface.BatchAPI) *LogWatcher {
 	w := LogWatcher{
-		awsService: awsService,
-		batch:      batch,
+		batchRepo:    batchRepo,
+		batchSession: batchSession,
 	}
 	return &w
 }
 
 func (watcher *LogWatcher) FindLogNames(ctx context.Context, limit int, sinceTime time.Time) error {
-	batchJobs, err := watcher.batch.ActiveJobsWithoutLogs(sinceTime)
+	batchJobs, err := watcher.batchRepo.ActiveJobsWithoutLogs(sinceTime)
 
 	if len(batchJobs) == 0 {
 		return nil
@@ -34,20 +36,41 @@ func (watcher *LogWatcher) FindLogNames(ctx context.Context, limit int, sinceTim
 		batchJobIDs = append(batchJobIDs, returnedBatchJob.BatchID)
 	}
 
-	LogNames, err := watcher.awsService.GetLogNames(ctx, batchJobIDs)
+	LogNames, err := watcher.getLogNames(ctx, batchJobIDs)
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{"batch_job_ids": batchJobIDs}).Error("Couldn't get cw log names for batch jobs")
+		log.WithError(err).
+			WithFields(log.Fields{"batch_job_ids": batchJobIDs}).
+			Error("Couldn't get cw log names for batch jobs")
 		return err
 	}
 
 	for _, jobID := range batchJobIDs {
 		logName, found := LogNames[jobID]
 		if found {
-			err := watcher.batch.SetLogName(jobID, logName)
+			err := watcher.batchRepo.SetLogName(jobID, logName)
 			if err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (watcher *LogWatcher) getLogNames(ctx context.Context, batchJobIDs []string) (map[string]string, error) {
+	ret := make(map[string]string)
+
+	cfg := batch.DescribeJobsInput{
+		Jobs: awsaws.StringSlice(batchJobIDs),
+	}
+
+	results, err := watcher.batchSession.DescribeJobsWithContext(ctx, &cfg)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, job := range results.Jobs {
+		ret[*job.JobId] = *job.Container.LogStreamName
+	}
+
+	return ret, nil
 }

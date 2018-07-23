@@ -14,6 +14,9 @@ import (
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
 	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
+	awsaws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/robfig/cron"
@@ -23,8 +26,9 @@ import (
 )
 
 var (
-	deploy     deployment.Service
-	awsService aws.Service
+	deploy      deployment.Service
+	awsService  aws.Service
+	batchClient *batch.Batch
 
 	db *gorm.DB
 
@@ -53,6 +57,8 @@ func setup(*cobra.Command, []string) {
 	awsService = *aws.New(conf.Reco.AWS, &cloudwatch.Service{
 		LogGroup: "foobar",
 	})
+
+	batchClient = batch.New(session.Must(session.NewSession(awsaws.NewConfig().WithRegion("us-east-1"))))
 
 	db = config.SetupDB(conf)
 	api.DB(db)
@@ -151,7 +157,7 @@ func generatedAFIs() {
 
 func getBatchJobLogNames() {
 	log.Printf("Getting log names")
-	watcher := NewLogWatcher(awsService, models.BatchDataSource(db))
+	watcher := NewLogWatcher(models.BatchDataSource(db), batchClient)
 
 	// find batch jobs that've become active in the last hour
 	sinceTime := time.Now().Add(-1 * time.Hour)
