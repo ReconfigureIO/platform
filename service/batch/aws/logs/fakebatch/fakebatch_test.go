@@ -1,4 +1,4 @@
-// +build integration_on_prem
+// +build on_prem
 
 package fakebatch
 
