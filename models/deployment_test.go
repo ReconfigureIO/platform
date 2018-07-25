@@ -455,6 +455,42 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 	})
 }
 
+func TestDeploymentHoursBtwWithSlowGoClock(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		userid := "foobar"
+		var zero time.Time
+		now := time.Now()
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: userid,
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: now.Add(-10 * time.Hour),
+				},
+			},
+			UserID: userid,
+		}
+
+		db.Create(&dep)
+
+		hours, err := DeploymentHoursBtw(&d, userid, zero, now.Add(-5*time.Second))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 10 {
+			t.Errorf("Expected %v found %v", 10, hours)
+		}
+	})
+}
+
 func TestDeploymentHoursStartedNoTerminated(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
