@@ -625,15 +625,15 @@ func TestDeploymentHoursBtwStartedBeforeStartTerminatedAfterStart(t *testing.T) 
 				},
 				DeploymentEvent{
 					Status:    "TERMINATED",
-					Timestamp: now.Add(-1 * time.Hour),
+					Timestamp: now.Add(-60 * time.Minute),
 				},
 			},
 			UserID: userid,
 		}
 
 		db.Create(&dep)
-
-		hours, err := DeploymentHoursBtw(&d, userid, now.Add(-2*time.Hour), now)
+		// -1 and -2 hours instead of -60 and -120 minutes results in 2 hours used not 1
+		hours, err := DeploymentHoursBtw(&d, userid, now.Add(-120*time.Minute), now)
 		if err != nil {
 			t.Error(err)
 			return
