@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reconfigure.io</title>
+  </head>
+  <body>
+    <h1>Reconfigure.io</h1>
+
+    {{ if .logged_in }}
+    Logged in as: {{ .email }}
+    <pre>
+    reco login gh_{{ .gh_id }}_{{ .token }}
+    </pre>
+
+    {{ else }}
+    <form method="GET" action="/auth/new-account">
+    email:<br>
+    <input type="text" name="email"><br>
+    <input type="submit" value="Sign up/Sign in">
+    </form>
+    {{ end }}
+  </body>
+</html>

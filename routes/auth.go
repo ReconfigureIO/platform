@@ -42,3 +42,14 @@ func SetupAuth(r gin.IRouter, db *gorm.DB, leads leads.Leads, authService svcaut
 		})
 	}
 }
+
+// SetupAuthOnPrem sets up the routes we use on-prem
+func SetupAuthOnPrem(r gin.IRouter, db *gorm.DB) {
+	authRoutes := r.Group("/auth")
+	{
+		signup := auth.SignupUserOnPrem{
+			DB: db,
+		}
+		authRoutes.GET("/new-account", signup.SignUpNoToken)
+	}
+}

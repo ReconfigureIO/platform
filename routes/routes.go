@@ -37,18 +37,24 @@ func SetupRoutes(
 	r.Use(sessions.Sessions("paus", store))
 	r.Use(middleware.SessionAuth(db))
 
-	// setup index
-	r.GET("/", handlers.Index)
+	if config.Env == "development-on-prem" {
+		// setup index
+		r.GET("/", handlers.IndexOnPrem)
+		SetupAuthOnPrem(r, db)
+	} else {
+		// setup index
+		r.GET("/", handlers.Index)
 
-	// Setup authenticated admin
-	authMiddleware := gin.BasicAuth(gin.Accounts{
-		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
-	})
-	admin := r.Group("/admin", authMiddleware)
-	SetupAdmin(admin, db, leads)
+		// Setup authenticated admin
+		authMiddleware := gin.BasicAuth(gin.Accounts{
+			"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+		})
+		admin := r.Group("/admin", authMiddleware)
+		SetupAdmin(admin, db, leads)
 
-	// signup & login flow
-	SetupAuth(r, db, leads, authService)
+		// signup & login flow
+		SetupAuth(r, db, leads, authService)
+	}
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
