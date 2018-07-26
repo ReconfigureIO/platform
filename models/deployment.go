@@ -27,7 +27,7 @@ type DeploymentRepo interface {
 
 	// DeploymentHours returns the total time used for deployments between
 	// startTime and DB time.Now.
-	DeploymentHours(userID string, startTime time.Time) ([]DeploymentHours, error)
+	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
 
 	// ActiveDeployments returns basic information about running deployments.
 	ActiveDeployments(userID string) ([]DeploymentHours, error)
@@ -96,7 +96,7 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and started IS NOT NULL)
+where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ? and started IS NOT NULL)
 `
 	sqlDeploymentInstances = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
@@ -294,14 +294,14 @@ func AggregateHoursBetween(deps []DeploymentHours, startTime, endTime time.Time)
 }
 
 func DeploymentHoursBtw(repo DeploymentRepo, userID string, startTime, endTime time.Time) (int, error) {
-	deps, err := repo.DeploymentHours(userID, startTime)
+	deps, err := repo.DeploymentHours(userID, startTime, endTime)
 	if err != nil {
 		return 0, err
 	}
 	return AggregateHoursBetween(deps, startTime, endTime), nil
 }
 
-func (repo *deploymentRepo) DeploymentHours(userID string, startTime time.Time) (deps []DeploymentHours, err error) {
+func (repo *deploymentRepo) DeploymentHours(userID string, startTime, endTime time.Time) (deps []DeploymentHours, err error) {
 	db := repo.db
 
 	rows, err := db.Raw(sqlDeploymentHours, userID, startTime).Rows()

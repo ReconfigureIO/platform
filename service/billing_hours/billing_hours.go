@@ -2,7 +2,6 @@ package billing_hours
 
 import (
 	"context"
-	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -28,7 +27,7 @@ func CheckUserHours(ds models.SubscriptionRepo, deployments models.DeploymentRep
 		}
 
 		// Get the user's used hours for this billing period
-		usedHours, err := models.DeploymentHoursBtw(deployments, user.ID, subscriptionInfo.StartTime, time.Now())
+		usedHours, err := models.DeploymentHoursBtw(deployments, user.ID, subscriptionInfo.StartTime, subscriptionInfo.EndTime)
 		if err != nil {
 			log.WithError(err).WithFields(log.Fields{
 				"user": user.ID,
