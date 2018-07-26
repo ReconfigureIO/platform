@@ -702,7 +702,7 @@ func TestDeploymentHoursStartedNoTerminated(t *testing.T) {
 
 		db.Create(&dep)
 
-		depHours, err := d.DeploymentHours(dep.UserID, now.AddDate(0, 0, -3))
+		depHours, err := d.DeploymentHours(dep.UserID, now.AddDate(0, 0, -3), now)
 		if err != nil {
 			t.Error(err)
 			return
