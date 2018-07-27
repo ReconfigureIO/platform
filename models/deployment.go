@@ -98,6 +98,7 @@ on j.id = terminated.deployment_id
     )
 where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ? and started IS NOT NULL)
 `
+
 	sqlDeploymentInstances = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
@@ -304,7 +305,7 @@ func DeploymentHoursBtw(repo DeploymentRepo, userID string, startTime, endTime t
 func (repo *deploymentRepo) DeploymentHours(userID string, startTime, endTime time.Time) (deps []DeploymentHours, err error) {
 	db := repo.db
 
-	rows, err := db.Raw(sqlDeploymentHours, userID, startTime).Rows()
+	rows, err := db.Raw(sqlDeploymentHours, userID, startTime, endTime).Rows()
 	if err != nil {
 		return nil, err
 	}
