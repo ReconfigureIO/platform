@@ -95,6 +95,7 @@ func (dh dockerHelper) Wait() {
 	case <-errored:
 	}
 
+	// Set this flag to stop worker containers being removed on exit
 	if os.Getenv("FAKE_BATCH_DEBUGGING") == "" {
 		dh.ArchiveLogAndRemoveContainer(nil)
 	}
