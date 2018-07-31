@@ -644,6 +644,78 @@ func TestDeploymentHoursBtwStartedBeforeStartTerminatedAfterStart(t *testing.T) 
 	})
 }
 
+func TestDeploymentHoursBtwStartedAfterStart(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		userid := "foobar"
+		now := time.Now()
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: userid,
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: now.Add(1 * time.Hour),
+				},
+			},
+			UserID: userid,
+		}
+
+		db.Create(&dep)
+		hours, err := DeploymentHoursBtw(&d, userid, now.Add(-5*time.Hour), now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 0 {
+			t.Errorf("Expected %v found %v", 0, hours)
+		}
+	})
+}
+
+func TestDeploymentHoursBtwStartedAndTerminatedAfterStart(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		userid := "foobar"
+		now := time.Now()
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: userid,
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: now.Add(1 * time.Hour),
+				},
+				DeploymentEvent{
+					Status:    "TERMINATED",
+					Timestamp: now.Add(2 * time.Hour),
+				},
+			},
+			UserID: userid,
+		}
+
+		db.Create(&dep)
+		hours, err := DeploymentHoursBtw(&d, userid, now.Add(-5*time.Hour), now)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 0 {
+			t.Errorf("Expected %v found %v", 0, hours)
+		}
+	})
+}
+
 func TestDeploymentHoursBtwWithSlowGoClock(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
