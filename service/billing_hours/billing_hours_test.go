@@ -42,7 +42,7 @@ func TestCheckUserHours(t *testing.T) {
 
 	deploymentRepo := models.NewMockDeploymentRepo(mockCtrl)
 	deploymentRepo.EXPECT().GetWithStatusForUser("fake-user", []string{models.StatusStarted, models.StatusQueued, models.StatusTerminating}).Return(deployments, nil)
-	deploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any()).Return(deploymentHours, nil)
+	deploymentRepo.EXPECT().DeploymentHours("fake-user", gomock.Any(), gomock.Any()).Return(deploymentHours, nil)
 
 	deploymentService := deployment.NewMockService(mockCtrl)
 	deploymentService.EXPECT().StopDeployment(gomock.Any(), deployments[0]).Return(nil)
@@ -70,7 +70,11 @@ func (s fake_SubscriptionRepo) Current(user models.User) (sub models.Subscriptio
 }
 
 func (s fake_SubscriptionRepo) CurrentSubscription(user models.User) (sub models.SubscriptionInfo, err error) {
-	sub = models.SubscriptionInfo{}
+	now := time.Now()
+	sub = models.SubscriptionInfo{
+		StartTime: now.AddDate(0, 0, -14),
+		EndTime:   now,
+	}
 	return sub, nil
 }
 
