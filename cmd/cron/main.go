@@ -55,7 +55,7 @@ func setup(*cobra.Command, []string) {
 
 	deploy = deployment.New(conf.Reco.Deploy)
 	awsService = *aws.New(conf.Reco.AWS, &cloudwatch.Service{
-		LogGroup: "foobar",
+		LogGroup: conf.Reco.AWS.LogGroup,
 	})
 
 	batchClient = batch.New(session.Must(session.NewSession(awsaws.NewConfig().WithRegion("us-east-1"))))
