@@ -26,7 +26,7 @@ type DeploymentRepo interface {
 	GetWithStatusForUser(string, []string) ([]Deployment, error)
 
 	// DeploymentHours returns the total time used for deployments between
-	// startTime and DB time.Now.
+	// startTime and endTime.
 	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
 
 	// ActiveDeployments returns basic information about running deployments.
@@ -102,8 +102,7 @@ where (
     and (
         (started.timestamp > ? and started.timestamp < ?)
         or (terminated.timestamp > $2 and terminated.timestamp < $3)
-        or (started.timestamp < $2 and terminated.timestamp > $3)
-        or (started.timestamp < $2 and terminated.timestamp is null)
+        or (started.timestamp < $2 and (terminated.timestamp > $3 or terminated.timestamp is null))
     )
 )
 `
