@@ -96,7 +96,16 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ? and started IS NOT NULL)
+where (
+    user_id = ?
+    and started is not null
+    and (
+        (started.timestamp > ? and started.timestamp < ?)
+        or (terminated.timestamp > $2 and terminated.timestamp < $3)
+        or (started.timestamp < $2 and terminated.timestamp > $3)
+        or (started.timestamp < $2 and terminated.timestamp is null)
+    )
+)
 `
 
 	sqlDeploymentInstances = `
