@@ -98,7 +98,7 @@ func main() {
 	}
 
 	awsSession := aws.New(conf.Reco.AWS, &cloudwatch.Service{
-		LogGroup: "foobar",
+		LogGroup: conf.Reco.AWS.LogGroup,
 	})
 
 	deploy := deployment.New(conf.Reco.Deploy)

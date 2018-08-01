@@ -235,7 +235,7 @@ func (s *Service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 	return *resp.JobId, nil
 }
 
-// HaltJob TODO campgareth: write proper comment
+// HaltJob terminates a running batch job
 func (s *Service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
@@ -246,12 +246,12 @@ func (s *Service) HaltJob(batchID string) error {
 	return err
 }
 
-// RunDeployment TODO campgareth: write proper comment
+// RunDeployment is not implemented
 func (s *Service) RunDeployment(command string) (string, error) {
 	return "This function does nothing yet", nil
 }
 
-// GetJobDetail TODO campgareth: write proper comment
+// GetJobDetail describes the AWS Batch job.
 func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{
@@ -267,7 +267,7 @@ func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	return resp.Jobs[0], nil
 }
 
-// GetJobStream TODO campgareth: write proper comment
+// GetJobStream takes a cloudwatch logstream name and returns the actual logstream
 func (s *Service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
@@ -288,7 +288,7 @@ func (s *Service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream,
 	return resp.LogStreams[0], nil
 }
 
-// Conf TODO campgareth: write proper comment
+// Conf is used to retrieve the service's config
 func (s *Service) Conf() *ServiceConfig {
 	return &s.conf
 }
@@ -340,4 +340,3 @@ func (stream *Stream) Run(ctx context.Context, logGroup string) error {
 	})
 	return err
 }
-

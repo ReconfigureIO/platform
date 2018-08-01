@@ -43,7 +43,7 @@ func CopyLogs(
 
 	started, finished := await(ctx, batchJob, func() {
 		// this function needs to update the batch job
-	}) // TODO campgareth: figure out what's going on here, b should be a models BatchJob but there's also an update function required
+	})
 	<-started
 	go func() {
 		<-finished
