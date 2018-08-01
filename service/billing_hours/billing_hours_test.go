@@ -70,7 +70,11 @@ func (s fake_SubscriptionRepo) Current(user models.User) (sub models.Subscriptio
 }
 
 func (s fake_SubscriptionRepo) CurrentSubscription(user models.User) (sub models.SubscriptionInfo, err error) {
-	sub = models.SubscriptionInfo{}
+	now := time.Now()
+	sub = models.SubscriptionInfo{
+		StartTime: now.AddDate(0, 0, -14),
+		EndTime:   now,
+	}
 	return sub, nil
 }
 

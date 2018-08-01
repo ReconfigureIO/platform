@@ -64,7 +64,7 @@ func (d DeploymentRunner) Run(j Job) {
 
 	deploymentsDS := models.DeploymentDataSource(d.DB)
 	// Get the user's used hours for this billing period
-	usedHours, err := models.DeploymentHoursBtw(deploymentsDS, j.User.ID, subscriptionInfo.StartTime, time.Now())
+	usedHours, err := models.DeploymentHoursBtw(deploymentsDS, j.User.ID, subscriptionInfo.StartTime, subscriptionInfo.EndTime)
 	if err != nil {
 		log.Errorf("Error while retrieving deployment hours used by user: %s", j.User.ID)
 		log.Errorf("Error: %s", err)
