@@ -1,0 +1,9 @@
+hr {
+  display: block;
+  width: 20px;
+  @include margin-leader(2);
+  @include margin-trailer(2);
+  height: 3px;
+  background-color: #e8ab74;
+  border: none;
+}
