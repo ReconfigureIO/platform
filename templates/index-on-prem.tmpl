@@ -78,8 +78,9 @@
 
     <div style="text-align: center;">
     {{ if .logged_in }}
-    <span style="font-family: 'GreycliffCF-Regular'; color: #2bba7f; text-align: center;">Logged in as: {{ .email }}</span>
-    <pre style="width: 100%; background-color: white; padding-left: 12px; padding-right: 6px; padding-top: 10px; padding-bottom: 0px; font-family: 'Consolas'; color: #474b57; text-align: center; margin-left: auto;">
+    <span style="font-family: 'GreycliffCF-Regular'; font-size: 16pt; color: #2bba7f; text-align: center;">Logged in as: {{ .email }}</span><br><br>
+    <p style="font-family: 'GreycliffCF-Regular'; font-size: 10pt; color: white; text-align: left;">Copy the command below and run in a terminal to authorise your on-prem account:</p>
+    <pre style="width: 100%; background-color: white; padding-top: 13px; font-family: courier; color: #474b57; text-align: center; margin-left: auto;">
     reco login gh_{{ .gh_id }}_{{ .token }}
     </pre>
     </div>
@@ -87,7 +88,7 @@
     {{ else }}
     <form method="GET" action="/auth/new-account" style="font-family: 'GreycliffCF-Regular'; color:#2bba7f; text-align: center;"><br>
     <input type="text" name="email" placeholder="Your email ..." style="width: 40%; padding-left: 12px; padding-right: 12px; padding-top: 12px; padding-bottom: 12px;"><br><br>
-    <input type="submit" value="SIGN UP / SIGN IN" style="color: white; background-color: #2bba7f; border: none; padding-left: 24px; padding-right: 24px; padding-top: 16px; padding-bottom: 16px; font-size: 10pt;">
+    <input type="submit" value="SIGN UP / SIGN IN" style="cursor: pointer; color: white; background-color: #2bba7f; border: none; padding-left: 24px; padding-right: 24px; padding-top: 16px; padding-bottom: 16px; font-size: 10pt;">
     </form>
     {{ end }}
     </div>
