@@ -69,20 +69,16 @@
     }
 
     </style>
-    <link rel="stylesheet" type="text/css" href="/assets/styles.css">
   </head>
   <body style="background-color: #474b57;">
     <div style="width:1000px; height:800px; margin-left:auto; margin-right:auto; margin-top: 20%;">
     <h1 style="font-family: 'GreycliffCF-Heavy'; font-size: 38pt; color: white; text-align: center;">Reconfigure<span style="font-size: 26pt; color: #e8ab74;">.io</span></h1>
     <hr style="display: block; width: 20px; height: 3px; background-color: #e8ab74; border: none;">
-    <img src="../assets/images/cockapoo.jpeg">
     <div style="text-align: center;">
     {{ if .logged_in }}
-    <span style="font-family: 'Bill-Corp-Narrow'; font-size: 16pt; color: #2bba7f; text-align: center;">Logged in as: {{ .email }}</span><br><br>
-    <p style="font-family: 'GreycliffCF-Regular'; font-size: 10pt; color: white; text-align: left;">Copy the command below and run in a terminal to authorise your on-prem account:</p>
-    <pre style="width: 100%; background-color: white; padding-top: 13px; font-family: courier; color: #474b57; text-align: center; margin-left: auto;">
-    reco login gh_{{ .gh_id }}_{{ .token }}
-    </pre>
+    <span style="font-family: 'GreycliffCF-Regular'; font-size: 14pt; color: #2bba7f; text-align: center;">Logged in as: <span style="color:white">{{ .email }}</span><br><br>
+    <p style="font-family: 'GreycliffCF-Regular'; font-size: 12pt; color: white; text-align: left;">Copy the command below and run in a terminal to authorise your on-prem account:</p>
+    <pre style="width: 100%; background-color: white; padding-top: 12px; padding-bottom: 12px; font-family: courier; font-size: 12pt; color: #474b57; text-align: center; margin-left: auto;">reco login gh_{{ .gh_id }}_{{ .token }}</pre>
     </div>
 
     {{ else }}
