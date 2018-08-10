@@ -52,4 +52,5 @@ func SetupAuthOnPrem(r gin.IRouter, db *gorm.DB) {
 		}
 		authRoutes.GET("/new-account", signup.SignUpNoToken)
 	}
+	r.Static("/assets", "./assets")
 }
