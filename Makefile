@@ -21,10 +21,13 @@ SRCDIR ?= .
 TEMPLATE_SOURCES := $(shell find templates -name *.tmpl)
 TEMPLATE_TARGETS := $(patsubst templates/%,dist-image/dist/templates/%,$(TEMPLATE_SOURCES))
 
+ASSET_SOURCES := $(shell find assets)
+ASSET_TARGETS := $(patsubst assets/%,dist-image/dist/assets/%,$(ASSET_SOURCES))
+
 DOCKER_TAG := ${VERSION}
 DOCKER_IMAGE := 398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/api
 
-all: ${TEMPLATE_TARGETS} dist-image/dist/main dist-image/dist/cron dist-image/dist/fake-batch dist-image/dist/deploy_schema
+all: ${TEMPLATE_TARGETS} ${ASSET_TARGETS} dist-image/dist/main dist-image/dist/cron dist-image/dist/fake-batch dist-image/dist/deploy_schema
 
 # Determine commands by looking into cmd/*
 COMMANDS=$(wildcard ${SRCDIR}/cmd/*)
@@ -78,6 +81,12 @@ dist-image/dist/templates: dist-image/dist
 
 dist-image/dist/templates/%: templates/% | dist-image/dist/templates
 	@cp $< $@
+
+dist-image/dist/assets: dist-image/dist
+	@mkdir -p $@
+
+dist-image/dist/assets/%: assets/% | dist-image/dist/assets
+	@cp -r $< $@
 
 clean:
 	rm -rf dist-image/dist
