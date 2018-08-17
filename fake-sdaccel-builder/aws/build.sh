@@ -11,7 +11,12 @@ echo "downloading source code... done"
 
 echo "compiling host cmds... done"
 
-echo "compiling fpga kernel... done"
+echo "compiling fpga kernel..."
+
+for i in $(seq 1 100)
+    do echo $i%
+    sleep 1
+done
 
 echo "uploading artifacts... done"
 

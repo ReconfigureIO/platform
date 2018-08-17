@@ -9,6 +9,11 @@ post_event STARTED
 
 echo "downloading source code... done"
 
-echo "running simulation... done"
+echo "running simulation..."
+
+for i in $(seq 1 100)
+    do echo $i%
+    sleep 1
+done
 
 post_event COMPLETED

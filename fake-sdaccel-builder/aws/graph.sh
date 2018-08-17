@@ -9,7 +9,12 @@ post_event STARTED
 
 echo "downloading source code... done"
 
-echo "generating graph... done"
+echo "generating graph..."
+
+for i in $(seq 1 100)
+    do echo $i%
+    sleep 1
+done
 
 echo "uploading graph... done"
 
