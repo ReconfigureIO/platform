@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -321,4 +322,40 @@ func (b Build) CreateReport(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, nil)
+}
+
+func (b Build) DownloadArtifact(c *gin.Context) {
+	build, err := b.ByID(c)
+	if err != nil {
+		return
+	}
+
+	if build.Status() != "COMPLETED" {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Build is '%s', not COMPLETED", build.Status()))
+		return
+	}
+
+	object, err := b.Storage.Download(build.ArtifactUrl())
+	if object != nil {
+		defer func() {
+			err := object.Close()
+			if err != nil {
+				log.WithError(err).Error("Failed to close b.Storage.Download")
+			}
+		}()
+	}
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(object)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	c.Header("Content-Encoding", "gzip")
+	c.Data(200, "application/zip", buf.Bytes())
 }
