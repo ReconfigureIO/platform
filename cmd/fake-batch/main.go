@@ -318,15 +318,30 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(input.Jobs) > 1 {
+		http.Error(w, "Cannot filter using multiple IDs", http.StatusBadRequest)
+		return
+	}
+
+	var containerListFilters filters.Args
+	if len(input.Jobs) == 1 {
+		containerListFilters = filters.NewArgs(
+			filters.Arg("label", "responsible=fake-batch"),
+			filters.Arg("id", *input.Jobs[0]),
+		)
+	} else {
+		containerListFilters = filters.NewArgs(
+			filters.Arg("label", "responsible=fake-batch"),
+		)
+	}
+
 	containers, err := h.dockerClient.ContainerList(
 		context.Background(),
 		types.ContainerListOptions{
 			// Include stopped containers.
 			All: true,
 			// Select containers started by fake-batch.
-			Filters: filters.NewArgs(
-				filters.Arg("label", "responsible=fake-batch"),
-			),
+			Filters: containerListFilters,
 		},
 	)
 	if err != nil {
