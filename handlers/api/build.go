@@ -329,6 +329,7 @@ func (b Build) DownloadArtifact(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	fmt.Println("I got this far boss")
 
 	if build.Status() != "COMPLETED" {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Build is '%s', not COMPLETED", build.Status()))
@@ -356,6 +357,5 @@ func (b Build) DownloadArtifact(c *gin.Context) {
 		return
 	}
 
-	c.Header("Content-Encoding", "gzip")
 	c.Data(200, "application/zip", buf.Bytes())
 }
