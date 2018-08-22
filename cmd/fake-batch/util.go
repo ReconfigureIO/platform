@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/batch"
+	"github.com/docker/docker/api/types"
 )
 
 type flushWriter struct {
@@ -68,5 +69,11 @@ func dockerStatusToBatchStatus(dockerStatus string) string {
 		return batch.JobStatusFailed
 	default:
 		return fmt.Sprintf("UNKNOWN STATUS: %q", dockerStatus)
+	}
+}
+
+func dockerContainerDetailToBatchContainerDetail(c types.Container) *batch.ContainerDetail {
+	return &batch.ContainerDetail{
+		LogStreamName: &c.ID,
 	}
 }
