@@ -318,15 +318,30 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(input.Jobs) > 1 {
+		http.Error(w, "Cannot filter using multiple IDs", http.StatusBadRequest)
+		return
+	}
+
+	var containerListFilters filters.Args
+	if len(input.Jobs) == 1 {
+		containerListFilters = filters.NewArgs(
+			filters.Arg("label", "responsible=fake-batch"),
+			filters.Arg("id", *input.Jobs[0]),
+		)
+	} else {
+		containerListFilters = filters.NewArgs(
+			filters.Arg("label", "responsible=fake-batch"),
+		)
+	}
+
 	containers, err := h.dockerClient.ContainerList(
 		context.Background(),
 		types.ContainerListOptions{
 			// Include stopped containers.
 			All: true,
 			// Select containers started by fake-batch.
-			Filters: filters.NewArgs(
-				filters.Arg("label", "responsible=fake-batch"),
-			),
+			Filters: containerListFilters,
 		},
 	)
 	if err != nil {
@@ -342,7 +357,8 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 			(&batch.JobDetail{}).
 				SetJobId(c.ID).
 				SetJobName(c.Labels["job-name"]).
-				SetStatus(dockerStatusToBatchStatus(c.Status)),
+				SetStatus(dockerStatusToBatchStatus(c.Status)).
+				SetContainer(dockerContainerDetailToBatchContainerDetail(c)),
 		)
 	}
 
@@ -373,10 +389,15 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) Logs(w http.ResponseWriter, r *http.Request) {
 	jobID := strings.TrimPrefix(r.URL.Path, "/v1/logs/")
-
+	if jobID == "" {
+		log.Printf("Logs: jobID is empty")
+		return
+	}
 	// Check to see if the log is in long term storage, grab it from there if
 	// possible.
-	if reader, err := h.storage.Download(jobID); err == nil {
+	fmt.Printf("Logs: URL = %v \n", r.URL)
+	fmt.Printf("Logs: jobID = %v \n", jobID)
+	if reader, err := h.storage.Download(jobID); err == nil { // TODO campgareth: give up attempt if reading from reader fails
 		_, err := io.Copy(w, reader)
 		if err != nil {
 			log.Printf("Logs: io.Copy(w, r): %v", err)

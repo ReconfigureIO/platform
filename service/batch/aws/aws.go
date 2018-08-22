@@ -36,8 +36,9 @@ type StreamService interface {
 // Logs converts a batchID to a cloudwatch log name then begins streaming
 func (s *Service) Logs(ctx context.Context, batchJob *models.BatchJob) (io.ReadCloser, error) {
 	logName := batchJob.LogName
+	var err error
 	if logName == "" {
-		logName, err := s.batchIDToLogName(batchJob.BatchID)
+		logName, err = s.batchIDToLogName(batchJob.BatchID)
 		if err != nil {
 			return nil, err
 		}
@@ -53,7 +54,10 @@ func (s *Service) batchIDToLogName(batchID string) (logName string, err error) {
 	if err != nil {
 		return "", err
 	}
-	return "", errors.New(*jobDetail.Container.LogStreamName)
+	if *jobDetail.Container.LogStreamName == "" {
+		return "", fmt.Errorf("batchIDToLogName: No LogStreamName in JobDetail output")
+	}
+	return *jobDetail.Container.LogStreamName, nil
 }
 
 // ServiceConfig holds configuration for service.
