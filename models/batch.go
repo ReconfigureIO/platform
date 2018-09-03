@@ -13,6 +13,7 @@ type BatchRepo interface {
 	New(batchID string) BatchJob
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
+	GetBatchJobsWithStatus([]string, int) ([]BatchJob, error)
 }
 
 const (
@@ -28,6 +29,19 @@ on j.id = started.batch_job_id
         limit 1
     )
 where (log_name = '' and started.timestamp > ?)
+`
+
+	sqlBatchJobsWithStatuses = `SELECT j.id
+FROM batch_jobs j
+LEFT join batch_job_events e
+ON j.id = e.batch_job_id
+    AND e.timestamp = (
+        SELECT max(timestamp)
+        FROM batch_job_events e1
+        WHERE j.id = e1.batch_job_id
+    )
+WHERE (e.status in (?))
+LIMIT ?
 `
 )
 
@@ -79,6 +93,30 @@ func (repo *batchRepo) ActiveJobsWithoutLogs(sinceTime time.Time) ([]BatchJob, e
 
 	var batchJobs []BatchJob
 	err = db.Where("id in (?)", ids).Find(&batchJobs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return batchJobs, nil
+}
+
+func (repo *batchRepo) GetBatchJobsWithStatus(statuses []string, limit int) ([]BatchJob, error) {
+	db := repo.db
+	rows, err := db.Raw(sqlBatchJobsWithStatuses, statuses, limit).Rows()
+	if err != nil {
+		return nil, err
+	}
+
+	ids := []string{}
+	for rows.Next() {
+		var id string
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+	rows.Close()
+
+	var batchJobs []BatchJob
+	err = db.Preload("Events").Where("id in (?)", ids).Find(&batchJobs).Error
 	if err != nil {
 		return nil, err
 	}
