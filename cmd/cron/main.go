@@ -106,6 +106,7 @@ func cronCmd() {
 
 	schedule(5*time.Minute, generatedAFIs)
 	schedule(5*time.Minute, getBatchJobLogNames)
+	schedule(15*time.Minute, checkBatchJobRunningStatus)
 	schedule(time.Minute, terminateDeployments)
 	schedule(time.Minute, checkHours)
 	schedule(time.Minute, findDeploymentIPs)
@@ -178,6 +179,10 @@ func checkBatchJobRunningStatus() {
 	batchJobs, err := batchRepo.GetBatchJobsWithStatus([]string{models.StatusStarted}, 100)
 	if err != nil {
 		log.WithError(err).Error("Errored while finding batch jobs in a running state")
+	}
+
+	if len(batchJobs) == 0 {
+		return
 	}
 
 	var batchJobIDs []string
