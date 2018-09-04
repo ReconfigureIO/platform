@@ -11,6 +11,90 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+var now = time.Now()
+
+var deploymentTests = []struct {
+	name          string
+	started       time.Time
+	terminated    time.Time
+	expectedHours int
+}{
+	{
+		name:          "started and terminated before search period",
+		started:       now.Add(-20 * time.Hour),
+		terminated:    now.Add(-15 * time.Hour),
+		expectedHours: 0,
+	},
+	{
+		name:          "started before search period, terminated during",
+		started:       now.Add(-20 * time.Hour),
+		terminated:    now.Add(-301 * time.Minute),
+		expectedHours: 5,
+	},
+	{
+		name:          "started before search period, terminated after",
+		started:       now.Add(-20 * time.Hour),
+		terminated:    now.Add(5 * time.Hour),
+		expectedHours: 10,
+	},
+	{
+		name:          "started and terminated during search period",
+		started:       now.Add(-5 * time.Hour),
+		terminated:    now.Add(-2 * time.Hour),
+		expectedHours: 3,
+	},
+	{
+		name:          "started during search period, terminated after",
+		started:       now.Add(-299 * time.Minute),
+		terminated:    now.Add(5 * time.Hour),
+		expectedHours: 5,
+	},
+	{
+		name:          "started and terminated after search period",
+		started:       now.Add(5 * time.Hour),
+		terminated:    now.Add(10 * time.Hour),
+		expectedHours: 0,
+	},
+	{
+		name:          "started before search period, no terminated event",
+		started:       now.Add(-20 * time.Hour),
+		terminated:    time.Time{},
+		expectedHours: 10,
+	},
+	{
+		name:          "started during search period, no terminated event",
+		started:       now.Add(-299 * time.Minute),
+		terminated:    time.Time{},
+		expectedHours: 5,
+	},
+	{
+		name:          "started after search period, no terminated event",
+		started:       now.Add(5 * time.Hour),
+		terminated:    time.Time{},
+		expectedHours: 0,
+	},
+}
+
+func TestDeploymentHoursBtw(t *testing.T) {
+	for _, deployment := range deploymentTests {
+		RunTransaction(func(db *gorm.DB) {
+			d := deploymentRepo{db}
+			generatedDeployment := genDeploymentWithTimestamps("foobar", deployment.started, deployment.terminated)
+			db.Create(&(generatedDeployment))
+			t.Run(deployment.name, func(t *testing.T) {
+				hours, err := DeploymentHoursBtw(&d, "foobar", now.Add(-10*time.Hour), now)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+				if hours != deployment.expectedHours {
+					t.Errorf("Expected %v found %v", deployment.expectedHours, hours)
+				}
+			})
+		})
+	}
+}
+
 func TestDeploymentGetWithStatusForUser(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
@@ -396,36 +480,6 @@ func TestDeploymentGetWithoutIP(t *testing.T) {
 	})
 }
 
-func TestDeploymentHoursBtw(t *testing.T) {
-	RunTransaction(func(db *gorm.DB) {
-		d := deploymentRepo{db}
-
-		userID := "user1"
-		now := time.Now()
-
-		deps := []Deployment{
-			genDeployment(userID, now, time.Hour),               // 1 hour
-			genDeployment(userID, now, 0),                       // 0 hours
-			genDeployment(userID, now, 0),                       // 0 hours
-			genDeployment(userID, now, time.Hour*2),             // 2 hours
-			genDeployment(userID, now, time.Hour+5*time.Minute), // 1 hour 5 minutes
-		} // total 4 hours 5 minutes, rounds to 5 hours
-
-		for i := range deps {
-			db.Create(&(deps[i]))
-		}
-
-		hours, err := DeploymentHoursBtw(&d, userID, now, now.AddDate(0, 0, 1))
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		if hours != 5 {
-			t.Errorf("Expected %v found %v", 5, hours)
-		}
-	})
-}
-
 func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := deploymentRepo{db}
@@ -451,6 +505,42 @@ func TestDeploymentHoursBtwWithNoEvents(t *testing.T) {
 		}
 		if hours != 0 {
 			t.Errorf("Expected %v found %v", 0, hours)
+		}
+	})
+}
+
+func TestDeploymentHoursBtwWithSlowGoClock(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := deploymentRepo{db}
+		userid := "foobar"
+		var zero time.Time
+		now := time.Now()
+
+		dep := Deployment{
+			Build: Build{
+				Project: Project{
+					UserID: userid,
+				},
+			},
+			Command: "test",
+			Events: []DeploymentEvent{
+				DeploymentEvent{
+					Status:    "STARTED",
+					Timestamp: now.Add(-10 * time.Hour),
+				},
+			},
+			UserID: userid,
+		}
+
+		db.Create(&dep)
+
+		hours, err := DeploymentHoursBtw(&d, userid, zero, now.Add(-5*time.Second))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if hours != 10 {
+			t.Errorf("Expected %v found %v", 10, hours)
 		}
 	})
 }
@@ -613,12 +703,14 @@ func genDeploymentWithTimestamps(userID string, start time.Time, end time.Time) 
 				Status:    "STARTED",
 				Timestamp: start,
 			},
-			DeploymentEvent{
-				Status:    "TERMINATED",
-				Timestamp: end,
-			},
 		},
 		UserID: userID,
+	}
+	if (end != time.Time{}) {
+		dep.Events = append(dep.Events, DeploymentEvent{
+			Status:    "TERMINATED",
+			Timestamp: end,
+		})
 	}
 	return dep
 }
