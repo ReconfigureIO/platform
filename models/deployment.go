@@ -25,7 +25,7 @@ type DeploymentRepo interface {
 	// Return a list of all deployment for a user, with the statuses specified
 	GetWithStatusForUser(string, []string) ([]Deployment, error)
 
-	// DeploymentHoursBtw returns the total time used for deployments between
+	// DeploymentHours returns the total time used for deployments between
 	// startTime and endTime.
 	DeploymentHours(userID string, startTime, endTime time.Time) ([]DeploymentHours, error)
 
@@ -96,8 +96,17 @@ on j.id = terminated.deployment_id
         where j.id = e2.deployment_id and e2.status = 'TERMINATED'
         limit 1
     )
-where (user_id = ? and coalesce(terminated.timestamp, now()) > ? and coalesce(terminated.timestamp, now()) < ? and started IS NOT NULL)
+where (
+    user_id = ?
+    and started is not null
+    and (
+        (started.timestamp > ? and started.timestamp < ?)
+        or (terminated.timestamp > $2 and terminated.timestamp < $3)
+        or (started.timestamp < $2 and (terminated.timestamp > $3 or terminated.timestamp is null))
+    )
+)
 `
+
 	sqlDeploymentInstances = `
 select j.id as id, started.timestamp as started, terminated.timestamp as terminated
 from deployments j
