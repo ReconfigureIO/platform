@@ -167,6 +167,53 @@ func getBatchJobLogNames() {
 	}
 }
 
+// checkBatchJobRunningStatus gets a list of all batch jobs we think are in a
+// running state and then queries AWS Batch for the true state of these jobs.
+// Jobs can transition from running states to errored states without sending an
+// event to platform in some cases e.g. when the underlying instance terminates
+func checkBatchJobRunningStatus() {
+	//watcher := NewLogWatcher(models.BatchDataSource(db), batchClient)
+	batchRepo := models.BatchDataSource(db)
+
+	batchJobs, err := batchRepo.GetBatchJobsWithStatus([]string{models.StatusStarted}, 100)
+	if err != nil {
+		log.WithError(err).Error("Errored while finding batch jobs in a running state")
+	}
+
+	var batchJobIDs []string
+	for _, batchJob := range batchJobs {
+		batchJobIDs = append(batchJobIDs, batchJob.BatchID)
+	}
+
+	// err := watcher.FindLogNames(context.Background(), 100, sinceTime)
+	cfg := batch.DescribeJobsInput{
+		Jobs: awsaws.StringSlice(batchJobIDs),
+	}
+
+	results, err := batchClient.DescribeJobs(&cfg)
+	if err != nil {
+		log.WithError(err).Error("Errored while running AWS Batch DescribeJobs")
+	}
+
+	for _, job := range results.Jobs {
+		if *job.Status == "FAILED" {
+			for _, batchJob := range batchJobs {
+				if batchJob.BatchID == *job.JobId {
+					err = batchRepo.AddEvent(batchJob, models.BatchJobEvent{
+						BatchJobID: batchJob.ID,
+						Timestamp:  time.Unix(*job.StoppedAt, 0),
+						Status:     models.StatusErrored,
+						Message:    *job.StatusReason,
+					})
+					if err != nil {
+						log.WithField("batch_job_id", batchJob.ID).WithError(err).Error("Errored while adding FAILED event")
+					}
+				}
+			}
+		}
+	}
+}
+
 func checkHours() {
 	log.Printf("checking for users exceeding their subscription hours")
 	err := billing_hours.CheckUserHours(models.SubscriptionDataSource(db), models.DeploymentDataSource(db), deploy)
