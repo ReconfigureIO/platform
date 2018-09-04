@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/storage"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -18,10 +20,12 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	Events          events.EventService
-	Storage         storage.Service
-	AWS             aws.Service
-	PublicProjectID string
+	HostName         string
+	CallbackProtocol string
+	Events           events.EventService
+	Storage          storage.Service
+	AWS              aws.Service
+	PublicProjectID  string
 }
 
 // Common preload functionality.
@@ -195,8 +199,8 @@ func (b Build) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
+	callbackURL := fmt.Sprintf("%s://%s/builds/%s/events?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
+	reportsURL := fmt.Sprintf("%s://%s/builds/%s/reports?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
 	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -222,7 +226,17 @@ func (b Build) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(b.AWS, c, &build.BatchJob)
+	err = batch.CopyLogs(
+		c,
+		&b.AWS,
+		c.Writer,
+		c.Request,
+		&build.BatchJob,
+	)
+	if err != nil {
+		log.WithError(err).Warnln("batch.CopyLogs error")
+	}
+
 }
 
 func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {

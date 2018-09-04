@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/storage"
 
@@ -26,11 +26,13 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
+	HostName         string
+	CallbackProtocol string
 	Events           events.EventService
 	UseSpotInstances bool
 	Storage          storage.Service
 	DeployService    deployment.Service
-	AWS              aws.Service
+	AWS              *aws.Service
 	PublicProjectID  string
 }
 
@@ -143,7 +145,7 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 
-		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+		callbackURL := fmt.Sprintf("%s://%s/deployments/%s/events?token=%s", d.CallbackProtocol, d.HostName, newDep.ID, newDep.Token)
 
 		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, callbackURL)
 		if err != nil {
@@ -220,7 +222,7 @@ func (d Deployment) Logs(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	streamDeploymentLogs(d.DeployService, d.AWS, c, &targetDep)
+	streamDeploymentLogs(d.DeployService, *d.AWS, c, &targetDep)
 }
 
 func (d Deployment) canPostEvent(c *gin.Context, dep models.Deployment) bool {

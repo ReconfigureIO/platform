@@ -5,28 +5,34 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 )
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	AWS     aws.Service
-	Events  events.EventService
-	Storage storage.Service
+	HostName         string
+	CallbackProtocol string
+	AWS              *aws.Service
+	Events           events.EventService
+	Storage          storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(hostName string, callbackProtocol string, events events.EventService, storageService storage.Service, awsSession *aws.Service) Simulation {
 	return Simulation{
-		AWS:     awsSession,
-		Events:  events,
-		Storage: storageService,
+		HostName:         hostName,
+		CallbackProtocol: callbackProtocol,
+		AWS:              awsSession,
+		Events:           events,
+		Storage:          storageService,
 	}
 }
 
@@ -121,7 +127,7 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
+	callbackURL := fmt.Sprintf("%s://%s/simulations/%s/events?token=%s", s.CallbackProtocol, s.HostName, sim.ID, sim.Token)
 
 	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {
@@ -130,7 +136,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{AWS: s.AWS}.New(simID)
+		batchJob := BatchService{AWS: *s.AWS}.New(simID)
 		return tx.Model(&sim).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -177,7 +183,16 @@ func (s Simulation) Logs(c *gin.Context) {
 		return
 	}
 
-	StreamBatchLogs(s.AWS, c, &sim.BatchJob)
+	err = batch.CopyLogs(
+		c,
+		s.AWS,
+		c.Writer,
+		c.Request,
+		&sim.BatchJob,
+	)
+	if err != nil {
+		log.WithError(err).Warnln("batch.CopyLogs error")
+	}
 }
 
 func (s Simulation) canPostEvent(c *gin.Context, sim models.Simulation) bool {
@@ -223,7 +238,7 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
+	newEvent, err := BatchService{AWS: *s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
 		sugar.InternalError(c, nil)

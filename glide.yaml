@@ -44,3 +44,7 @@ import:
   subpackages:
   - api
   - api/types/container
+- package: github.com/fortytw2/leaktest
+  version: v1.2.0
+- package: github.com/ReconfigureIO/pingproto
+  version: v1.0.0

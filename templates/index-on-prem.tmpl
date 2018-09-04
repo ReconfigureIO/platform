@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Reconfigure.io</title>
+    <style>
+    /*
+    Font: 		Greycliff CF
+    Style: 		Heavy
+    URL: 		https://www.youworkforthem.com/font/T6406/greycliff-cf
+    Foundry: 	Connary Fagen
+    Foundry: 	https://www.youworkforthem.com/designer/479/connary-fagen
+    Copyright:	© 2016 Connary Fagen
+    Version: 	17
+    Created:	May 10, 2016
+    License: 	https://www.youworkforthem.com/font-license
+    License: 	The WebFont(s) listed in this document must follow the YouWorkForThem
+          WebFont license rules. All other parties are strictly restricted
+          from using the WebFonts(s) listed without a purchased license.
+          All details above must always remain unaltered and visible in your CSS.
+    */
+
+    @font-face {
+      font-family: 'GreycliffCF-Heavy';
+      src: url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.eot');
+      src: url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.eot?#iefix') format('embedded-opentype'),
+           url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.woff2') format('woff2'),
+           url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.woff') format('woff'),
+           url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.ttf') format('truetype'),
+           url('../assets/fonts/greycliff-cf-heavy/webfonts/greycliff-cf-heavy.svg#youworkforthem') format('svg');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /*
+    Font: 		Greycliff CF
+    Style: 		Regular
+    URL: 		https://www.youworkforthem.com/font/T6406/greycliff-cf
+    Foundry: 	Connary Fagen
+    Foundry: 	https://www.youworkforthem.com/designer/479/connary-fagen
+    Copyright:	© 2016 Connary Fagen
+    Version: 	17
+    Created:	May 10, 2016
+    License: 	https://www.youworkforthem.com/font-license
+    License: 	The WebFont(s) listed in this document must follow the YouWorkForThem
+          WebFont license rules. All other parties are strictly restricted
+          from using the WebFonts(s) listed without a purchased license.
+          All details above must always remain unaltered and visible in your CSS.
+    */
+
+    @font-face {
+      font-family: 'GreycliffCF-Regular';
+      src: url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.eot');
+      src: url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.eot?#iefix') format('embedded-opentype'),
+           url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.woff2') format('woff2'),
+           url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.woff') format('woff'),
+           url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.ttf') format('truetype'),
+           url('../assets/fonts/greycliff-cf-regular/webfonts/greycliff-cf-regular.svg#youworkforthem') format('svg');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face{
+      font-family: 'Bill-Corp-Narrow';
+      src: url('../assets/fonts/bill-corp-narrow/webfonts/bill-corporate-narrow-roman-webfont.woff') format('woff'),
+           url('../assets/fonts/bill-corp-narrow/webfonts/bill-corporate-narrow-roman-webfont.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    </style>
+  </head>
+  <body style="background-color: #474b57;">
+    <div style="width:1000px; height:800px; margin-left:auto; margin-right:auto; margin-top: 20%;">
+    <h1 style="font-family: 'GreycliffCF-Heavy'; font-size: 38pt; color: white; text-align: center;">Reconfigure<span style="font-size: 26pt; color: #e8ab74;">.io</span></h1>
+    <hr style="display: block; width: 20px; height: 3px; background-color: #e8ab74; border: none;">
+    <div style="text-align: center;">
+    {{ if .logged_in }}
+    <span style="font-family: 'GreycliffCF-Regular'; font-size: 14pt; color: #2bba7f; text-align: center;">Logged in as: <span style="color:white">{{ .email }}</span><br><br>
+    <p style="font-family: 'GreycliffCF-Regular'; font-size: 12pt; color: white; text-align: left;">Copy the command below and run in a terminal to authorise your on-prem account:</p>
+    <pre style="width: 100%; border-radius: 5px; background-color: white; padding-top: 12px; padding-bottom: 12px; font-family: courier; font-size: 12pt; color: #474b57; text-align: center; margin-left: auto;">reco login gh_{{ .gh_id }}_{{ .token }}</pre>
+    </div>
+
+    {{ else }}
+    <form method="GET" action="/auth/new-account" style="font-family: 'GreycliffCF-Regular'; color:#2bba7f; text-align: center;"><br>
+    <input type="text" name="email" placeholder="Enter your email" style="font-family: 'GreycliffCF-Regular'; font-size: 12pt; color: #474b57; outline: none; border: 3px solid #DCDCDC; border-radius: 5px; width: 40%; padding-left: 12px; padding-right: 12px; padding-top: 12px; padding-bottom: 12px;"><br><br>
+    <input type="submit" value="SIGN UP / SIGN IN" style="cursor: pointer; color: white; background-color: #2bba7f; border: none; padding-left: 24px; padding-right: 24px; padding-top: 16px; padding-bottom: 16px; font-size: 10pt;">
+    </form>
+    {{ end }}
+    </div>
+  </body>
+</html>

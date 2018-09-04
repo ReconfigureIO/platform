@@ -7,7 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -21,9 +21,11 @@ import (
 func SetupRoutes(
 	config config.RecoConfig,
 	secretKey string,
+	callbackProtocol string,
+	hostName string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService aws.Service,
+	awsService *aws.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,
@@ -37,18 +39,24 @@ func SetupRoutes(
 	r.Use(sessions.Sessions("paus", store))
 	r.Use(middleware.SessionAuth(db))
 
-	// setup index
-	r.GET("/", handlers.Index)
+	if config.Env == "development-on-prem" {
+		// setup index
+		r.GET("/", handlers.IndexOnPrem)
+		SetupAuthOnPrem(r, db)
+	} else {
+		// setup index
+		r.GET("/", handlers.Index)
 
-	// Setup authenticated admin
-	authMiddleware := gin.BasicAuth(gin.Accounts{
-		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
-	})
-	admin := r.Group("/admin", authMiddleware)
-	SetupAdmin(admin, db, leads)
+		// Setup authenticated admin
+		authMiddleware := gin.BasicAuth(gin.Accounts{
+			"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+		})
+		admin := r.Group("/admin", authMiddleware)
+		SetupAdmin(admin, db, leads)
 
-	// signup & login flow
-	SetupAuth(r, db, leads, authService)
+		// signup & login flow
+		SetupAuth(r, db, leads, authService)
+	}
 
 	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
 
@@ -67,10 +75,12 @@ func SetupRoutes(
 	}
 
 	build := api.Build{
-		Events:          events,
-		Storage:         storage,
-		PublicProjectID: publicProjectID,
-		AWS:             awsService,
+		HostName:         hostName,
+		CallbackProtocol: callbackProtocol,
+		Events:           events,
+		Storage:          storage,
+		PublicProjectID:  publicProjectID,
+		AWS:              *awsService,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
@@ -94,7 +104,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage, awsService)
+	simulation := api.NewSimulation(hostName, callbackProtocol, events, storage, awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -105,9 +115,11 @@ func SetupRoutes(
 	}
 
 	graph := api.Graph{
-		AWS:     awsService,
-		Events:  events,
-		Storage: storage,
+		HostName:         hostName,
+		CallbackProtocol: callbackProtocol,
+		AWS:              awsService,
+		Events:           events,
+		Storage:          storage,
 	}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
@@ -119,6 +131,8 @@ func SetupRoutes(
 	}
 
 	deployment := api.Deployment{
+		HostName:         hostName,
+		CallbackProtocol: callbackProtocol,
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,

@@ -6,7 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch/aws"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -18,9 +18,11 @@ import (
 
 // Graph handles requests for graphs.
 type Graph struct {
-	Events  events.EventService
-	Storage storage.Service
-	AWS     aws.Service
+	HostName         string
+	CallbackProtocol string
+	Events           events.EventService
+	Storage          storage.Service
+	AWS              *aws.Service
 }
 
 // Common preload functionality.
@@ -139,7 +141,7 @@ func (g Graph) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/graphs/%s/events?token=%s", c.Request.Host, graph.ID, graph.Token)
+	callbackURL := fmt.Sprintf("%s://%s/graphs/%s/events?token=%s", g.CallbackProtocol, g.HostName, graph.ID, graph.Token)
 	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)
@@ -147,7 +149,7 @@ func (g Graph) Input(c *gin.Context) {
 	}
 
 	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{AWS: g.AWS}.New(graphID)
+		batchJob := BatchService{AWS: *g.AWS}.New(graphID)
 		return tx.Model(&graph).Association("BatchJob").Append(batchJob).Error
 	})
 
@@ -238,7 +240,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
 	}
 
-	newEvent, err := BatchService{AWS: g.AWS}.AddEvent(&graph.BatchJob, event)
+	newEvent, err := BatchService{AWS: *g.AWS}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
 		sugar.InternalError(c, nil)
