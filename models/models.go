@@ -127,36 +127,6 @@ type PostDepEvent struct {
 	Code    int    `json:"code"`
 }
 
-// Simulation model.
-type Simulation struct {
-	uuidHook
-	ID         string   `gorm:"primary_key" json:"id"`
-	User       User     `json:"-" gorm:"ForeignKey:UserID"`
-	UserID     int      `json:"-"`
-	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
-	ProjectID  string   `json:"-"`
-	BatchJobID int64    `json:"-"`
-	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
-	Token      string   `json:"-"`
-	Command    string   `json:"command"`
-}
-
-// Status returns simulation status.
-func (s *Simulation) Status() string {
-	events := s.BatchJob.Events
-	length := len(events)
-	if len(events) > 0 {
-		return events[length-1].Status
-	}
-	return StatusSubmitted
-}
-
-// PostSimulation is the post request body for new simulation.
-type PostSimulation struct {
-	ProjectID string `json:"project_id" validate:"nonzero"`
-	Command   string `json:"command" validate:"nonzero"`
-}
-
 // Deployment model.
 type Deployment struct {
 	uuidHook

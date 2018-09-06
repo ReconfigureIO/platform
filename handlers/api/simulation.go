@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ReconfigureIO/platform/middleware"
@@ -249,4 +250,48 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	sugar.EnqueueEvent(s.Events, c, eventMessage, sim.Project.UserID, map[string]interface{}{"simulation_id": sim.ID, "project_name": sim.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
+}
+
+// Report fetches a simulation's report.
+func (s Simulation) Report(c *gin.Context) {
+	simulationRepo := models.SimulationDataSource(db)
+	simulation, err := s.ByID(c)
+	if err != nil {
+		return
+	}
+
+	report, err := simulationRepo.GetSimulationReport(simulation)
+
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, report)
+}
+
+// CreateReport creates simulation report.
+func (s Simulation) CreateReport(c *gin.Context) {
+	simulationRepo := models.SimulationDataSource(db)
+	simulation, err := s.unauthOne(c)
+	if err != nil {
+		return
+	}
+
+	switch c.ContentType() {
+	case "application/vnd.reconfigure.io/reports-v1+json":
+		report := models.ReportV1{}
+		c.BindJSON(&report)
+		err = simulationRepo.StoreSimulationReport(simulation, report)
+	default:
+		err = errors.New("Not a valid report version")
+	}
+
+	if err != nil {
+		c.Error(err)
+		sugar.ErrResponse(c, 500, nil)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, nil)
 }
