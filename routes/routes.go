@@ -112,6 +112,7 @@ func SetupRoutes(
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
+		simulationRoute.GET("/:id/reports", simulation.Report)
 	}
 
 	graph := api.Graph{
@@ -159,6 +160,7 @@ func SetupRoutes(
 	reportRoutes := r.Group("", middleware.TokenAuth(db, events))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
+		reportRoutes.POST("/simulations/:id/reports", simulation.CreateReport)
 	}
 	return r
 }
