@@ -135,15 +135,17 @@ func main() {
 	r.Use(cors.New(corsConfig))
 	r.LoadHTMLGlob("templates/*")
 
+	callbackProtocol := "https"
 	var authService auth.Service
 	if conf.Reco.Env == "development-on-prem" {
 		authService = &auth.NOPService{DB: db}
+		callbackProtocol = "http"
 	} else {
 		authService = github.New(db)
 	}
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, callbackProtocol, conf.Host, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue
