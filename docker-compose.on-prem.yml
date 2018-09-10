@@ -62,7 +62,9 @@ services:
       - web-base
       - minio
     networks:
-      - platform
+      platform:
+        aliases:
+          - fake-batch.test
     environment:
       - WORKER_NETWORK=platform_platform
       - AWS_ACCESS_KEY_ID=foo
