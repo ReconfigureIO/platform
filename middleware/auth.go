@@ -50,18 +50,15 @@ func TokenAuth(db *gorm.DB, events events.EventService, config config.RecoConfig
 			return
 		}
 
-		var ghID int
-		var err error
+		var prefix string
 		if config.Env == "development-on-prem" {
-			ghID, err = strconv.Atoi(strings.TrimPrefix(username, "onprem_"))
-			if err != nil {
-				return
-			}
+			prefix = "onprem_"
 		} else {
-			ghID, err = strconv.Atoi(strings.TrimPrefix(username, "gh_"))
-			if err != nil {
-				return
-			}
+			prefix = "gh_"
+		}
+		ghID, err := strconv.Atoi(strings.TrimPrefix(username, prefix))
+		if err != nil {
+			return
 		}
 
 		user := models.User{GithubID: ghID}
