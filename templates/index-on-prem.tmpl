@@ -78,7 +78,7 @@
     {{ if .logged_in }}
     <span style="font-family: 'GreycliffCF-Regular'; font-size: 14pt; color: #2bba7f; text-align: center;">Logged in as: <span style="color:white">{{ .email }}</span><br><br>
     <p style="font-family: 'GreycliffCF-Regular'; font-size: 12pt; color: white; text-align: left;">Copy the command below and run in a terminal to authorise your on-prem account:</p>
-    <pre style="width: 100%; border-radius: 5px; background-color: white; padding-top: 12px; padding-bottom: 12px; font-family: courier; font-size: 12pt; color: #474b57; text-align: center; margin-left: auto;">reco login gh_{{ .gh_id }}_{{ .token }}</pre>
+    <pre style="width: 100%; border-radius: 5px; background-color: white; padding-top: 12px; padding-bottom: 12px; font-family: courier; font-size: 12pt; color: #474b57; text-align: center; margin-left: auto;">reco login onprem_{{ .gh_id }}_{{ .token }}</pre>
     </div>
 
     {{ else }}

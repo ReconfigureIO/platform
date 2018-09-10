@@ -55,7 +55,7 @@ func SetupRoutes(
 		SetupAuth(r, db, leads, authService)
 	}
 
-	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
+	apiRoutes := r.Group("/", middleware.TokenAuth(db, events, config), middleware.RequiresUser())
 
 	billing := api.Billing{}
 	profile := profile.Profile{
@@ -139,7 +139,7 @@ func SetupRoutes(
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
-	eventRoutes := r.Group("", middleware.TokenAuth(db, events))
+	eventRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
@@ -147,7 +147,7 @@ func SetupRoutes(
 		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
 
-	reportRoutes := r.Group("", middleware.TokenAuth(db, events))
+	reportRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
 	}
