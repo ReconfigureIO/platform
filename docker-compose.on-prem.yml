@@ -12,14 +12,14 @@ services:
     environment:
       - MINIO_ACCESS_KEY=foo
       - MINIO_SECRET_KEY=foobarbaz
-      - MINIO_DOMAIN=minio
+      - MINIO_DOMAIN=minio.test
     ports:
       - "9000:9000"
     networks:
       platform:
         aliases:
-          - reconfigureio-builds.minio
-          - testbucket.reconfigure.io.minio
+          - reconfigureio-builds.minio.test
+          - testbucket.reconfigure.io.minio.test
 
   web-base:
     build: build
@@ -29,8 +29,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
-      - S3_ENDPOINT=http://minio:9000/
-      - RECO_AWS_ENDPOINT=http://fake-batch:9090
+      - S3_ENDPOINT=http://minio.test:9000/
+      - RECO_AWS_ENDPOINT=http://fake-batch.test:9090
       - AWS_REGION=us-east-1
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=8080
@@ -67,7 +67,7 @@ services:
       - WORKER_NETWORK=platform_platform
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
-      - S3_ENDPOINT=http://minio:9000/
+      - S3_ENDPOINT=http://minio.test:9000/
       - FAKE_BATCH_DEBUGGING=true
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
@@ -87,8 +87,8 @@ services:
     environment:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
-      - S3_ENDPOINT=http://minio:9000/
-      - RECO_AWS_ENDPOINT=http://fake-batch:9090
+      - S3_ENDPOINT=http://minio.test:9000/
+      - RECO_AWS_ENDPOINT=http://fake-batch.test:9090
       - AWS_REGION=us-east-1
       - DATABASE_URL=host=db user=postgres dbname=postgres sslmode=disable password=mysecretpassword
       - PORT=80
