@@ -240,10 +240,7 @@ func (b Build) Logs(c *gin.Context) {
 
 }
 
-// authCheck returns true if the API request is coming from the human creator
-// of the object or an automated system with a token that allows it to access
-// the build.
-func (b Build) authCheck(c *gin.Context, build models.Build) bool {
+func (b Build) canPostEvent(c *gin.Context, build models.Build) bool {
 	user, loggedIn := middleware.CheckUser(c)
 	if loggedIn && build.Project.UserID == user.ID {
 		return true
@@ -262,7 +259,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	if !b.authCheck(c, build) {
+	if !b.canPostEvent(c, build) {
 		c.AbortWithStatus(403)
 		return
 	}
@@ -327,13 +324,25 @@ func (b Build) CreateReport(c *gin.Context) {
 	sugar.SuccessResponse(c, 200, nil)
 }
 
+func (b Build) canDownloadArtifact(c *gin.Context, build models.Build) bool {
+	user, loggedIn := middleware.CheckUser(c)
+	if loggedIn && build.Project.UserID == user.ID {
+		return true
+	}
+	token, exists := c.GetQuery("token")
+	if exists && build.Token == token {
+		return true
+	}
+	return false
+}
+
 func (b Build) DownloadArtifact(c *gin.Context) {
 	build, err := b.unauthOne(c)
 	if err != nil {
 		return
 	}
 
-	if !b.authCheck(c, build) {
+	if !b.canDownloadArtifact(c, build) {
 		c.AbortWithStatus(403)
 		return
 	}
