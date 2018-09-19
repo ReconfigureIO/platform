@@ -66,11 +66,10 @@ services:
         aliases:
           - fake-batch.test
     environment:
-      - WORKER_NETWORK=platform_platform
+      - FAKE_BATCH_WORKER_NETWORK=platform_platform
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
       - S3_ENDPOINT=http://minio.test:9000/
-      - FAKE_BATCH_DEBUGGING=true
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   web:

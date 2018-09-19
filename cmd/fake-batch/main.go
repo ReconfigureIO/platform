@@ -245,7 +245,7 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 
 	hostConfig := container.HostConfig{
 		Binds:       h.jobDefinitions[*input.JobDefinition].MountPoints,
-		NetworkMode: container.NetworkMode(os.Getenv("WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
+		NetworkMode: container.NetworkMode(os.Getenv("FAKE_BATCH_WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
 	}
 
 	createOutput, err := h.dockerClient.ContainerCreate(
@@ -323,16 +323,11 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var containerListFilters filters.Args
+	containerListFilters := filters.NewArgs(
+		filters.Arg("label", "responsible=fake-batch"),
+	)
 	if len(input.Jobs) == 1 {
-		containerListFilters = filters.NewArgs(
-			filters.Arg("label", "responsible=fake-batch"),
-			filters.Arg("id", *input.Jobs[0]),
-		)
-	} else {
-		containerListFilters = filters.NewArgs(
-			filters.Arg("label", "responsible=fake-batch"),
-		)
+		containerListFilters.Add("id", *input.Jobs[0])
 	}
 
 	containers, err := h.dockerClient.ContainerList(
