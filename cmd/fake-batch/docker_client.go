@@ -7,6 +7,8 @@ import (
 	"log"
 	"strings"
 
+	"github.com/docker/docker/pkg/stdcopy"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -155,7 +157,7 @@ func (dh dockerHelper) Run() {
 }
 
 func (dh dockerHelper) Logs(ctx context.Context) (io.ReadCloser, error) {
-	return dh.client.ContainerLogs(
+	rawLogs, err := dh.client.ContainerLogs(
 		ctx,
 		dh.id,
 		types.ContainerLogsOptions{
@@ -164,4 +166,19 @@ func (dh dockerHelper) Logs(ctx context.Context) (io.ReadCloser, error) {
 			ShowStdout: true,
 		},
 	)
+	if err != nil {
+		return nil, err
+	}
+	combinedLogs, w := io.Pipe()
+	go stripDockerLogEncapsulation(rawLogs, w)
+	return combinedLogs, nil
+}
+
+func stripDockerLogEncapsulation(r io.Reader, w io.WriteCloser) {
+	defer w.Close()
+
+	_, err := stdcopy.StdCopy(w, w, r)
+	if err != nil {
+		log.Printf("stripDockerLogEncapsulation: %v", err)
+	}
 }

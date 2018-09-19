@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	os.Setenv("DOCKER_API_VERSION", "1.37") // Hmm.
+	os.Setenv("DOCKER_API_VERSION", "1.26") // 1.26 is in use on our ECS Vivado images.
 
 	dockerClient, err := client.NewEnvClient()
 	if err != nil {
@@ -36,7 +36,7 @@ func main() {
 			Image: "ubuntu:latest",
 		},
 		"sdaccel-builder-build": JobDefinition{
-			Image: "sdaccel-builder:v0.17.5",
+			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
 			MountPoints: []string{
 				"/opt/Xilinx:/opt/Xilinx",
 			},
@@ -185,6 +185,21 @@ func (h *handler) submitJobInputToContainerConfig(
 		env []string
 	)
 
+	env = []string{
+		"AWS_DEFAULT_REGION=us-east-1",
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", os.Getenv("AWS_ACCESS_KEY_ID")),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", os.Getenv("AWS_SECRET_ACCESS_KEY")),
+		fmt.Sprintf("S3_ENDPOINT=%s", os.Getenv("S3_ENDPOINT")),
+		"LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/SDK/lib/lnx64.o",
+		"XILINX_SDX=/opt/Xilinx/SDx/2017.1.op",
+		"XILINX_SDACCEL=/opt/Xilinx/SDx/2017.1.op",
+		"LD_LIBRARY_PATH=/opt/Xilinx/SDx/2017.1.op/Vivado/lib/lnx64.o",
+		"XILINX_VIVADO=/opt/Xilinx/SDx/2017.1.op/Vivado",
+		"LOG_BUCKET=reconfigureio-builds",
+		"XILINXD_LICENSE_FILE=/opt/Xilinx/license/XilinxAWS.lic",
+		"DCP_BUCKET=reconfigureio-builds",
+	}
+
 	co := input.ContainerOverrides
 	if co != nil {
 		if co.Command != nil {
@@ -229,7 +244,8 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 	containerConfig := h.submitJobInputToContainerConfig(input)
 
 	hostConfig := container.HostConfig{
-		Binds: h.jobDefinitions[*input.JobDefinition].MountPoints,
+		Binds:       h.jobDefinitions[*input.JobDefinition].MountPoints,
+		NetworkMode: container.NetworkMode(os.Getenv("FAKE_BATCH_WORKER_NETWORK")), // Connect to an existing network with a name matching this env var's value
 	}
 
 	createOutput, err := h.dockerClient.ContainerCreate(
@@ -262,6 +278,10 @@ func (h *handler) SubmitJob(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
+		} else {
+			log.Printf("ContainerCreate: Unknown Error: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
 		}
 	}
 
@@ -298,15 +318,25 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(input.Jobs) > 1 {
+		http.Error(w, "Cannot filter using multiple IDs", http.StatusBadRequest)
+		return
+	}
+
+	containerListFilters := filters.NewArgs(
+		filters.Arg("label", "responsible=fake-batch"),
+	)
+	if len(input.Jobs) == 1 {
+		containerListFilters.Add("id", *input.Jobs[0])
+	}
+
 	containers, err := h.dockerClient.ContainerList(
 		context.Background(),
 		types.ContainerListOptions{
 			// Include stopped containers.
 			All: true,
 			// Select containers started by fake-batch.
-			Filters: filters.NewArgs(
-				filters.Arg("label", "responsible=fake-batch"),
-			),
+			Filters: containerListFilters,
 		},
 	)
 	if err != nil {
@@ -322,7 +352,11 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 			(&batch.JobDetail{}).
 				SetJobId(c.ID).
 				SetJobName(c.Labels["job-name"]).
-				SetStatus(dockerStatusToBatchStatus(c.Status)),
+				SetStatus(dockerStatusToBatchStatus(c.Status)).
+				SetContainer(&batch.ContainerDetail{
+					LogStreamName: &c.ID,
+				},
+				),
 		)
 	}
 
@@ -353,10 +387,15 @@ func (h *handler) TerminateJob(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) Logs(w http.ResponseWriter, r *http.Request) {
 	jobID := strings.TrimPrefix(r.URL.Path, "/v1/logs/")
-
+	if jobID == "" {
+		log.Printf("Logs: jobID is empty")
+		return
+	}
 	// Check to see if the log is in long term storage, grab it from there if
 	// possible.
-	if reader, err := h.storage.Download(jobID); err == nil {
+	fmt.Printf("Logs: URL = %v \n", r.URL)
+	fmt.Printf("Logs: jobID = %v \n", jobID)
+	if reader, err := h.storage.Download(jobID); err == nil { // TODO campgareth: give up attempt if reading from reader fails
 		_, err := io.Copy(w, reader)
 		if err != nil {
 			log.Printf("Logs: io.Copy(w, r): %v", err)
