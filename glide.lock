@@ -1,5 +1,5 @@
-hash: 440b48ab17d57c1effbe726e4471162408dd39f8c2c01754b9328e9b28d65e5e
-updated: 2018-06-26T09:56:22.364363+01:00
+hash: 2e05602704ccd62f318d2b158b61cfb9449ea3488ea7da27427583fb525500f8
+updated: 2018-09-07T10:10:42.289912181+01:00
 imports:
 - name: github.com/abiosoft/errs
   version: db634b8eb5e35ffff64e0bfe982c1a72a6ecdf3d
@@ -84,6 +84,8 @@ imports:
   - tlsconfig
 - name: github.com/docker/go-units
   version: 47565b4f722fb6ceae66b95f853feed578a4a51c
+- name: github.com/fortytw2/leaktest
+  version: a5ef70473c97b71626b9abeda80ee92ba2a7de9e
 - name: github.com/garyburd/redigo
   version: d1ed5c67e5794de818ea85e6b522fda02623a484
   subpackages:
@@ -164,12 +166,14 @@ imports:
   version: 816c9085562cd7ee03e7f8188a1cfd942858cded
 - name: github.com/ReconfigureIO/logruzio
   version: cd769a9cbdfa4f9d890e88600e87fe868c08e4ac
+- name: github.com/ReconfigureIO/pingproto
+  version: 46a79c15445cde40f953f8dfaad4009fb8b21c39
 - name: github.com/robfig/cron
   version: b41be1df696709bb6395fe435af20370037c0b4c
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
-  version: c155da19408a8799da419ed3eeb0cb5db0ad5dbc
+  version: 3e01752db0189b9157070a0e1668a620f9a85da2
 - name: github.com/spf13/cobra
   version: b95ab734e27d33e0d8fbabf71ca990568d4e2020
 - name: github.com/spf13/pflag
