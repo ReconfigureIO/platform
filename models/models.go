@@ -69,7 +69,13 @@ type User struct {
 
 // LoginToken return the user's login token.
 func (u User) LoginToken() string {
-	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
+	var prefix string
+	if u.GithubAccessToken == "on-prem" {
+		prefix = "onprem"
+	} else {
+		prefix = "gh"
+	}
+	return fmt.Sprintf("%s_%d_%s", prefix, u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.

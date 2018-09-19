@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/gin-gonic/contrib/sessions"
@@ -37,7 +38,7 @@ func SessionAuth(db *gorm.DB) gin.HandlerFunc {
 }
 
 // TokenAuth handles token authentication.
-func TokenAuth(db *gorm.DB, events events.EventService) gin.HandlerFunc {
+func TokenAuth(db *gorm.DB, events events.EventService, config config.RecoConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, exists := c.Get(strUser)
 		if exists {
@@ -49,7 +50,13 @@ func TokenAuth(db *gorm.DB, events events.EventService) gin.HandlerFunc {
 			return
 		}
 
-		ghID, err := strconv.Atoi(strings.TrimPrefix(username, "gh_"))
+		var prefix string
+		if config.Env == "development-on-prem" {
+			prefix = "onprem_"
+		} else {
+			prefix = "gh_"
+		}
+		ghID, err := strconv.Atoi(strings.TrimPrefix(username, prefix))
 		if err != nil {
 			return
 		}

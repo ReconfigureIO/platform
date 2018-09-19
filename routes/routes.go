@@ -38,19 +38,24 @@ func SetupRoutes(
 	r.Use(middleware.SessionAuth(db))
 
 	// setup index
-	r.GET("/", handlers.Index)
+	if config.Env == "development-on-prem" {
+		r.GET("/", handlers.IndexOnPrem)
+		SetupAuthOnPrem(r, db)
+	} else {
+		r.GET("/", handlers.Index)
 
-	// Setup authenticated admin
-	authMiddleware := gin.BasicAuth(gin.Accounts{
-		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
-	})
-	admin := r.Group("/admin", authMiddleware)
-	SetupAdmin(admin, db, leads)
+		// Setup authenticated admin
+		authMiddleware := gin.BasicAuth(gin.Accounts{
+			"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+		})
+		admin := r.Group("/admin", authMiddleware)
+		SetupAdmin(admin, db, leads)
 
-	// signup & login flow
-	SetupAuth(r, db, leads, authService)
+		// signup & login flow
+		SetupAuth(r, db, leads, authService)
+	}
 
-	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
+	apiRoutes := r.Group("/", middleware.TokenAuth(db, events, config), middleware.RequiresUser())
 
 	billing := api.Billing{}
 	profile := profile.Profile{
@@ -134,7 +139,7 @@ func SetupRoutes(
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
-	eventRoutes := r.Group("", middleware.TokenAuth(db, events))
+	eventRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
@@ -142,7 +147,7 @@ func SetupRoutes(
 		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
 
-	reportRoutes := r.Group("", middleware.TokenAuth(db, events))
+	reportRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
 	}
