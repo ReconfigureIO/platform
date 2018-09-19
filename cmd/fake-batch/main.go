@@ -358,7 +358,10 @@ func (h *handler) DescribeJobs(w http.ResponseWriter, r *http.Request) {
 				SetJobId(c.ID).
 				SetJobName(c.Labels["job-name"]).
 				SetStatus(dockerStatusToBatchStatus(c.Status)).
-				SetContainer(dockerContainerDetailToBatchContainerDetail(c)),
+				SetContainer(&batch.ContainerDetail{
+					LogStreamName: &c.ID,
+				},
+				),
 		)
 	}
 

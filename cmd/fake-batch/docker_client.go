@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/docker/docker/pkg/stdcopy"
@@ -95,10 +94,7 @@ func (dh dockerHelper) Wait() {
 	case <-errored:
 	}
 
-	// Set this flag to stop worker containers being removed on exit
-	if os.Getenv("FAKE_BATCH_DEBUGGING") == "" {
-		dh.ArchiveLogAndRemoveContainer(nil)
-	}
+	dh.ArchiveLogAndRemoveContainer(nil)
 }
 
 // ArchiveLogAndRemoveContainer grabs logs out of Docker and puts them into long
@@ -171,14 +167,14 @@ func (dh dockerHelper) Logs(ctx context.Context) (io.ReadCloser, error) {
 		},
 	)
 	if err != nil {
-		return rawLogs, err
+		return nil, err
 	}
 	combinedLogs, w := io.Pipe()
 	go stripDockerLogEncapsulation(rawLogs, w)
 	return combinedLogs, nil
 }
 
-func stripDockerLogEncapsulation(r io.ReadCloser, w io.WriteCloser) {
+func stripDockerLogEncapsulation(r io.Reader, w io.WriteCloser) {
 	defer w.Close()
 
 	_, err := stdcopy.StdCopy(w, w, r)
