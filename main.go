@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/url"
 	"os"
 	"time"
 
@@ -144,8 +145,13 @@ func main() {
 		authService = github.New(db)
 	}
 
+	hostname := url.URL{
+		Host:   conf.Host,
+		Scheme: callbackProtocol,
+	}
+
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, callbackProtocol, conf.Host, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, hostname, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/ReconfigureIO/platform/service/aws"
@@ -26,8 +27,7 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
-	HostName         string
-	CallbackProtocol string
+	Hostname         url.URL
 	Events           events.EventService
 	UseSpotInstances bool
 	Storage          storage.Service
@@ -145,7 +145,10 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 
-		callbackURL := fmt.Sprintf("%s://%s/deployments/%s/events?token=%s", d.CallbackProtocol, d.HostName, newDep.ID, newDep.Token)
+		q := d.Hostname.Query()
+		q.Set("token", newDep.Token)
+		d.Hostname.Path = "/deployments" + newDep.ID + "/events"
+		callbackURL := d.Hostname.String()
 
 		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, callbackURL)
 		if err != nil {

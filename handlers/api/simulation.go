@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -16,21 +17,19 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	HostName         string
-	CallbackProtocol string
-	AWS              aws.Service
-	Events           events.EventService
-	Storage          storage.Service
+	Hostname url.URL
+	AWS      aws.Service
+	Events   events.EventService
+	Storage  storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(hostName string, callbackProtocol string, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(hostName url.URL, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
 	return Simulation{
-		HostName:         hostName,
-		CallbackProtocol: callbackProtocol,
-		AWS:              awsSession,
-		Events:           events,
-		Storage:          storageService,
+		Hostname: hostName,
+		AWS:      awsSession,
+		Events:   events,
+		Storage:  storageService,
 	}
 }
 
@@ -125,7 +124,10 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("%s://%s/simulations/%s/events?token=%s", s.CallbackProtocol, s.HostName, sim.ID, sim.Token)
+	q := s.Hostname.Query()
+	q.Set("token", sim.Token)
+	s.Hostname.Path = "/simulations" + sim.ID + "/events"
+	callbackURL := s.Hostname.String()
 
 	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
 	if err != nil {

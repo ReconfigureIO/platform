@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/storage"
@@ -18,12 +19,11 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	HostName         string
-	CallbackProtocol string
-	Events           events.EventService
-	Storage          storage.Service
-	AWS              aws.Service
-	PublicProjectID  string
+	Hostname        url.URL
+	Events          events.EventService
+	Storage         storage.Service
+	AWS             aws.Service
+	PublicProjectID string
 }
 
 // Common preload functionality.
@@ -197,8 +197,13 @@ func (b Build) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("%s://%s/builds/%s/events?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
-	reportsURL := fmt.Sprintf("%s://%s/builds/%s/reports?token=%s", b.CallbackProtocol, b.HostName, build.ID, build.Token)
+
+	q := b.Hostname.Query()
+	q.Set("token", build.Token)
+	b.Hostname.Path = "/builds" + build.ID + "/events"
+	callbackURL := b.Hostname.String()
+	b.Hostname.Path = "/builds" + build.ID + "/reports"
+	reportsURL := b.Hostname.String()
 	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
 	if err != nil {
 		sugar.InternalError(c, err)

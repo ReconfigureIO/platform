@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"fmt"
+	"net/url"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -18,11 +19,10 @@ import (
 
 // Graph handles requests for graphs.
 type Graph struct {
-	HostName         string
-	CallbackProtocol string
-	Events           events.EventService
-	Storage          storage.Service
-	AWS              aws.Service
+	Hostname url.URL
+	Events   events.EventService
+	Storage  storage.Service
+	AWS      aws.Service
 }
 
 // Common preload functionality.
@@ -141,7 +141,10 @@ func (g Graph) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("%s://%s/graphs/%s/events?token=%s", g.CallbackProtocol, g.HostName, graph.ID, graph.Token)
+	q := g.Hostname.Query()
+	q.Set("token", graph.Token)
+	g.Hostname.Path = "/graphs" + graph.ID + "/events"
+	callbackURL := g.Hostname.String()
 	graphID, err := g.AWS.RunGraph(graph, callbackURL)
 	if err != nil {
 		sugar.InternalError(c, err)

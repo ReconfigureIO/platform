@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/url"
+
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers"
 	"github.com/ReconfigureIO/platform/handlers/api"
@@ -21,8 +23,7 @@ import (
 func SetupRoutes(
 	config config.RecoConfig,
 	secretKey string,
-	callbackProtocol string,
-	hostName string,
+	hostname url.URL,
 	r *gin.Engine,
 	db *gorm.DB,
 	awsService aws.Service,
@@ -69,12 +70,11 @@ func SetupRoutes(
 	}
 
 	build := api.Build{
-		HostName:         hostName,
-		CallbackProtocol: callbackProtocol,
-		Events:           events,
-		Storage:          storage,
-		PublicProjectID:  publicProjectID,
-		AWS:              awsService,
+		Hostname:        hostname,
+		Events:          events,
+		Storage:         storage,
+		PublicProjectID: publicProjectID,
+		AWS:             awsService,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
@@ -98,7 +98,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(hostName, callbackProtocol, events, storage, awsService)
+	simulation := api.NewSimulation(hostname, events, storage, awsService)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -109,11 +109,10 @@ func SetupRoutes(
 	}
 
 	graph := api.Graph{
-		HostName:         hostName,
-		CallbackProtocol: callbackProtocol,
-		AWS:              awsService,
-		Events:           events,
-		Storage:          storage,
+		Hostname: hostname,
+		AWS:      awsService,
+		Events:   events,
+		Storage:  storage,
 	}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
@@ -125,8 +124,7 @@ func SetupRoutes(
 	}
 
 	deployment := api.Deployment{
-		HostName:         hostName,
-		CallbackProtocol: callbackProtocol,
+		Hostname:         hostname,
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,
