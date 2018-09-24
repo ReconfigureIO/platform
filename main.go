@@ -145,13 +145,13 @@ func main() {
 		authService = github.New(db)
 	}
 
-	hostname := url.URL{
+	APIBaseURL := url.URL{
 		Host:   conf.Host,
 		Scheme: callbackProtocol,
 	}
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, hostname, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, APIBaseURL, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
 
 	// queue
 	var deploymentQueue queue.Queue

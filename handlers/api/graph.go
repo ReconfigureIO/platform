@@ -19,10 +19,10 @@ import (
 
 // Graph handles requests for graphs.
 type Graph struct {
-	Hostname url.URL
-	Events   events.EventService
-	Storage  storage.Service
-	AWS      aws.Service
+	APIBaseURL url.URL
+	Events     events.EventService
+	Storage    storage.Service
+	AWS        aws.Service
 }
 
 // Common preload functionality.
@@ -141,11 +141,12 @@ func (g Graph) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	q := g.Hostname.Query()
-	q.Set("token", graph.Token)
-	g.Hostname.Path = "/graphs" + graph.ID + "/events"
-	callbackURL := g.Hostname.String()
-	graphID, err := g.AWS.RunGraph(graph, callbackURL)
+
+	urlEvents := g.APIBaseURL
+	urlEvents.Query().Set("token", graph.Token)
+	urlEvents.Path = "/graphs/" + graph.ID + "/events"
+
+	graphID, err := g.AWS.RunGraph(graph, urlEvents.String())
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

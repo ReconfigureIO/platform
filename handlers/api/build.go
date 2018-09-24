@@ -19,7 +19,7 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
-	Hostname        url.URL
+	APIBaseURL      url.URL
 	Events          events.EventService
 	Storage         storage.Service
 	AWS             aws.Service
@@ -198,13 +198,13 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	q := b.Hostname.Query()
-	q.Set("token", build.Token)
-	b.Hostname.Path = "/builds" + build.ID + "/events"
-	callbackURL := b.Hostname.String()
-	b.Hostname.Path = "/builds" + build.ID + "/reports"
-	reportsURL := b.Hostname.String()
-	buildID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
+	urlEvents, urlReports := b.APIBaseURL, b.APIBaseURL
+	urlEvents.Query().Set("token", build.Token)
+	urlReports.Query().Set("token", build.Token)
+	urlEvents.Path = "/builds/" + build.ID + "/events"
+	urlReports.Path = "/builds/" + build.ID + "/reports"
+
+	buildID, err := b.AWS.RunBuild(build, urlEvents.String(), urlReports.String())
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

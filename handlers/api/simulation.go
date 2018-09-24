@@ -17,19 +17,19 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	Hostname url.URL
-	AWS      aws.Service
-	Events   events.EventService
-	Storage  storage.Service
+	APIBaseURL url.URL
+	AWS        aws.Service
+	Events     events.EventService
+	Storage    storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(hostName url.URL, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(APIBaseURL url.URL, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
 	return Simulation{
-		Hostname: hostName,
-		AWS:      awsSession,
-		Events:   events,
-		Storage:  storageService,
+		APIBaseURL: APIBaseURL,
+		AWS:        awsSession,
+		Events:     events,
+		Storage:    storageService,
 	}
 }
 
@@ -124,12 +124,11 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	q := s.Hostname.Query()
-	q.Set("token", sim.Token)
-	s.Hostname.Path = "/simulations" + sim.ID + "/events"
-	callbackURL := s.Hostname.String()
+	urlEvents := s.APIBaseURL
+	urlEvents.Query().Set("token", sim.Token)
+	urlEvents.Path = "/simulations/" + sim.ID + "/events"
 
-	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
+	simID, err := s.AWS.RunSimulation(s3Url, urlEvents.String(), sim.Command)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
