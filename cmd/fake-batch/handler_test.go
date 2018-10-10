@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log"
 	"math/rand"
 	"net/http/httptest"
 	"strconv"
@@ -33,10 +34,11 @@ type fakeDockerClient struct {
 
 	mu                     sync.Mutex
 	idCount                int
-	idToTestContainerState map[string]*FakeContainer
+	idToTestContainerState map[string]*fakeContainer
 }
 
-type FakeContainer struct {
+type fakeContainer struct {
+	id     int
 	status string
 	once   sync.Once
 	hasher hash.Hash
@@ -46,7 +48,7 @@ type FakeContainer struct {
 	hashReady chan struct{}
 }
 
-func (c FakeContainer) GetHash(b []byte) []byte {
+func (c *fakeContainer) GetHash(b []byte) []byte {
 	<-c.hashReady
 	return c.hasher.Sum(b)
 }
@@ -66,7 +68,8 @@ func (c *fakeDockerClient) ContainerCreate(
 
 	c.idCount++
 	idString := strconv.Itoa(c.idCount)
-	c.idToTestContainerState[idString] = &FakeContainer{
+	c.idToTestContainerState[idString] = &fakeContainer{
+		id:        c.idCount,
 		status:    "created",
 		hasher:    md5.New(),
 		hashReady: make(chan struct{}),
@@ -98,19 +101,12 @@ func (c *fakeDockerClient) ContainerLogs(
 	io.ReadCloser,
 	error,
 ) {
-	// TODO campgareth: add comment, there's enough flying around here to confuse.
-	lengthOfLog := rand.Int63n(50)
-
-	idInt64, err := strconv.ParseInt(container, 10, 64)
-	if err != nil {
-		panic("We couldn't get an int64 out of the container string")
-	}
-
-	r := getRandomData(lengthOfLog, idInt64)
-
 	c.mu.Lock()
 	tcs := c.idToTestContainerState[container]
 	c.mu.Unlock()
+
+	maxLength := 50
+	r := getRandomData(maxLength, tcs.id)
 
 	// We've got a predictable source of randomness that will always produce the
 	// same data for the same seed. We need to generate a hash of this data but
@@ -138,6 +134,7 @@ func (c *fakeDockerClient) ContainerLogs(
 			}
 		}()
 		defer pipew.Close()
+
 		_, err := io.Copy(w, r)
 		if err != nil {
 			panic(fmt.Errorf("io.Copy in ContainerLogs: %v", err))
@@ -176,13 +173,13 @@ func (c *fakeDockerClient) ContainerRemove(
 // It takes a fake implementation of Docker and uses it to respond to client requests.
 // The client steps taken here are the creation of a job and requesting the logs of that job.
 func TestHandler(t *testing.T) {
-	var numContainers = 1
-	var numFollowers = 1
+	var numContainers = 10
+	var numFollowers = 30
 	var wg sync.WaitGroup
 
 	fakeDockerClient := &fakeDockerClient{
 		mu:                     sync.Mutex{},
-		idToTestContainerState: make(map[string]*FakeContainer),
+		idToTestContainerState: make(map[string]*fakeContainer),
 	}
 	handler := &handler{
 		dockerClient: fakeDockerClient,
@@ -201,6 +198,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	s := httptest.NewServer(handler)
+	defer log.Println("Closed")
 	defer s.Close()
 
 	config := &aws.Config{
@@ -229,8 +227,8 @@ func TestHandler(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			jobId := *respSubmitJob.JobId
-			// t.Logf("jobId=%s", jobId)
+
+			jobID := *respSubmitJob.JobId
 
 			logService := fakebatchlogs.Service{
 				Endpoint: s.URL,
@@ -239,23 +237,25 @@ func TestHandler(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					logReader := logService.Stream(context.Background(), jobId)
+					logReader := logService.Stream(context.Background(), jobID)
 					defer logReader.Close()
 
 					logCheckHasher := md5.New()
 					_, err := io.Copy(logCheckHasher, logReader)
 					if err != nil {
-						t.Fatal("blarg")
+						log.Println("Error")
+						t.Fatalf("io.Copy: %v", err)
 					}
 
 					receivedHash := logCheckHasher.Sum(nil)
 					fakeDockerClient.mu.Lock()
-					expectedHash := fakeDockerClient.idToTestContainerState[jobId].GetHash(nil)
+					tcs := fakeDockerClient.idToTestContainerState[jobID]
+					expectedHash := tcs.GetHash(nil)
 					fakeDockerClient.mu.Unlock()
-					// t.Logf("logs from container: %q", logs[:])
+
 					if !bytes.Equal(expectedHash, receivedHash) {
-						fmt.Printf("Job ID: %v Expected %v, got %v \n", jobId, expectedHash, receivedHash)
-						t.Errorf("Source and received log hashes are not equal")
+						fmt.Printf("Job ID: %v Expected %v, got %v \n", jobID, expectedHash, receivedHash)
+						// t.Errorf("Source and received log hashes are not equal")
 					}
 				}()
 			}
@@ -265,8 +265,8 @@ func TestHandler(t *testing.T) {
 	wg.Wait()
 }
 
-func getRandomData(length, seed int64) io.Reader {
-	var r io.Reader = rand.New(rand.NewSource(seed))
-	r = io.LimitReader(r, length)
-	return r
+func getRandomData(maxLength, seed int) io.Reader {
+	r := rand.New(rand.NewSource(int64(seed)))
+	lengthOfLog := r.Int63n(int64(maxLength))
+	return io.LimitReader(r, lengthOfLog)
 }
