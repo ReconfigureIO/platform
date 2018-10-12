@@ -55,7 +55,7 @@ func (s *jobQueueSemaphores) enqueue(q Q, run func()) {
 	go func() {
 		runningChan <- struct{}{}
 		defer func() { <-runningChan }()
-		
+
 		run()
 	}()
 }

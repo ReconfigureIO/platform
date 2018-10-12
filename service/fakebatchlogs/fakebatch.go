@@ -1,4 +1,4 @@
-// Package logs implements (*logs.Service).Stream(ctx, logStreamName) io.ReadCloser backed by polling CloudWatchLogs.
+// Package fakebatchlogs implements Stream(...) backed by fakebatch.
 package fakebatchlogs
 
 import (
@@ -8,50 +8,42 @@ import (
 	"net/http"
 )
 
-// Service implements Stream(logStreamName string) io.ReadCloser.
-// It polls the CloudWatchLogs API at a period defined by defaultPollPeriod.
+// Service implements Stream()
 type Service struct {
 	Endpoint string
 }
 
 // Stream returns an io.ReadCloser containing the logs for the given
-// logStreamName. It is valid to call
-// Stream on a logStreamName which does not yet exist, in that case, Stream will
-// wait for it to exist, or for the context to be canceled. Context cancelation
-// is treated as the end of the stream, causing the ReadCloser to return io.EOF.
-func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadCloser {
-	r, w := io.Pipe()
-
-	URL := fmt.Sprintf("%s/v1/logs/%s", s.Endpoint, logStreamName)
-	req, err := http.NewRequest(http.MethodGet, URL, nil)
+// logStreamName. It is valid to call Stream on a logStreamName which does not
+// yet exist, in that case, Stream will wait for it to exist, or for the context
+// to be canceled. Context cancelation is treated as the end of the stream,
+// causing the ReadCloser to return io.EOF.
+func (s *Service) Stream(
+	ctx context.Context, logStreamName string,
+) io.ReadCloser {
+	url := fmt.Sprintf("%s/v1/logs/%s", s.Endpoint, logStreamName)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		_ = w.CloseWithError(err)
-		return r
+		err := fmt.Errorf("fakebatchlogs.Stream: http.NewRequest: %v", err)
+		return errReader(err)
 	}
+
 	req = req.WithContext(ctx)
-	client := &http.Client{}
-	response, err := client.Do(req)
+
+	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
-		fmt.Printf("Failed to run client.Do: %v \n", err)
-		_ = w.CloseWithError(err)
-		return r
+		return errReader(fmt.Errorf("fakebatchlogs.Stream: client.Do: %v", err))
+	}
+	if !(200 <= resp.StatusCode && resp.StatusCode <= 299) {
+		err := fmt.Errorf("non-2xx status: %v %v", resp.StatusCode, resp.Status)
+		return errReader(fmt.Errorf("fakebatchlogs.Stream: client.Do: %v", err))
 	}
 
-	if response.StatusCode != 200 {
-		fmt.Printf("Expected status code 200, got %v \n", response.StatusCode)
-		_ = w.CloseWithError(err)
-		return r
-	}
-	go func() {
-		defer response.Body.Close()
-		fmt.Println("starting io.Copy in Stream function")
-		_, err = io.Copy(w, response.Body)
-		if err != nil {
-			fmt.Printf("Error on io.Copy in Stream function: %v \n", err)
-			w.CloseWithError(err)
-		}
-		w.Close()
-	}()
+	return resp.Body
+}
 
+func errReader(err error) io.ReadCloser {
+	r, w := io.Pipe()
+	_ = w.CloseWithError(err)
 	return r
 }
