@@ -32,7 +32,7 @@ import (
 type fakeDockerClient struct {
 	dockerClient
 
-	mu                     sync.Mutex
+	mu                     *sync.Mutex
 	idCount                int
 	idToTestContainerState map[string]*fakeContainer
 }
@@ -178,7 +178,7 @@ func TestHandler(t *testing.T) {
 	var wg sync.WaitGroup
 
 	fakeDockerClient := &fakeDockerClient{
-		mu:                     sync.Mutex{},
+		mu: &sync.Mutex{},
 		idToTestContainerState: make(map[string]*fakeContainer),
 	}
 	handler := &handler{
