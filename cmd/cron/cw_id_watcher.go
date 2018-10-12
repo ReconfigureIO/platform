@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	awsaws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/batch/batchiface"
 	log "github.com/sirupsen/logrus"
@@ -60,7 +60,7 @@ func (watcher *LogWatcher) getLogNames(ctx context.Context, batchJobIDs []string
 	ret := make(map[string]string)
 
 	cfg := batch.DescribeJobsInput{
-		Jobs: awsaws.StringSlice(batchJobIDs),
+		Jobs: aws.StringSlice(batchJobIDs),
 	}
 
 	results, err := watcher.batchSession.DescribeJobsWithContext(ctx, &cfg)

@@ -4,14 +4,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	awsaws "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
-	awsbatch "github.com/aws/aws-sdk-go/service/batch"
+	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/batch/batchiface"
 	"github.com/golang/mock/gomock"
 )
@@ -63,19 +62,19 @@ type fakeBatchClient struct {
 func (
 	batch fakeBatchClient,
 ) DescribeJobsWithContext(
-	ctx awsaws.Context,
-	req *awsbatch.DescribeJobsInput,
+	ctx aws.Context,
+	req *batch.DescribeJobsInput,
 	opts ...request.Option,
 ) (
-	*awsbatch.DescribeJobsOutput,
+	*batch.DescribeJobsOutput,
 	error,
 ) {
-	return &awsbatch.DescribeJobsOutput{
-		Jobs: []*awsbatch.JobDetail{
-			&awsbatch.JobDetail{
-				JobId: awsaws.String("foobar"),
-				Container: &awsbatch.ContainerDetail{
-					LogStreamName: awsaws.String("LogName"),
+	return &batch.DescribeJobsOutput{
+		Jobs: []*batch.JobDetail{
+			&batch.JobDetail{
+				JobId: aws.String("foobar"),
+				Container: &batch.ContainerDetail{
+					LogStreamName: aws.String("LogName"),
 				},
 			},
 		},
