@@ -21,6 +21,8 @@ spec:
         env:
         - name: RECO_NAME
           value: "cron"
+        - name: AWS_REGION
+          value: "us-east-1"
         envFrom:
           - configMapRef:
               name: production-config
