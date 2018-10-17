@@ -58,6 +58,7 @@ func (s *service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
 }
 
+// RunBuild creates an AWS Batch Job that runs our build process
 func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
@@ -130,6 +131,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 	return *resp.JobId, nil
 }
 
+// RunSimulation creates an AWS Batch Job that runs our simulation process
 func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
@@ -177,6 +179,7 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 	return *resp.JobId, nil
 }
 
+// RunGraph creates an AWS Batch Job that runs our graph process
 func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(graph.InputUrl())
@@ -211,6 +214,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 	return *resp.JobId, nil
 }
 
+// HaltJob terminates a running batch job
 func (s *service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
@@ -221,10 +225,12 @@ func (s *service) HaltJob(batchID string) error {
 	return err
 }
 
+// RunDeployment is not implemented
 func (s *service) RunDeployment(command string) (string, error) {
 	return "This function does nothing yet", nil
 }
 
+// GetJobDetail describes the AWS Batch job.
 func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{
@@ -240,6 +246,7 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	return resp.Jobs[0], nil
 }
 
+// GetJobStream takes a cloudwatch logstream name and returns the actual logstream
 func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
@@ -260,6 +267,7 @@ func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream,
 	return resp.LogStreams[0], nil
 }
 
+// Conf is used to retrieve the service's config
 func (s *service) Conf() *ServiceConfig {
 	return &s.conf
 }
@@ -272,6 +280,7 @@ type Stream struct {
 	Ended   bool
 }
 
+// NewStream TODO campgareth: write proper comment
 func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
