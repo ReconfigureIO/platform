@@ -1,43 +1,26 @@
-Type of change
-==============
+Subject line, without full stop
 
-<!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
+<!-- First time? Take a look at: https://blog.github.com/2015-01-21-how-to-write-the-perfect-pull-request/ -->
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
+<!-- PR Body. Describe the purpose of the change here. -->
 
-Description
-===========
+<!-- What feedback do you want from the review? -->
 
-<!--- What does this code solve? How does it solve it? -->
+Checklist
+=========
 
-Review Checklist
-================
+- [ ] Thought about testing?
+- [ ] Is the intent of the code clear? (use comments judiciously!)
+- [ ] Added to RELEASE.md?
 
-<!--- Don't edit this, the reviewer will. Make sure you follow it though -->
+<!--
 
-Goals
------
+    Have you told everyone that needs to know about this PR?
 
-- [ ] Does it solve the problem?
+    Do you need to update global docs?
+        https://github.com/ReconfigureIO/internal-docs/wiki/Engineering-Function
 
-- [ ] Is it the simplest implementation of that solution?
-    Does it yak shave? Does it introduce new dependencies that aren't necessary?
+    You *are* allowed to delete the contents of this template.
+    Please strive to make the intent of your change clear in the PR.
 
-- [ ] Does it decrease modularity?
-    Does the user of a module need to import another module to use this one?
-    If we want to delete these changes, how easy is that?
-
-- [ ] Does it clarify our domain?
-    What things does it refine? What things get added? How does this pave the way for new things?
-    Are things named in such a way that a domain expert can find them?
-
-- [ ] Does it introduce non-domain concepts?
-    What does the user of this need to learn outside of our domain in order to use this?
-
-Testing
--------
-
-- [ ] Do we integration test changes to external services?
-
-- [ ] Do we unit test code we can change?
+-->
