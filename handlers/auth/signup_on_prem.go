@@ -29,8 +29,8 @@ func (s *SignupUserOnPrem) SignUpNoToken(c *gin.Context) {
 
 	if sugar.ValidateRequest(c, newUser) {
 		user, err := models.CreateOrUpdateUser(s.DB, models.User{
-			Email:    newUser.Email,
-			GithubID: int(int32(h.Sum32())),
+			Email:             newUser.Email,
+			GithubID:          int(int32(h.Sum32())),
 			GithubAccessToken: "on-prem",
 		}, true)
 		if err != nil {
