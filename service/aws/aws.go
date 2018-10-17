@@ -5,6 +5,8 @@ package aws
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
@@ -17,25 +19,45 @@ import (
 // ErrNotFound is not found error.
 var ErrNotFound = errors.New("Not Found")
 
-// Service is an AWS service.
-type Service interface {
-	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
-	RunGraph(graph models.Graph, callbackURL string) (string, error)
-	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
-	RunDeployment(command string) (string, error)
-
-	HaltJob(batchID string) error
-	GetJobDetail(id string) (*batch.JobDetail, error)
-
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
-	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
-
-	Conf() *ServiceConfig
-}
-
-type service struct {
+// Service implements batch.Service.
+type Service struct {
 	session *session.Session
 	conf    ServiceConfig
+
+	// TODO(pwaller): Initialize this during construction by passing in a batch/aws/logs.Service instance.
+	streamService StreamService
+}
+
+// StreamService contains functions for streaming logs from a batch job
+type StreamService interface {
+	Stream(ctx context.Context, logStreamName string) io.ReadCloser
+}
+
+// Logs converts a batchID to a cloudwatch log name then begins streaming
+func (s *Service) Logs(ctx context.Context, batchJob *models.BatchJob) (io.ReadCloser, error) {
+	logName := batchJob.LogName
+	var err error
+	if logName == "" {
+		logName, err = s.batchIDToLogName(batchJob.BatchID)
+		if err != nil {
+			return nil, err
+		}
+		if logName == "" {
+			return nil, fmt.Errorf("Logs: Could not determine logName with batchIDToLogName for BatchJob %v", batchJob.ID)
+		}
+	}
+	return s.streamService.Stream(ctx, logName), nil
+}
+
+func (s *Service) batchIDToLogName(batchID string) (logName string, err error) {
+	jobDetail, err := s.GetJobDetail(batchID)
+	if err != nil {
+		return "", err
+	}
+	if *jobDetail.Container.LogStreamName == "" {
+		return "", fmt.Errorf("batchIDToLogName: No LogStreamName in JobDetail output")
+	}
+	return *jobDetail.Container.LogStreamName, nil
 }
 
 // ServiceConfig holds configuration for service.
@@ -48,18 +70,21 @@ type ServiceConfig struct {
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig) Service {
-	s := service{conf: conf}
+func New(conf ServiceConfig, streamService StreamService) *Service {
+	s := Service{
+		conf:          conf,
+		streamService: streamService,
+	}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }
 
-func (s *service) s3Url(key string) string {
+func (s *Service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
 }
 
 // RunBuild creates an AWS Batch Job that runs our build process
-func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
+func (s *Service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	debugArtifactURL := s.s3Url(build.DebugUrl())
@@ -132,7 +157,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 }
 
 // RunSimulation creates an AWS Batch Job that runs our simulation process
-func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
+func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -180,7 +205,7 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 }
 
 // RunGraph creates an AWS Batch Job that runs our graph process
-func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
+func (s *Service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(graph.InputUrl())
 	outputArtifactURL := s.s3Url(graph.ArtifactUrl())
@@ -215,7 +240,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 }
 
 // HaltJob terminates a running batch job
-func (s *service) HaltJob(batchID string) error {
+func (s *Service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
 		JobId:  aws.String(batchID),        // Required
@@ -226,12 +251,12 @@ func (s *service) HaltJob(batchID string) error {
 }
 
 // RunDeployment is not implemented
-func (s *service) RunDeployment(command string) (string, error) {
+func (s *Service) RunDeployment(command string) (string, error) {
 	return "This function does nothing yet", nil
 }
 
 // GetJobDetail describes the AWS Batch job.
-func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
+func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{
 		Jobs: aws.StringSlice([]string{id}),
@@ -247,7 +272,7 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 }
 
 // GetJobStream takes a cloudwatch logstream name and returns the actual logstream
-func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
+func (s *Service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
@@ -268,20 +293,20 @@ func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream,
 }
 
 // Conf is used to retrieve the service's config
-func (s *service) Conf() *ServiceConfig {
+func (s *Service) Conf() *ServiceConfig {
 	return &s.conf
 }
 
 // Stream is log stream.
 type Stream struct {
-	session *service
+	session *Service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
 	Ended   bool
 }
 
 // NewStream TODO campgareth: write proper comment
-func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
+func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
 	return &Stream{

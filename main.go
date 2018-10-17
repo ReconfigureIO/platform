@@ -11,8 +11,10 @@ import (
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
 	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/cloudwatchlogs"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
+	"github.com/ReconfigureIO/platform/service/fakebatchlogs"
 	"github.com/ReconfigureIO/platform/service/leads"
 	"github.com/ReconfigureIO/platform/service/queue"
 	s3reco "github.com/ReconfigureIO/platform/service/storage/s3"
@@ -95,7 +97,9 @@ func main() {
 		S3API:       s3aws.New(session),
 	}
 
-	awsSession := aws.New(conf.Reco.AWS)
+	awsSession := aws.New(conf.Reco.AWS, &cloudwatchlogs.Service{
+		LogGroup: conf.Reco.AWS.LogGroup,
+	})
 
 	deploy := deployment.New(conf.Reco.Deploy)
 
@@ -139,6 +143,9 @@ func main() {
 	var authService auth.Service
 	if conf.Reco.Env == "development-on-prem" {
 		authService = &auth.NOPService{DB: db}
+		awsSession = aws.New(conf.Reco.AWS, &fakebatchlogs.Service{
+			Endpoint: os.Getenv("RECO_AWS_ENDPOINT"),
+		})
 	} else {
 		authService = github.New(db)
 	}

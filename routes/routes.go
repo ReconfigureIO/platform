@@ -23,7 +23,7 @@ func SetupRoutes(
 	secretKey string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService aws.Service,
+	awsService *aws.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,
@@ -75,7 +75,7 @@ func SetupRoutes(
 		Events:          events,
 		Storage:         storage,
 		PublicProjectID: publicProjectID,
-		AWS:             awsService,
+		AWS:             *awsService,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
