@@ -18,7 +18,6 @@ import (
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/billing_hours"
 	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -28,7 +27,6 @@ import (
 
 var (
 	deploy          deployment.Service
-	awsService      aws.Service
 	awsBatchService batchiface.BatchAPI
 
 	db *gorm.DB
@@ -55,7 +53,6 @@ func setup(*cobra.Command, []string) {
 	}
 
 	deploy = deployment.New(conf.Reco.Deploy)
-	awsService = aws.New(conf.Reco.AWS)
 
 	sess := session.New()
 	awsBatchService = batch.New(sess)
