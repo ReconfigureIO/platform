@@ -1,13 +1,12 @@
 package aws
 
-//go:generate mockgen -source=aws.go -package=aws -destination=aws_mock.go
-
 import (
 	"context"
 	"errors"
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -17,23 +16,7 @@ import (
 // ErrNotFound is not found error.
 var ErrNotFound = errors.New("Not Found")
 
-// Service is an AWS service.
-type Service interface {
-	RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error)
-	RunGraph(graph models.Graph, callbackURL string) (string, error)
-	RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error)
-	RunDeployment(command string) (string, error)
-
-	HaltJob(batchID string) error
-	GetJobDetail(id string) (*batch.JobDetail, error)
-
-	NewStream(stream cloudwatchlogs.LogStream) *Stream
-	GetJobStream(string) (*cloudwatchlogs.LogStream, error)
-
-	Conf() *ServiceConfig
-}
-
-type service struct {
+type Service struct {
 	session *session.Session
 	conf    ServiceConfig
 }
@@ -48,18 +31,18 @@ type ServiceConfig struct {
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig) Service {
-	s := service{conf: conf}
+func New(conf ServiceConfig) *Service {
+	s := Service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }
 
-func (s *service) s3Url(key string) string {
+func (s *Service) s3Url(key string) string {
 	return "s3://" + s.conf.Bucket + "/" + key
 }
 
 // RunBuild creates an AWS Batch Job that runs our build process
-func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
+func (s *Service) RunBuild(build models.Build, callbackURL string, reportsURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(build.InputUrl())
 	debugArtifactURL := s.s3Url(build.DebugUrl())
@@ -132,7 +115,7 @@ func (s *service) RunBuild(build models.Build, callbackURL string, reportsURL st
 }
 
 // RunSimulation creates an AWS Batch Job that runs our simulation process
-func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
+func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -180,7 +163,7 @@ func (s *service) RunSimulation(inputArtifactURL string, callbackURL string, com
 }
 
 // RunGraph creates an AWS Batch Job that runs our graph process
-func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
+func (s *Service) RunGraph(graph models.Graph, callbackURL string) (string, error) {
 	batchSession := batch.New(s.session)
 	inputArtifactURL := s.s3Url(graph.InputUrl())
 	outputArtifactURL := s.s3Url(graph.ArtifactUrl())
@@ -215,7 +198,7 @@ func (s *service) RunGraph(graph models.Graph, callbackURL string) (string, erro
 }
 
 // HaltJob terminates a running batch job
-func (s *service) HaltJob(batchID string) error {
+func (s *Service) HaltJob(batchID string) error {
 	batchSession := batch.New(s.session)
 	params := &batch.TerminateJobInput{
 		JobId:  aws.String(batchID),        // Required
@@ -226,12 +209,12 @@ func (s *service) HaltJob(batchID string) error {
 }
 
 // RunDeployment is not implemented
-func (s *service) RunDeployment(command string) (string, error) {
+func (s *Service) RunDeployment(command string) (string, error) {
 	return "This function does nothing yet", nil
 }
 
 // GetJobDetail describes the AWS Batch job.
-func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
+func (s *Service) GetJobDetail(id string) (*batch.JobDetail, error) {
 	batchSession := batch.New(s.session)
 	inp := &batch.DescribeJobsInput{
 		Jobs: aws.StringSlice([]string{id}),
@@ -247,7 +230,7 @@ func (s *service) GetJobDetail(id string) (*batch.JobDetail, error) {
 }
 
 // GetJobStream takes a cloudwatch logstream name and returns the actual logstream
-func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
+func (s *Service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream, error) {
 	cwLogs := cloudwatchlogs.New(s.session)
 
 	searchParams := &cloudwatchlogs.DescribeLogStreamsInput{
@@ -268,20 +251,20 @@ func (s *service) GetJobStream(logStreamName string) (*cloudwatchlogs.LogStream,
 }
 
 // Conf is used to retrieve the service's config
-func (s *service) Conf() *ServiceConfig {
+func (s *Service) Conf() *ServiceConfig {
 	return &s.conf
 }
 
 // Stream is log stream.
 type Stream struct {
-	session *service
+	session *Service
 	stream  cloudwatchlogs.LogStream
 	Events  chan *cloudwatchlogs.GetLogEventsOutput
 	Ended   bool
 }
 
 // NewStream TODO campgareth: write proper comment
-func (s *service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
+func (s *Service) NewStream(stream cloudwatchlogs.LogStream) *Stream {
 	logs := make(chan *cloudwatchlogs.GetLogEventsOutput)
 
 	return &Stream{
