@@ -50,8 +50,9 @@ var ErrNotFound = errors.New("Not Found")
 func (s *Service) Stream(ctx context.Context, batchJob *models.BatchJob) io.ReadCloser {
 	logStreamName, err := s.batchJobtoLogStreamName(batchJob)
 	if err != nil {
-		// TODO campgareth: figure out why we would hit this path and what to do
-		// in that event.
+		// TODO campgareth: This path can be hit if there is no logname attached
+		// to the batchJob and the requests to AWS do not return a logname. This
+		// indicates a need for some bounded retry logic in the requests to AWS
 		return nil
 	}
 	r, w := io.Pipe()
