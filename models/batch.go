@@ -55,7 +55,7 @@ func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 
 // GetLogName takes a BatchJob ID and returns that BatchJob's logname if present
 func (repo *batchRepo) GetLogName(id string) (string, error) {
-	batchJob := BatchJob{}
+	var batchJob BatchJob
 	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
 	if err != nil {
 		return "", err
