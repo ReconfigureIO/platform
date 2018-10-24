@@ -4,14 +4,12 @@ package cloudwatchlogs
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"log"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 )
@@ -21,7 +19,6 @@ import (
 type Service struct {
 	CloudWatchLogsAPI cloudwatchlogsiface.CloudWatchLogsAPI
 	LogGroup          string
-	batchSession      *batch.Batch
 
 	_pollPeriod time.Duration // for tests only.
 }
@@ -34,9 +31,6 @@ func (s *Service) pollPeriod() time.Duration {
 	}
 	return s._pollPeriod
 }
-
-// ErrNotFound is not found error.
-var ErrNotFound = errors.New("Not Found")
 
 // Stream returns an io.ReadCloser containing the logs for the given
 // logStreamName. Under the hood, it polls CloudWatchLogs. It is valid to call
