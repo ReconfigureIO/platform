@@ -5,15 +5,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"strings"
 	"time"
 
-	"github.com/ReconfigureIO/platform/models"
-
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/batch"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
@@ -47,14 +43,7 @@ var ErrNotFound = errors.New("Not Found")
 // Stream on a logStreamName which does not yet exist, in that case, Stream will
 // wait for it to exist, or for the context to be canceled. Context cancelation
 // is treated as the end of the stream, causing the ReadCloser to return io.EOF.
-func (s *Service) Stream(ctx context.Context, batchJob *models.BatchJob) io.ReadCloser {
-	logStreamName, err := s.batchJobtoLogStreamName(batchJob)
-	if err != nil {
-		// TODO campgareth: This path can be hit if there is no logname attached
-		// to the batchJob and the requests to AWS do not return a logname. This
-		// indicates a need for some bounded retry logic in the requests to AWS
-		return nil
-	}
+func (s *Service) Stream(ctx context.Context, logStreamName string) io.ReadCloser {
 	r, w := io.Pipe()
 	go s.pollCloudWatch(ctx, w, logStreamName)
 	return r
@@ -175,45 +164,4 @@ func isContextCancelation(err error) bool {
 
 	return strings.HasSuffix(err.Error(), context.DeadlineExceeded.Error()) ||
 		strings.HasSuffix(err.Error(), context.Canceled.Error())
-}
-
-func (s *Service) batchJobtoLogStreamName(batchJob *models.BatchJob) (string, error) {
-	logName := batchJob.LogName
-	var err error
-	if logName == "" {
-		logName, err = s.batchIDToLogName(batchJob.BatchID)
-		if err != nil {
-			return "", err
-		}
-		if logName == "" {
-			return "", fmt.Errorf("Logs: Could not determine logName with batchIDToLogName for BatchJob %v", batchJob.ID)
-		}
-	}
-	return logName, err
-}
-
-func (s *Service) batchIDToLogName(batchID string) (logName string, err error) {
-	jobDetail, err := s.getJobDetail(batchID)
-	if err != nil {
-		return "", err
-	}
-	if *jobDetail.Container.LogStreamName == "" {
-		return "", fmt.Errorf("batchIDToLogName: No LogStreamName in JobDetail output")
-	}
-	return *jobDetail.Container.LogStreamName, nil
-}
-
-// GetJobDetail describes the AWS Batch job.
-func (s *Service) getJobDetail(id string) (*batch.JobDetail, error) {
-	inp := &batch.DescribeJobsInput{
-		Jobs: aws.StringSlice([]string{id}),
-	}
-	resp, err := s.batchSession.DescribeJobs(inp)
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Jobs) == 0 {
-		return nil, ErrNotFound
-	}
-	return resp.Jobs[0], nil
 }
