@@ -46,6 +46,16 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 	return batchJob
 }
 
+// HasStarted returns if the build has started.
+func (repo *batchRepo) HasStarted(batchID) (bool, error) {
+	var batchJob BatchJob
+	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
+	if err != nil {
+		return nil, err
+	}
+	return hasStarted(batchJob.Status()), nil
+}
+
 // AddEvent adds an event to the batch service.
 func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 	db := repo.db

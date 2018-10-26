@@ -2,6 +2,7 @@
 package bidtolidadapter
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 type Adapter interface {
-	bidToLid(string) string
+	bidToLid(string) (string, error)
 }
 
 type adapter struct {
@@ -27,7 +28,7 @@ type adapter struct {
 	}
 }
 
-func (a *adapter) bidToLid(batchID string) (string, error) {
+func (a *adapter) bidToLid(ctx context.Context, batchID string) (string, error) {
 	// take batch ID
 	// try not to hammer aws.
 
@@ -45,10 +46,20 @@ func (a *adapter) bidToLid(batchID string) (string, error) {
 
 	// poll DB until we think batch job is started
 	var started bool
-	for started != true {
-		started = a.batchRepo.HasStarted(batchID) // TODO campgareth: find a better way to implement this, maybe get the batchRepo to return a channel we can block on while it handles stuff? idk
-		time.Sleep(10 * time.Second)
-	}
+	select {
+    case <-ctx.Done():
+        return "", ctx.Err()
+    case err := <-c:
+        return err
+    }
+
+	// for started != true {
+	// 	started, err = a.batchRepo.HasStarted(batchID) // TODO campgareth: find a better way to implement this, maybe get the batchRepo to return a channel we can block on while it handles stuff? idk
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	// 	time.Sleep(10 * time.Second)
+	// }
 
 	// Once batch job is started query the database one more time in case cron got there first
 	logname, err = a.batchRepo.GetLogName(batchID)
