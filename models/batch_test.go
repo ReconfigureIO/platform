@@ -53,6 +53,25 @@ func TestBatchSetLogName(t *testing.T) {
 	})
 }
 
+func TestBatchGetLogName(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+		batch := BatchJob{
+			BatchID: "foo",
+			LogName: "foobarLogName"
+		}
+		db.Create(&batch)
+		returned, err := d.GetLogName(batch.BatchID)
+		if err != nil {
+			t.Error(err)
+		}
+		if batch.LogName != returned {
+			t.Fatalf("Failed to get batch job's log name. Expected: %v Got: %v \n", batch.LogName, returned)
+			return
+		}
+	})
+}
+
 func TestBatchActiveJobsWithoutLogs(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
