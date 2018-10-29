@@ -14,6 +14,8 @@ type BatchRepo interface {
 	GetLogName(id string) (string, error)
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
+	HasStarted(string) (bool, error)
+	AwaitStarted(string) (chan struct{}, error)
 }
 
 const (
@@ -46,12 +48,29 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 	return batchJob
 }
 
-// HasStarted returns if the build has started.
-func (repo *batchRepo) HasStarted(batchID) (bool, error) {
-	var batchJob BatchJob
-	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
+func (repo *batchRepo) AwaitStarted(batchID string) (chan struct{}, error) {
+	startedChan := make(chan struct{})
+	_, err := repo.HasStarted(batchID)
 	if err != nil {
 		return nil, err
+	}
+	go func() {
+		var started bool
+		for started != true {
+			started, _ = repo.HasStarted(batchID)
+			time.Sleep(10 * time.Second)
+		}
+		close(startedChan)
+	}()
+	return startedChan, nil
+}
+
+// HasStarted returns if the build has started.
+func (repo *batchRepo) HasStarted(batchID string) (bool, error) {
+	var batchJob BatchJob
+	err := repo.db.Where("batch_id = ?", batchID).First(&batchJob).Error
+	if err != nil {
+		return false, err
 	}
 	return hasStarted(batchJob.Status()), nil
 }
