@@ -48,6 +48,9 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 	return batchJob
 }
 
+// AwaitStarted polls the BatchRepo's DB for the state of the batch job
+// associated with a given ID. It returns a channel to the caller which it
+// closes when the job has become started.
 func (repo *batchRepo) AwaitStarted(batchID string) (chan struct{}, error) {
 	startedChan := make(chan struct{})
 	_, err := repo.HasStarted(batchID)

@@ -48,7 +48,7 @@ func (a *adapter) bidToLid(batchID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_ = <-started
+	<-started
 
 	logname, err = a.batchRepo.GetLogName(batchID)
 	if err != nil {
