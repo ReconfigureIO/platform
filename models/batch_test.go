@@ -58,7 +58,7 @@ func TestBatchGetLogName(t *testing.T) {
 		d := BatchDataSource(db)
 		batch := BatchJob{
 			BatchID: "foo",
-			LogName: "foobarLogName"
+			LogName: "foobarLogName",
 		}
 		db.Create(&batch)
 		returned, err := d.GetLogName(batch.BatchID)
@@ -71,6 +71,55 @@ func TestBatchGetLogName(t *testing.T) {
 		}
 	})
 }
+
+func TestBatchAwaitStarted(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+		batch := BatchJob{
+			BatchID: "foo",
+		}
+		db.Create(&batch)
+		wait, err := d.AwaitStarted(batch.BatchID)
+		if err != nil {
+			t.Error(err)
+		}
+
+		select
+		// read from wait... except that blocks forever
+		// so read from wait in a go func
+		// meanwhile post an event that makes wait close
+		// then wait a moment for the scheduler to catch up?
+		// then check the go func exited correctly?
+
+		if batch.LogName != returned {
+			t.Fatalf("Failed to get batch job's log name. Expected: %v Got: %v \n", batch.LogName, returned)
+			return
+		}
+	})
+}
+
+// func TestBatchHasStarted(t *testing.T) { // TODO campgareth: replace this with a table driven test
+// 	RunTransaction(func(db *gorm.DB) {
+// 		d := BatchDataSource(db)
+// 		batch := BatchJob{
+// 			BatchID: "foo",
+// 			Events: []BatchJobEvent{
+// 				BatchJobEvent{
+// 					BatchJobID: "foo"
+// 				}
+// 			}
+// 		}
+// 		db.Create(&batch)
+// 		returned, err := d.GetLogName(batch.BatchID)
+// 		if err != nil {
+// 			t.Error(err)
+// 		}
+// 		if batch.LogName != returned {
+// 			t.Fatalf("Failed to get batch job's log name. Expected: %v Got: %v \n", batch.LogName, returned)
+// 			return
+// 		}
+// 	})
+// }
 
 func TestBatchActiveJobsWithoutLogs(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
