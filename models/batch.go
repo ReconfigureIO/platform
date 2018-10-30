@@ -15,7 +15,7 @@ type BatchRepo interface {
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
 	HasStarted(string) (bool, error)
-	AwaitStarted(string) (chan struct{}, error)
+	AwaitStarted(string, time.Duration) (chan struct{}, error)
 }
 
 const (
@@ -51,7 +51,7 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 // AwaitStarted polls the BatchRepo's DB for the state of the batch job
 // associated with a given ID. It returns a channel to the caller which it
 // closes when the job has become started.
-func (repo *batchRepo) AwaitStarted(batchID string) (chan struct{}, error) {
+func (repo *batchRepo) AwaitStarted(batchID string, pollPeriod time.Duration) (chan struct{}, error) {
 	startedChan := make(chan struct{})
 	_, err := repo.HasStarted(batchID)
 	if err != nil {
@@ -61,7 +61,7 @@ func (repo *batchRepo) AwaitStarted(batchID string) (chan struct{}, error) {
 		var started bool
 		for started != true {
 			started, _ = repo.HasStarted(batchID)
-			time.Sleep(10 * time.Second)
+			time.Sleep(pollPeriod)
 		}
 		close(startedChan)
 	}()
