@@ -3,6 +3,7 @@
 package models
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -75,24 +76,26 @@ func TestBatchGetLogName(t *testing.T) {
 func TestBatchAwaitStarted(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
+
 		batch := BatchJob{
 			BatchID: "foo",
 		}
 		db.Create(&batch)
-		wait, err := d.AwaitStarted(batch.BatchID, 100*time.Microsecond)
+
+		err := d.AddEvent(batch, BatchJobEvent{
+			BatchJobID: batch.ID,
+			Status:     StatusStarted,
+		})
 		if err != nil {
 			t.Error(err)
 		}
 
-		go func() {
-			err := d.AddEvent(batch, BatchJobEvent{
-				BatchJobID: batch.ID,
-				Status:     StatusStarted,
-			})
-			if err != nil {
-				t.Error(err)
-			}
-		}()
+		ctxtimeout := context.WithTimeout(context.Background, 100*time.Millisecond)
+
+		wait, err := BatchAwaitStarted(ctxtimeout, &d, batch.BatchID, 100*time.Microsecond)
+		if err != nil {
+			t.Error(err)
+		}
 
 		select {
 		case <-wait:

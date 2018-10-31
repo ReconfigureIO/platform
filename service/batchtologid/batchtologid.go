@@ -3,6 +3,7 @@ package batchtologid
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -13,8 +14,8 @@ import (
 )
 
 type Adapter struct {
-	batchRepo models.BatchRepo
-	aws       interface {
+	BatchRepo models.BatchRepo
+	AWS       interface {
 		DescribeJobs(
 			*batch.DescribeJobsInput,
 		) (
@@ -22,6 +23,7 @@ type Adapter struct {
 			error,
 		)
 	}
+	PollingPeriod time.Duration
 }
 
 // Do takes a batch job ID and returns the log name associated with that job. It
@@ -30,21 +32,21 @@ type Adapter struct {
 // repo for the log name. If this is not available, it queries AWS for the log
 // name.
 func (a *Adapter) Do(ctx context.Context, batchID string) (string, error) {
-	err := a.batchRepo.AwaitStarted(ctx, batchID, 1*time.Second)
+	err := models.BatchAwaitStarted(ctx, a.BatchRepo, batchID, a.PollingPeriod)
 	if err != nil {
 		return "", err
 	}
 
-	logname, err := a.batchRepo.GetLogName(batchID)
+	logname, err := a.BatchRepo.GetLogName(batchID)
 	if err != nil {
-		log.Printf("bidToLid: batchRepo.GetLogName: %v \n", err)
+		log.Printf("bidToLid: BatchRepo.GetLogName: %v \n", err)
 		return "", err
 	}
 	if logname != "" {
 		return logname, nil
 	}
 
-	resp, err := a.aws.DescribeJobs(&batch.DescribeJobsInput{
+	resp, err := a.AWS.DescribeJobs(&batch.DescribeJobsInput{
 		Jobs: aws.StringSlice([]string{batchID}),
 	})
 	if err != nil {
@@ -54,9 +56,12 @@ func (a *Adapter) Do(ctx context.Context, batchID string) (string, error) {
 		return "", fmt.Errorf("bidToLid: There is no AWS Batch Job with ID %v", batchID)
 	}
 
-	err = a.batchRepo.SetLogName(batchID, *resp.Jobs[0].Container.LogStreamName)
+	if resp.Jobs[0].Container.LogStreamName == nil {
+		return "", errors.New("BatchToLogID: Adapter.Do: Got nil LogStreamName from AWS Batch")
+	}
+	err = a.BatchRepo.SetLogName(batchID, *resp.Jobs[0].Container.LogStreamName)
 	if err != nil {
-		log.Printf("bidToLid: batchRepo.SetLogName: %v \n", err)
+		log.Printf("bidToLid: BatchRepo.SetLogName: %v \n", err)
 	}
 	return *resp.Jobs[0].Container.LogStreamName, nil
 

@@ -1,7 +1,9 @@
 package batchtologid
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -25,25 +27,28 @@ func (aws *fakeAWS) DescribeJobs(input *batch.DescribeJobsInput) (*batch.Describ
 	}, nil
 }
 
-func TestBidToLidAwait(t *testing.T) {
+func TestBatchToLogID(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	batchRepo.EXPECT().AwaitStarted(batchID).Return(nil)
+	batchRepo.EXPECT().HasStarted(batchID).Return(true, nil)
 	batchRepo.EXPECT().GetLogName(batchID).Return("", nil)
 	batchRepo.EXPECT().SetLogName(batchID, logName).Return(nil)
 
 	b2l := Adapter{
-		batchRepo: batchRepo,
-		aws:       &fakeAWS{},
+		BatchRepo:     batchRepo,
+		AWS:           &fakeAWS{},
+		PollingPeriod: time.Microsecond,
 	}
 
-	returned, err := b2l.bidToLid(batchID)
+	ctxtimeout, _ := context.WithTimeout(context.Background(), 100*time.Millisecond)
+
+	returned, err := b2l.Do(ctxtimeout, batchID)
 	if err != nil {
 		t.Error(err)
 	}
 	if returned != logName {
-		t.Errorf("Returned log name did not expected value. Returned: %v Expected: %v \n", returned, logName)
+		t.Errorf("Returned log name did not match expected value. Returned: %v Expected: %v \n", returned, logName)
 	}
 }

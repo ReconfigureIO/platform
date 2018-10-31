@@ -16,7 +16,6 @@ type BatchRepo interface {
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
 	HasStarted(batchID string) (started bool, err error)
-	AwaitStarted(ctx context.Context, batchID string, pollPeriod time.Duration) error
 }
 
 const (
@@ -52,7 +51,7 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 // AwaitStarted polls the BatchRepo's DB for the state of the batch job
 // associated with a given ID. It blocks until the batch job has started, unless
 // an error occurs.
-func (repo *batchRepo) AwaitStarted(ctx context.Context, batchID string, pollPeriod time.Duration) error {
+func BatchAwaitStarted(ctx context.Context, repo BatchRepo, batchID string, pollPeriod time.Duration) error {
 	for {
 		select {
 		case <-time.After(pollPeriod):
