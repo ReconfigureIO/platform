@@ -85,10 +85,13 @@ func TestBatchAwaitStarted(t *testing.T) {
 		}
 
 		go func() {
-			d.AddEvent(batch, BatchJobEvent{
+			err := d.AddEvent(batch, BatchJobEvent{
 				BatchJobID: batch.ID,
 				Status:     StatusStarted,
 			})
+			if err != nil {
+				t.Error(err)
+			}
 		}()
 
 		select {
