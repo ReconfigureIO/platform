@@ -1,5 +1,5 @@
-// package bidtolidadapter takes an AWS Batch Job ID and returns the associated AWS CloudWatch Log Name
-package bidtolidadapter
+// package batchtologid takes an AWS Batch Job ID and returns the associated AWS CloudWatch Log Name
+package batchtologid
 
 import (
 	"fmt"
@@ -35,6 +35,12 @@ type adapter struct {
 // back to the batch job so that cron doesn't have to continue to poll AWS Batch
 // for that particular job.
 func (a *adapter) bidToLid(batchID string) (string, error) {
+	started, err := a.batchRepo.AwaitStarted(batchID)
+	if err != nil {
+		return "", err
+	}
+	<-started
+
 	logname, err := a.batchRepo.GetLogName(batchID)
 	if err != nil {
 		log.Printf("bidToLid: batchRepo.GetLogName: %v \n", err)
@@ -44,25 +50,9 @@ func (a *adapter) bidToLid(batchID string) (string, error) {
 		return logname, nil
 	}
 
-	started, err := a.batchRepo.AwaitStarted(batchID)
-	if err != nil {
-		return "", err
-	}
-	<-started
-
-	logname, err = a.batchRepo.GetLogName(batchID)
-	if err != nil {
-		log.Printf("bidToLid: batchRepo.GetLogName: %v \n", err)
-		return "", err
-	}
-	if logname != "" {
-		return logname, nil
-	}
-
-	inp := &batch.DescribeJobsInput{
+	resp, err := a.aws.DescribeJobs(&batch.DescribeJobsInput{
 		Jobs: aws.StringSlice([]string{batchID}),
-	}
-	resp, err := a.aws.DescribeJobs(inp)
+	})
 	if err != nil {
 		return "", err
 	}

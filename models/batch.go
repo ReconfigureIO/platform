@@ -3,6 +3,7 @@ package models
 //go:generate mockgen -source=batch.go -package=models -destination=batch_mock.go
 
 import (
+	"context"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -15,7 +16,7 @@ type BatchRepo interface {
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
 	HasStarted(batchID string) (started bool, err error)
-	AwaitStarted(batchID string, pollPeriod time.Duration) (started chan struct{}, err error)
+	AwaitStarted(ctx context.Context, batchID string, pollPeriod time.Duration) error
 }
 
 const (
@@ -49,23 +50,19 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 }
 
 // AwaitStarted polls the BatchRepo's DB for the state of the batch job
-// associated with a given ID. It returns a channel to the caller which it
-// closes when the job has become started.
-func (repo *batchRepo) AwaitStarted(batchID string, pollPeriod time.Duration) (chan struct{}, error) {
-	startedChan := make(chan struct{})
-	_, err := repo.HasStarted(batchID)
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		var started bool
-		for started != true {
-			started, _ = repo.HasStarted(batchID)
-			time.Sleep(pollPeriod)
+// associated with a given ID. It blocks until the batch job has started, unless
+// an error occurs.
+func (repo *batchRepo) AwaitStarted(ctx context.Context, batchID string, pollPeriod time.Duration) error {
+	for {
+		select {
+		case <-time.After(pollPeriod):
+			if started, err = repo.HasStarted(batchID); started | (err != nil) {
+				return err
+			}
+		case <-ctx.Done():
+			return
 		}
-		close(startedChan)
-	}()
-	return startedChan, nil
+	}
 }
 
 // HasStarted returns if the build has started.

@@ -1,4 +1,4 @@
-package bidtolidadapter
+package batchtologid
 
 import (
 	"testing"
@@ -11,9 +11,9 @@ import (
 var logName = "foobarLogName"
 var batchID = "foobarBatchID"
 
-type fake_aws struct{}
+type fakeAWS struct{}
 
-func (aws *fake_aws) DescribeJobs(input *batch.DescribeJobsInput) (*batch.DescribeJobsOutput, error) {
+func (aws *fakeAWS) DescribeJobs(input *batch.DescribeJobsInput) (*batch.DescribeJobsOutput, error) {
 	return &batch.DescribeJobsOutput{
 		Jobs: []*batch.JobDetail{
 			&batch.JobDetail{
@@ -40,7 +40,7 @@ func TestBidToLidAwait(t *testing.T) {
 
 	b2l := adapter{
 		batchRepo: batchRepo,
-		aws:       &fake_aws{},
+		aws:       &fakeAWS{},
 	}
 
 	returned, err := b2l.bidToLid(batchID)
