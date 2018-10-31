@@ -79,7 +79,7 @@ func TestBatchAwaitStarted(t *testing.T) {
 			BatchID: "foo",
 		}
 		db.Create(&batch)
-		wait, err := d.AwaitStarted(batch.BatchID, time.Microsecond)
+		wait, err := d.AwaitStarted(batch.BatchID, 100*time.Microsecond)
 		if err != nil {
 			t.Error(err)
 		}
@@ -97,7 +97,7 @@ func TestBatchAwaitStarted(t *testing.T) {
 		select {
 		case <-wait:
 			return
-		case <-time.After(1 * time.Millisecond):
+		case <-time.After(100 * time.Millisecond):
 			t.Fatalf("Test was not notified of BatchJob start before timer expired")
 		}
 	})
