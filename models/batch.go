@@ -11,11 +11,11 @@ import (
 type BatchRepo interface {
 	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
-	GetLogName(id string) (string, error)
+	GetLogName(batchID string) (logName string, error)
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
-	HasStarted(string) (bool, error)
-	AwaitStarted(string, time.Duration) (chan struct{}, error)
+	HasStarted(batchID string) (started bool, error)
+	AwaitStarted(batchID string, pollPeriod time.Duration) (started chan struct{}, error)
 }
 
 const (
