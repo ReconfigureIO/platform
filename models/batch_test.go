@@ -103,6 +103,29 @@ func TestBatchAwaitStarted(t *testing.T) {
 	})
 }
 
+func TestBatchHasStarted(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+		batch := BatchJob{
+			BatchID: "foo",
+			Events: []BatchJobEvent{
+				BatchJobEvent{
+					Status: StatusStarted,
+				},
+			},
+		}
+		db.Create(&batch)
+
+		started, err := d.HasStarted(batch.BatchID)
+		if err != nil {
+			t.Error(err)
+		}
+		if !started {
+			t.Error("BatchJob with started event is not considered started")
+		}
+	})
+}
+
 func TestBatchActiveJobsWithoutLogs(t *testing.T) {
 	RunTransaction(func(db *gorm.DB) {
 		d := BatchDataSource(db)
