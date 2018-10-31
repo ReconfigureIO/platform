@@ -2,19 +2,17 @@
 package batchtologid
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/ReconfigureIO/platform/models"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/batch"
 )
 
-type Adapter interface {
-	bidToLid(string) (string, error)
-}
-
-type adapter struct {
+type Adapter struct {
 	batchRepo models.BatchRepo
 	aws       interface {
 		DescribeJobs(
@@ -26,20 +24,16 @@ type adapter struct {
 	}
 }
 
-// bidToLid takes a batch job ID and returns the log name associated with that
-// job. It attempts to do this by querying our Database. If the log name is not
-// available yet, perhaps because we're using AWS Batch which only presents a
-// log name once the job has started running, then we wait for the DB to state
-// the job has started when queried before asking AWS Batch for the log name. If
-// we get the log name from AWS Batch as part of this process we also write it
-// back to the batch job so that cron doesn't have to continue to poll AWS Batch
-// for that particular job.
-func (a *adapter) bidToLid(batchID string) (string, error) {
-	started, err := a.batchRepo.AwaitStarted(batchID)
+// Do takes a batch job ID and returns the log name associated with that job. It
+// attempts to do this by querying batchRepo. It first waits for the batch job
+// to become started, which is a blocking operation. It then queries the batch
+// repo for the log name. If this is not available, it queries AWS for the log
+// name.
+func (a *Adapter) Do(ctx context.Context, batchID string) (string, error) {
+	err := a.batchRepo.AwaitStarted(ctx, batchID, 1*time.Second)
 	if err != nil {
 		return "", err
 	}
-	<-started
 
 	logname, err := a.batchRepo.GetLogName(batchID)
 	if err != nil {

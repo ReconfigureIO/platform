@@ -29,16 +29,12 @@ func TestBidToLidAwait(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	await := make(chan struct{})
-	close(await)
-
 	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	batchRepo.EXPECT().GetLogName(batchID).Return("", nil)
-	batchRepo.EXPECT().AwaitStarted(batchID).Return(await, nil)
+	batchRepo.EXPECT().AwaitStarted(batchID).Return(nil)
 	batchRepo.EXPECT().GetLogName(batchID).Return("", nil)
 	batchRepo.EXPECT().SetLogName(batchID, logName).Return(nil)
 
-	b2l := adapter{
+	b2l := Adapter{
 		batchRepo: batchRepo,
 		aws:       &fakeAWS{},
 	}

@@ -56,11 +56,15 @@ func (repo *batchRepo) AwaitStarted(ctx context.Context, batchID string, pollPer
 	for {
 		select {
 		case <-time.After(pollPeriod):
-			if started, err = repo.HasStarted(batchID); started | (err != nil) {
+			started, err := repo.HasStarted(batchID)
+			if err != nil {
 				return err
 			}
+			if started {
+				return nil
+			}
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		}
 	}
 }
