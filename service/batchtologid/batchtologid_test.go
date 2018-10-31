@@ -42,7 +42,8 @@ func TestBatchToLogID(t *testing.T) {
 		PollingPeriod: time.Microsecond,
 	}
 
-	ctxtimeout, _ := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctxtimeout, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
 
 	returned, err := b2l.Do(ctxtimeout, batchID)
 	if err != nil {
