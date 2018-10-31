@@ -71,7 +71,7 @@ func (repo *batchRepo) AwaitStarted(batchID string, pollPeriod time.Duration) (c
 // HasStarted returns if the build has started.
 func (repo *batchRepo) HasStarted(batchID string) (bool, error) {
 	var batchJob BatchJob
-	err := repo.db.Where("batch_id = ?", batchID).First(&batchJob).Error
+	err := repo.db.Preload("Events").Where("batch_id = ?", batchID).First(&batchJob).Error
 	if err != nil {
 		return false, err
 	}
