@@ -25,27 +25,6 @@ func (aws *fake_aws) DescribeJobs(input *batch.DescribeJobsInput) (*batch.Descri
 	}, nil
 }
 
-func TestBidToLid(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	batchRepo := models.NewMockBatchRepo(mockCtrl)
-	batchRepo.EXPECT().GetLogName(batchID).Return(logName, nil)
-
-	b2l := adapter{
-		batchRepo: batchRepo,
-		aws:       &fake_aws{},
-	}
-
-	returned, err := b2l.bidToLid(batchID)
-	if err != nil {
-		t.Error(err)
-	}
-	if returned != logName {
-		t.Errorf("Returned log name did not expected value. Returned: %v Expected: %v \n", returned, logName)
-	}
-}
-
 func TestBidToLidAwait(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
