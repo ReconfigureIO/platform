@@ -90,18 +90,12 @@ func TestBatchAwaitStarted(t *testing.T) {
 			t.Error(err)
 		}
 
-		ctxtimeout := context.WithTimeout(context.Background, 100*time.Millisecond)
+		ctxtimeout, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
 
-		wait, err := BatchAwaitStarted(ctxtimeout, &d, batch.BatchID, 100*time.Microsecond)
+		err = BatchAwaitStarted(ctxtimeout, d, batch.BatchID, 100*time.Microsecond)
 		if err != nil {
 			t.Error(err)
-		}
-
-		select {
-		case <-wait:
-			return
-		case <-time.After(100 * time.Millisecond):
-			t.Fatalf("Test was not notified of BatchJob start before timer expired")
 		}
 	})
 }
