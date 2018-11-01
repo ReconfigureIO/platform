@@ -5,7 +5,6 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
@@ -18,13 +17,13 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	AWS     *aws.Service
+	AWS     batch.Service
 	Events  events.EventService
 	Storage storage.Service
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService, storageService storage.Service, awsSession *aws.Service) Simulation {
+func NewSimulation(events events.EventService, storageService storage.Service, awsSession batch.Service) Simulation {
 	return Simulation{
 		AWS:     awsSession,
 		Events:  events,

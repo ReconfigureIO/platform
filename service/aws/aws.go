@@ -1,7 +1,5 @@
 package aws
 
-//go:generate mockgen -source=aws.go -package=aws -destination=aws_mock.go
-
 import (
 	"context"
 	"errors"
@@ -10,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/batch"
@@ -19,45 +18,10 @@ import (
 // ErrNotFound is not found error.
 var ErrNotFound = errors.New("Not Found")
 
-// Service implements batch.Service.
+
 type Service struct {
 	session *session.Session
 	conf    ServiceConfig
-
-	// TODO(pwaller): Initialize this during construction by passing in a batch/aws/logs.Service instance.
-	streamService StreamService
-}
-
-// StreamService contains functions for streaming logs from a batch job
-type StreamService interface {
-	Stream(ctx context.Context, logStreamName string) io.ReadCloser
-}
-
-// Logs converts a batchID to a cloudwatch log name then begins streaming
-func (s *Service) Logs(ctx context.Context, batchJob *models.BatchJob) (io.ReadCloser, error) {
-	logName := batchJob.LogName
-	var err error
-	if logName == "" {
-		logName, err = s.batchIDToLogName(batchJob.BatchID)
-		if err != nil {
-			return nil, err
-		}
-		if logName == "" {
-			return nil, fmt.Errorf("Logs: Could not determine logName with batchIDToLogName for BatchJob %v", batchJob.ID)
-		}
-	}
-	return s.streamService.Stream(ctx, logName), nil
-}
-
-func (s *Service) batchIDToLogName(batchID string) (logName string, err error) {
-	jobDetail, err := s.GetJobDetail(batchID)
-	if err != nil {
-		return "", err
-	}
-	if *jobDetail.Container.LogStreamName == "" {
-		return "", fmt.Errorf("batchIDToLogName: No LogStreamName in JobDetail output")
-	}
-	return *jobDetail.Container.LogStreamName, nil
 }
 
 // ServiceConfig holds configuration for service.
@@ -70,11 +34,8 @@ type ServiceConfig struct {
 }
 
 // New creates a new service with conf.
-func New(conf ServiceConfig, streamService StreamService) *Service {
-	s := Service{
-		conf:          conf,
-		streamService: streamService,
-	}
+func New(conf ServiceConfig) *Service {
+	s := Service{conf: conf}
 	s.session = session.Must(session.NewSession(aws.NewConfig().WithRegion("us-east-1").WithEndpoint(conf.EndPoint)))
 	return &s
 }

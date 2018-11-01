@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/storage"
 
@@ -30,7 +30,7 @@ type Deployment struct {
 	UseSpotInstances bool
 	Storage          storage.Service
 	DeployService    deployment.Service
-	AWS              *aws.Service
+	AWS              batch.Service
 	PublicProjectID  string
 }
 

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ReconfigureIO/platform/service/aws"
 	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/storage"
 	log "github.com/sirupsen/logrus"
@@ -22,7 +21,7 @@ import (
 type Build struct {
 	Events          events.EventService
 	Storage         storage.Service
-	AWS             aws.Service
+	AWS             batch.Service
 	PublicProjectID string
 }
 

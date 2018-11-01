@@ -4,12 +4,12 @@ import (
 	"time"
 
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 )
 
 // BatchService is aws batch job service.
 type BatchService struct {
-	AWS aws.Service
+	AWS batch.Service
 }
 
 // New creates a new batch job with its queued event.

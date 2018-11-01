@@ -7,7 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -23,7 +23,7 @@ func SetupRoutes(
 	secretKey string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService *aws.Service,
+	awsService batch.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,

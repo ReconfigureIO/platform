@@ -6,7 +6,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -20,7 +20,7 @@ import (
 type Graph struct {
 	Events  events.EventService
 	Storage storage.Service
-	AWS     *aws.Service
+	AWS     batch.Service
 }
 
 // Common preload functionality.
