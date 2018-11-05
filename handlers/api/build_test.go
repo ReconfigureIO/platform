@@ -4,8 +4,10 @@ package api
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -59,13 +61,19 @@ func TestDownloadArtifact(t *testing.T) {
 	models.RunTransaction(func(db *gorm.DB) {
 		DB(db)
 		now := time.Now()
-		// create a build in the DB
+
+		user := models.User{
+			GithubID: 1,
+			Email:    "foo@bar.com",
+		}
+		db.Create(&user)
+
 		builds := []models.Build{
 			{
-				ID: "foobar",
+				Token: "foobar",
 				Project: models.Project{
 					User: models.User{
-						ID: "user1",
+						ID: user.ID,
 					},
 				},
 				BatchJob: models.BatchJob{
@@ -95,13 +103,6 @@ func TestDownloadArtifact(t *testing.T) {
 			},
 		}
 
-		user := models.User{
-			ID:       "user1",
-			GithubID: 1,
-			Email:    "foo@bar.com",
-		}
-		db.Create(&user)
-
 		for i := range builds {
 			err := db.Create(&(builds[i])).Error
 			if err != nil {
@@ -111,24 +112,37 @@ func TestDownloadArtifact(t *testing.T) {
 
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
-
 		storageService := storage.NewMockService(mockCtrl)
-
-		context := &gin.Context{
-			Params: []gin.Param{
-				gin.Param{
-					Key:   "id",
-					Value: builds[0].ID,
-				},
-			},
-			Keys: make(map[string]interface{})
-		}
-
-		apiBuild := Build{
-			Storage: storageService,
-		}
 		storageService.EXPECT().Download("builds/"+builds[0].ID+"/artifacts.zip").Return(ioutil.NopCloser(bytes.NewReader([]byte("foo"))), nil)
 
-		apiBuild.DownloadArtifact(context)
+		build := Build{
+			Storage: storageService,
+		}
+		r := gin.Default()
+		r.GET("builds/:id/artifacts", build.DownloadArtifact)
+
+		// Test if human user auth lets you download artifacts
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/builds/"+builds[0].ID+"/artifacts", nil)
+		req.SetBasicAuth(strconv.Itoa(user.GithubID), user.Token)
+		r.ServeHTTP(w, req)
+
+		if w.Code == 200 {
+			t.Error("Human user was allowed to download artifacts")
+		}
+
+		// Test if machine token auth lets you download artifacts
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest("GET", "/builds/"+builds[0].ID+"/artifacts?token="+builds[0].Token, nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != 200 {
+			t.Fatalf("Machine could not download artifact, response code: %v", w.Code)
+		}
+
+		if w.Body.String() != "foo" {
+			t.Fatalf("Expected artifact contents to be foo, got %v \n", w.Body.String())
+		}
+
 	})
 }

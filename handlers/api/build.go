@@ -339,6 +339,7 @@ func (b Build) canDownloadArtifact(c *gin.Context, build models.Build) bool {
 func (b Build) DownloadArtifact(c *gin.Context) {
 	build, err := b.unauthOne(c)
 	if err != nil {
+		c.AbortWithError(404, err)
 		return
 	}
 
