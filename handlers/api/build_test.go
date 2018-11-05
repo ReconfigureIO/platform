@@ -108,7 +108,6 @@ func TestDownloadArtifact(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		fmt.Println("I made the objects in the DB boss")
 
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
@@ -130,8 +129,6 @@ func TestDownloadArtifact(t *testing.T) {
 		}
 		storageService.EXPECT().Download("builds/"+builds[0].ID+"/artifacts.zip").Return(ioutil.NopCloser(bytes.NewReader([]byte("foo"))), nil)
 
-		fmt.Println("I got right up to just before we make the call boss")
 		apiBuild.DownloadArtifact(context)
-
 	})
 }
