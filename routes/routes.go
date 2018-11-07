@@ -85,6 +85,9 @@ func SetupRoutes(
 		buildRoute.PUT("/:id/input", build.Input)
 		buildRoute.GET("/:id/logs", build.Logs)
 		buildRoute.GET("/:id/reports", build.Report)
+		if config.Env == "development-on-prem" {
+			buildRoute.GET("/:id/artifacts", build.DownloadArtifact)
+		}
 	}
 
 	project := api.Project{
