@@ -277,7 +277,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	if err != nil {
-		sugar.InternalError(c, nil)
+		sugar.InternalError(c, err)
 		return
 	}
 	eventMessage := "Build entered state:" + event.Status
