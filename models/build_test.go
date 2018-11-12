@@ -49,7 +49,7 @@ func TestCreateBuildReport(t *testing.T) {
 		// create a build in the DB
 		build := Build{}
 		db.Create(&build)
-		report := ReportV1{}
+		report := Report{}
 		// run the get with status function
 		err := d.StoreBuildReport(build, report)
 		if err != nil {

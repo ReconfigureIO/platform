@@ -295,7 +295,7 @@ func (b Build) CreateReport(c *gin.Context) {
 
 	switch c.ContentType() {
 	case "application/vnd.reconfigure.io/reports-v1+json":
-		report := models.ReportV1{}
+		report := models.Report{}
 		c.BindJSON(&report)
 		err = buildRepo.StoreBuildReport(build, report)
 	default:
