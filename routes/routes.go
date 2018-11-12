@@ -6,6 +6,7 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/deployment"
@@ -30,6 +31,7 @@ func SetupRoutes(
 	deploy deployment.Service,
 	publicProjectID string,
 	authService auth.Service,
+	simRepo models.SimulationRepo,
 ) *gin.Engine {
 
 	// setup common routes
@@ -102,7 +104,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage, awsService)
+	simulation := api.NewSimulation(events, storage, awsService, simRepo)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -110,6 +112,7 @@ func SetupRoutes(
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
+		simulationRoute.GET("/:id/reports", simulation.Report)
 	}
 
 	graph := api.Graph{
@@ -153,6 +156,7 @@ func SetupRoutes(
 	reportRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
+		reportRoutes.POST("/simulations/:id/reports", simulation.CreateReport)
 	}
 	return r
 }
