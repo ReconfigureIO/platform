@@ -18,17 +18,26 @@ func main() {
 		log.Fatalf("Unable to configure docker client: %v", err)
 	}
 
-	// Make a map of JobDefinitions to pass to handler
 	jobDefinitions := map[string]JobDefinition{
-		"fake-batch-job-definition": JobDefinition{
-			Image: "ubuntu:latest",
-		},
 		"sdaccel-builder-build": JobDefinition{
 			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
 			MountPoints: []string{
 				"/opt/Xilinx:/opt/Xilinx",
 			},
 		},
+	}
+	if os.Getenv("RECO_ENV") == "development" {
+		jobDefinitions = map[string]JobDefinition{
+			"ubuntu": JobDefinition{
+				Image: "ubuntu:latest",
+			},
+			"sdaccel-builder-build": JobDefinition{
+				Image: "fake-sdaccel-builder:latest",
+				MountPoints: []string{
+					"/opt/Xilinx:/opt/Xilinx",
+				},
+			},
+		}
 	}
 
 	handler := &handler{
