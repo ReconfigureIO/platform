@@ -101,6 +101,10 @@ services:
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
 
+  fake-sdaccel-builder:
+    build: ./fake-sdaccel-builder
+    image: fake-sdaccel-builder:latest
+
 networks:
   platform:
     driver: bridge
