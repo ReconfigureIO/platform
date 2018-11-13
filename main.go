@@ -7,6 +7,7 @@ import (
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/migration"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/routes"
 	"github.com/ReconfigureIO/platform/service/auth"
 	"github.com/ReconfigureIO/platform/service/auth/github"
@@ -127,6 +128,7 @@ func main() {
 		corsConfig.AllowOrigins = []string{
 			"https://app.reconfigureio-infra.com",
 			"http://local.reconfigure.io",
+			"http://local.reconfigure.io:8080",
 			"http://local.reconfigure.io:4200",
 			"https://reconfigure.ayup.io",
 		}
@@ -143,7 +145,7 @@ func main() {
 	}
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService)
+	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService, models.SimulationDataSource(db))
 
 	// queue
 	var deploymentQueue queue.Queue

@@ -6,8 +6,9 @@ import (
 	"github.com/ReconfigureIO/platform/handlers/api"
 	"github.com/ReconfigureIO/platform/handlers/profile"
 	"github.com/ReconfigureIO/platform/middleware"
+	"github.com/ReconfigureIO/platform/models"
 	"github.com/ReconfigureIO/platform/service/auth"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/deployment"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/leads"
@@ -23,13 +24,14 @@ func SetupRoutes(
 	secretKey string,
 	r *gin.Engine,
 	db *gorm.DB,
-	awsService aws.Service,
+	awsService batch.Service,
 	events events.EventService,
 	leads leads.Leads,
 	storage storage.Service,
 	deploy deployment.Service,
 	publicProjectID string,
 	authService auth.Service,
+	simRepo models.SimulationRepo,
 ) *gin.Engine {
 
 	// setup common routes
@@ -38,19 +40,24 @@ func SetupRoutes(
 	r.Use(middleware.SessionAuth(db))
 
 	// setup index
-	r.GET("/", handlers.Index)
+	if config.Env == "development-on-prem" {
+		r.GET("/", handlers.IndexOnPrem)
+		SetupAuthOnPrem(r, db)
+	} else {
+		r.GET("/", handlers.Index)
 
-	// Setup authenticated admin
-	authMiddleware := gin.BasicAuth(gin.Accounts{
-		"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
-	})
-	admin := r.Group("/admin", authMiddleware)
-	SetupAdmin(admin, db, leads)
+		// Setup authenticated admin
+		authMiddleware := gin.BasicAuth(gin.Accounts{
+			"admin": "ffea108b2166081bcfd03a99c597be78b3cf30de685973d44d3b86480d644264",
+		})
+		admin := r.Group("/admin", authMiddleware)
+		SetupAdmin(admin, db, leads)
 
-	// signup & login flow
-	SetupAuth(r, db, leads, authService)
+		// signup & login flow
+		SetupAuth(r, db, leads, authService)
+	}
 
-	apiRoutes := r.Group("/", middleware.TokenAuth(db, events), middleware.RequiresUser())
+	apiRoutes := r.Group("/", middleware.TokenAuth(db, events, config), middleware.RequiresUser())
 
 	billing := api.Billing{}
 	profile := profile.Profile{
@@ -80,6 +87,9 @@ func SetupRoutes(
 		buildRoute.PUT("/:id/input", build.Input)
 		buildRoute.GET("/:id/logs", build.Logs)
 		buildRoute.GET("/:id/reports", build.Report)
+		if config.Env == "development-on-prem" {
+			buildRoute.GET("/:id/artifacts", build.DownloadArtifact)
+		}
 	}
 
 	project := api.Project{
@@ -94,7 +104,7 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage, awsService)
+	simulation := api.NewSimulation(events, storage, awsService, simRepo)
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -102,6 +112,7 @@ func SetupRoutes(
 		simulationRoute.GET("/:id", simulation.Get)
 		simulationRoute.PUT("/:id/input", simulation.Input)
 		simulationRoute.GET("/:id/logs", simulation.Logs)
+		simulationRoute.GET("/:id/reports", simulation.Report)
 	}
 
 	graph := api.Graph{
@@ -134,7 +145,7 @@ func SetupRoutes(
 		deploymentRoute.GET("/:id/logs", deployment.Logs)
 	}
 
-	eventRoutes := r.Group("", middleware.TokenAuth(db, events))
+	eventRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		eventRoutes.POST("/builds/:id/events", build.CreateEvent)
 		eventRoutes.POST("/simulations/:id/events", simulation.CreateEvent)
@@ -142,9 +153,10 @@ func SetupRoutes(
 		eventRoutes.POST("/deployments/:id/events", deployment.CreateEvent)
 	}
 
-	reportRoutes := r.Group("", middleware.TokenAuth(db, events))
+	reportRoutes := r.Group("", middleware.TokenAuth(db, events, config))
 	{
 		reportRoutes.POST("/builds/:id/reports", build.CreateReport)
+		reportRoutes.POST("/simulations/:id/reports", simulation.CreateReport)
 	}
 	return r
 }

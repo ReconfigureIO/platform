@@ -69,7 +69,13 @@ type User struct {
 
 // LoginToken return the user's login token.
 func (u User) LoginToken() string {
-	return fmt.Sprintf("gh_%d_%s", u.GithubID, u.Token)
+	var prefix string
+	if u.GithubAccessToken == "on-prem" {
+		prefix = "onprem"
+	} else {
+		prefix = "gh"
+	}
+	return fmt.Sprintf("%s_%d_%s", prefix, u.GithubID, u.Token)
 }
 
 // NewUser creates a new User.
@@ -125,36 +131,6 @@ type PostDepEvent struct {
 	Status  string `json:"status" validate:"nonzero"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
-}
-
-// Simulation model.
-type Simulation struct {
-	uuidHook
-	ID         string   `gorm:"primary_key" json:"id"`
-	User       User     `json:"-" gorm:"ForeignKey:UserID"`
-	UserID     int      `json:"-"`
-	Project    Project  `json:"project,omitempty" gorm:"ForeignKey:ProjectID"`
-	ProjectID  string   `json:"-"`
-	BatchJobID int64    `json:"-"`
-	BatchJob   BatchJob `json:"job" gorm:"ForeignKey:BatchJobId"`
-	Token      string   `json:"-"`
-	Command    string   `json:"command"`
-}
-
-// Status returns simulation status.
-func (s *Simulation) Status() string {
-	events := s.BatchJob.Events
-	length := len(events)
-	if len(events) > 0 {
-		return events[length-1].Status
-	}
-	return StatusSubmitted
-}
-
-// PostSimulation is the post request body for new simulation.
-type PostSimulation struct {
-	ProjectID string `json:"project_id" validate:"nonzero"`
-	Command   string `json:"command" validate:"nonzero"`
 }
 
 // Deployment model.
