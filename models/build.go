@@ -13,7 +13,7 @@ type BuildRepo interface {
 	// Return a list of deployments, with the statuses specified,
 	// limited to that number
 	GetBuildsWithStatus([]string, int) ([]Build, error)
-	StoreBuildReport(Build, ReportV1) error
+	StoreBuildReport(Build, Report) error
 	GetBuildReport(build Build) (BuildReport, error)
 }
 
@@ -129,9 +129,9 @@ type BuildReport struct {
 	Report  string `json:"report" sql:"type:JSONB NOT NULL DEFAULT '{}'::JSONB"`
 }
 
-// StoreBuildReport takes a build and reportV1,
+// StoreBuildReport takes a build and Report,
 // and attaches the report to the build
-func (repo *buildRepo) StoreBuildReport(build Build, report ReportV1) error {
+func (repo *buildRepo) StoreBuildReport(build Build, report Report) error {
 	db := repo.db
 	newBytes, err := json.Marshal(&report)
 	if err != nil {
@@ -159,32 +159,4 @@ func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
 type PostBuild struct {
 	ProjectID string `json:"project_id" validate:"nonzero"`
 	Message   string `json:"message"`
-}
-
-type ReportV1 struct {
-	ModuleName      string       `json:"moduleName"`
-	PartName        string       `json:"partName"`
-	LutSummary      GroupSummary `json:"lutSummary"`
-	RegSummary      GroupSummary `json:"regSummary"`
-	BlockRamSummary GroupSummary `json:"blockRamSummary"`
-	UltraRamSummary PartDetail   `json:"ultraRamSummary"`
-	DspBlockSummary PartDetail   `json:"dspBlockSummary"`
-	WeightedAverage PartDetail   `json:"weightedAverage"`
-}
-
-type GroupSummary struct {
-	Description string      `json:"description"`
-	Used        int         `json:"used"`
-	Available   int         `json:"available"`
-	Utilisation float32     `json:"utilisation"`
-	Detail      PartDetails `json:"detail"`
-}
-
-type PartDetails map[string]PartDetail
-
-type PartDetail struct {
-	Description string  `json:"description"`
-	Used        int     `json:"used"`
-	Available   int     `json:"available"`
-	Utilisation float32 `json:"utilisation"`
 }

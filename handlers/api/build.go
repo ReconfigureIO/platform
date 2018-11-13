@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 
@@ -285,7 +286,7 @@ func (b Build) CreateEvent(c *gin.Context) {
 	}
 
 	if err != nil {
-		sugar.InternalError(c, nil)
+		sugar.InternalError(c, err)
 		return
 	}
 	eventMessage := "Build entered state:" + event.Status
@@ -303,7 +304,7 @@ func (b Build) CreateReport(c *gin.Context) {
 
 	switch c.ContentType() {
 	case "application/vnd.reconfigure.io/reports-v1+json":
-		report := models.ReportV1{}
+		report := models.Report{}
 		c.BindJSON(&report)
 		err = buildRepo.StoreBuildReport(build, report)
 	default:
@@ -317,4 +318,57 @@ func (b Build) CreateReport(c *gin.Context) {
 	}
 
 	sugar.SuccessResponse(c, 200, nil)
+}
+
+func (b Build) canDownloadArtifact(c *gin.Context, build models.Build) bool {
+	user, loggedIn := middleware.CheckUser(c)
+	if loggedIn && build.Project.UserID == user.ID {
+		return true
+	}
+	token, exists := c.GetQuery("token")
+	if exists && build.Token == token {
+		return true
+	}
+	return false
+}
+
+func (b Build) DownloadArtifact(c *gin.Context) {
+	build, err := b.unauthOne(c)
+	if err != nil {
+		c.AbortWithError(404, err)
+		return
+	}
+
+	if !b.canDownloadArtifact(c, build) {
+		c.AbortWithStatus(403)
+		return
+	}
+
+	if build.Status() != "COMPLETED" {
+		sugar.ErrResponse(c, 400, fmt.Sprintf("Build is '%s', not COMPLETED", build.Status()))
+		return
+	}
+
+	object, err := b.Storage.Download(build.ArtifactUrl())
+	if object != nil {
+		defer func() {
+			err := object.Close()
+			if err != nil {
+				log.WithError(err).Error("Failed to close b.Storage.Download")
+			}
+		}()
+	}
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(object)
+	if err != nil {
+		sugar.InternalError(c, err)
+		return
+	}
+
+	c.Data(200, "application/zip", buf.Bytes())
 }
