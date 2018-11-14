@@ -143,7 +143,7 @@ func (g Graph) Input(c *gin.Context) {
 	}
 
 	urlEvents := g.APIBaseURL
-	urlEvents.Query().Set("token", graph.Token)
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", graph.Token)
 	urlEvents.Path = "/graphs/" + graph.ID + "/events"
 
 	graphID, err := g.AWS.RunGraph(graph, urlEvents.String())

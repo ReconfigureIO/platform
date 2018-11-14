@@ -20,20 +20,20 @@ import (
 // Simulation handles simulation requests.
 type Simulation struct {
 	APIBaseURL url.URL
-	AWS     batch.Service
-	Events  events.EventService
-	Storage storage.Service
-	Repo    models.SimulationRepo
+	AWS        batch.Service
+	Events     events.EventService
+	Storage    storage.Service
+	Repo       models.SimulationRepo
 }
 
 // NewSimulation creates a new Simulation.
 func NewSimulation(APIBaseURL url.URL, events events.EventService, storageService storage.Service, awsSession batch.Service, repo models.SimulationRepo) Simulation {
 	return Simulation{
 		APIBaseURL: APIBaseURL,
-    AWS:     awsSession,
-		Events:  events,
-		Storage: storageService,
-		Repo:    repo,
+		AWS:        awsSession,
+		Events:     events,
+		Storage:    storageService,
+		Repo:       repo,
 	}
 }
 
@@ -129,7 +129,7 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	urlEvents := s.APIBaseURL
-	urlEvents.Query().Set("token", sim.Token)
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", sim.Token)
 	urlEvents.Path = "/simulations/" + sim.ID + "/events"
 
 	simID, err := s.AWS.RunSimulation(s3Url, urlEvents.String(), sim.Command)

@@ -27,7 +27,7 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
-	APIBaseURL         url.URL
+	APIBaseURL       url.URL
 	Events           events.EventService
 	UseSpotInstances bool
 	Storage          storage.Service
@@ -146,9 +146,9 @@ func (d Deployment) Create(c *gin.Context) {
 		}
 
 		urlEvents := d.APIBaseURL
-		urlEvents.Query().Set("token", newDep.Token)
+		urlEvents.RawQuery = fmt.Sprintf("token=%s", newDep.Token)
 		urlEvents.Path = "/deployments/" + newDep.ID + "/events"
-		
+
 		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, urlEvents.String())
 		if err != nil {
 			sugar.InternalError(c, err)

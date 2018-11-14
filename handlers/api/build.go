@@ -201,8 +201,8 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	urlEvents, urlReports := b.APIBaseURL, b.APIBaseURL
-	urlEvents.Query().Set("token", build.Token)
-	urlReports.Query().Set("token", build.Token)
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", build.Token)
+	urlReports.RawQuery = fmt.Sprintf("token=%s", build.Token)
 	urlEvents.Path = "/builds/" + build.ID + "/events"
 	urlReports.Path = "/builds/" + build.ID + "/reports"
 
