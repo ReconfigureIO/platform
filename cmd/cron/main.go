@@ -5,26 +5,29 @@ import (
 	"os"
 	"time"
 
-	"github.com/ReconfigureIO/platform/config"
-	"github.com/ReconfigureIO/platform/handlers/api"
-	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
-	"github.com/ReconfigureIO/platform/service/billing_hours"
-	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
-	"github.com/ReconfigureIO/platform/service/deployment"
-	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
-	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/batch"
+	"github.com/aws/aws-sdk-go/service/batch/batchiface"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	stripe "github.com/stripe/stripe-go"
+
+	"github.com/ReconfigureIO/platform/config"
+	"github.com/ReconfigureIO/platform/handlers/api"
+	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/billing_hours"
+	"github.com/ReconfigureIO/platform/service/cw_id_watcher"
+	"github.com/ReconfigureIO/platform/service/deployment"
+	"github.com/ReconfigureIO/platform/service/fpgaimage/afi"
+	"github.com/ReconfigureIO/platform/service/fpgaimage/afi/afiwatcher"
 )
 
 var (
-	deploy     deployment.Service
-	awsService aws.Service
+	deploy          deployment.Service
+	awsBatchService batchiface.BatchAPI
 
 	db *gorm.DB
 
@@ -50,7 +53,9 @@ func setup(*cobra.Command, []string) {
 	}
 
 	deploy = deployment.New(conf.Reco.Deploy)
-	awsService = aws.New(conf.Reco.AWS)
+
+	sess := session.New()
+	awsBatchService = batch.New(sess)
 
 	db = config.SetupDB(conf)
 	api.DB(db)
@@ -149,7 +154,10 @@ func generatedAFIs() {
 
 func getBatchJobLogNames() {
 	log.Printf("Getting log names")
-	watcher := cw_id_watcher.NewLogWatcher(awsService, models.BatchDataSource(db))
+	watcher := &cw_id_watcher.LogWatcher{
+		BatchAPI:  awsBatchService,
+		BatchRepo: models.BatchDataSource(db),
+	}
 
 	// find batch jobs that've become active in the last hour
 	sinceTime := time.Now().Add(-1 * time.Hour)

@@ -3,6 +3,7 @@
 package models
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -49,6 +50,75 @@ func TestBatchSetLogName(t *testing.T) {
 		if batch.LogName != "bar" {
 			t.Fatal("Failed to set batch job's log name")
 			return
+		}
+	})
+}
+
+func TestBatchGetLogName(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+		batch := BatchJob{
+			BatchID: "foo",
+			LogName: "foobarLogName",
+		}
+		db.Create(&batch)
+		returned, err := d.GetLogName(batch.BatchID)
+		if err != nil {
+			t.Error(err)
+		}
+		if batch.LogName != returned {
+			t.Fatalf("Failed to get batch job's log name. Expected: %v Got: %v \n", batch.LogName, returned)
+			return
+		}
+	})
+}
+
+func TestBatchAwaitStarted(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+
+		batch := BatchJob{
+			BatchID: "foo",
+		}
+		db.Create(&batch)
+
+		err := d.AddEvent(batch, BatchJobEvent{
+			BatchJobID: batch.ID,
+			Status:     StatusStarted,
+		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		ctxtimeout, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		err = BatchAwaitStarted(ctxtimeout, d, batch.BatchID, 100*time.Microsecond)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestBatchHasStarted(t *testing.T) {
+	RunTransaction(func(db *gorm.DB) {
+		d := BatchDataSource(db)
+		batch := BatchJob{
+			BatchID: "foo",
+			Events: []BatchJobEvent{
+				BatchJobEvent{
+					Status: StatusStarted,
+				},
+			},
+		}
+		db.Create(&batch)
+
+		started, err := d.HasStarted(batch.BatchID)
+		if err != nil {
+			t.Error(err)
+		}
+		if !started {
+			t.Error("BatchJob with started event is not considered started")
 		}
 	})
 }
@@ -131,7 +201,7 @@ func TestBatchActiveJobsWithoutLogsWithLogs(t *testing.T) {
 		}
 
 		if len(batchJobs) != 0 {
-			t.Fatal("Expected 0 batch jobs, got %s", len(batchJobs))
+			t.Fatalf("Expected 0 batch jobs, got %v", len(batchJobs))
 			return
 		}
 

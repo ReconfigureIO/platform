@@ -156,8 +156,8 @@ func (s *service) runInstance(ctx context.Context, encodedConfig string, dryRun 
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.RunInstancesInput{
-		DryRun:  aws.Bool(dryRun),
-		ImageId: aws.String(s.Conf.AMI),
+		DryRun:                            aws.Bool(dryRun),
+		ImageId:                           aws.String(s.Conf.AMI),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),

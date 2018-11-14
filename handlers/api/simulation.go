@@ -1,12 +1,14 @@
 package api
 
 import (
+	"crypto/subtle"
+	"errors"
 	"fmt"
 	"net/url"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -18,18 +20,20 @@ import (
 // Simulation handles simulation requests.
 type Simulation struct {
 	APIBaseURL url.URL
-	AWS        aws.Service
-	Events     events.EventService
-	Storage    storage.Service
+	AWS     batch.Service
+	Events  events.EventService
+	Storage storage.Service
+	Repo    models.SimulationRepo
 }
 
 // NewSimulation creates a new Simulation.
-func NewSimulation(APIBaseURL url.URL, events events.EventService, storageService storage.Service, awsSession aws.Service) Simulation {
+func NewSimulation(APIBaseURL url.URL, events events.EventService, storageService storage.Service, awsSession batch.Service, repo models.SimulationRepo) Simulation {
 	return Simulation{
 		APIBaseURL: APIBaseURL,
-		AWS:        awsSession,
-		Events:     events,
-		Storage:    storageService,
+    AWS:     awsSession,
+		Events:  events,
+		Storage: storageService,
+		Repo:    repo,
 	}
 }
 
@@ -197,6 +201,15 @@ func (s Simulation) canPostEvent(c *gin.Context, sim models.Simulation) bool {
 	return false
 }
 
+// isTokenAuthorized handles authentication and authorization for workers. On a
+// job's (e.g. simulation) creation it is given a token which is also given to
+// the worker that processes the job. When the worker sends events or reports to
+// the API it includes this token in the request.
+func isTokenAuthorized(c *gin.Context, correctToken string) bool {
+	gotToken, ok := c.GetQuery("token")
+	return ok && subtle.ConstantTimeCompare([]byte(gotToken), []byte(correctToken)) == 1
+}
+
 // CreateEvent creates a new event.
 func (s Simulation) CreateEvent(c *gin.Context) {
 	sim, err := s.unauthOne(c)
@@ -226,12 +239,13 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	_, isUser := middleware.CheckUser(c)
 	if event.Status == models.StatusTerminated && isUser {
 		sugar.ErrResponse(c, 400, fmt.Sprintf("Users cannot post TERMINATED events, please upgrade to reco v0.3.1 or above"))
+		return
 	}
 
 	newEvent, err := BatchService{AWS: s.AWS}.AddEvent(&sim.BatchJob, event)
 
 	if err != nil {
-		sugar.InternalError(c, nil)
+		sugar.InternalError(c, err)
 		return
 	}
 
@@ -239,4 +253,67 @@ func (s Simulation) CreateEvent(c *gin.Context) {
 	sugar.EnqueueEvent(s.Events, c, eventMessage, sim.Project.UserID, map[string]interface{}{"simulation_id": sim.ID, "project_name": sim.Project.Name, "message": event.Message})
 
 	sugar.SuccessResponse(c, 200, newEvent)
+}
+
+// Report fetches a simulation's report.
+func (s Simulation) Report(c *gin.Context) {
+	user := middleware.GetUser(c)
+	var id string
+	if !bindID(c, &id) {
+		sugar.ErrResponse(c, 404, nil)
+		return
+	}
+	sim, err := s.Repo.ByIDForUser(id, user.ID)
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	report, err := s.Repo.GetReport(sim.ID)
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, report)
+}
+
+// CreateReport creates simulation report.
+func (s Simulation) CreateReport(c *gin.Context) {
+	var id string
+	if !bindID(c, &id) {
+		sugar.ErrResponse(c, 404, nil)
+		return
+	}
+	sim, err := s.Repo.ByID(id)
+	if err != nil {
+		sugar.NotFoundOrError(c, err)
+		return
+	}
+
+	if !isTokenAuthorized(c, sim.Token) {
+		c.AbortWithStatus(403)
+		return
+	}
+
+	if c.ContentType() != "application/vnd.reconfigure.io/reports-v1+json" {
+		err = errors.New("Not a valid report version")
+		sugar.ErrResponse(c, 400, err)
+		return
+	}
+
+	var report models.Report
+	err = c.BindJSON(&report)
+	if err != nil {
+		sugar.ErrResponse(c, 500, err)
+		return
+	}
+
+	err = s.Repo.StoreReport(sim.ID, report)
+	if err != nil {
+		sugar.ErrResponse(c, 500, err)
+		return
+	}
+
+	sugar.SuccessResponse(c, 200, nil)
 }

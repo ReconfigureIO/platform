@@ -3,6 +3,7 @@ package models
 //go:generate mockgen -source=batch.go -package=models -destination=batch_mock.go
 
 import (
+	"context"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -11,8 +12,10 @@ import (
 type BatchRepo interface {
 	AddEvent(batchJob BatchJob, event BatchJobEvent) error
 	New(batchID string) BatchJob
+	GetLogName(batchID string) (logName string, err error)
 	SetLogName(id string, logName string) error
 	ActiveJobsWithoutLogs(time.Time) ([]BatchJob, error)
+	HasStarted(batchID string) (started bool, err error)
 }
 
 const (
@@ -45,11 +48,51 @@ func (repo *batchRepo) New(batchID string) BatchJob {
 	return batchJob
 }
 
+// AwaitStarted polls the BatchRepo's DB for the state of the batch job
+// associated with a given ID. It blocks until the batch job has started, unless
+// an error occurs.
+func BatchAwaitStarted(ctx context.Context, repo BatchRepo, batchID string, pollPeriod time.Duration) error {
+	for {
+		select {
+		case <-time.After(pollPeriod):
+			started, err := repo.HasStarted(batchID)
+			if err != nil {
+				return err
+			}
+			if started {
+				return nil
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// HasStarted returns if the build has started.
+func (repo *batchRepo) HasStarted(batchID string) (bool, error) {
+	var batchJob BatchJob
+	err := repo.db.Preload("Events").Where("batch_id = ?", batchID).First(&batchJob).Error
+	if err != nil {
+		return false, err
+	}
+	return hasStarted(batchJob.Status()), nil
+}
+
 // AddEvent adds an event to the batch service.
 func (repo *batchRepo) AddEvent(batchJob BatchJob, event BatchJobEvent) error {
 	db := repo.db
 	err := db.Model(&batchJob).Association("Events").Append(event).Error
 	return err
+}
+
+// GetLogName takes a BatchJob ID and returns that BatchJob's logname if present
+func (repo *batchRepo) GetLogName(id string) (string, error) {
+	var batchJob BatchJob
+	err := repo.db.Where("batch_id = ?", id).First(&batchJob).Error
+	if err != nil {
+		return "", err
+	}
+	return batchJob.LogName, nil
 }
 
 func (repo *batchRepo) SetLogName(id string, logName string) error {

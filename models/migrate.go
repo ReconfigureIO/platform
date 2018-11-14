@@ -17,4 +17,5 @@ func MigrateAll(db *gorm.DB) {
 	db.AutoMigrate(&BuildReport{})
 	db.AutoMigrate(&Graph{})
 	db.AutoMigrate(&QueueEntry{})
+	db.AutoMigrate(&SimulationReport{})
 }

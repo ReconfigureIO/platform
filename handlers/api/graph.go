@@ -7,7 +7,7 @@ import (
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
-	"github.com/ReconfigureIO/platform/service/aws"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/events"
 	"github.com/ReconfigureIO/platform/service/storage"
 	"github.com/ReconfigureIO/platform/sugar"
@@ -22,7 +22,7 @@ type Graph struct {
 	APIBaseURL url.URL
 	Events     events.EventService
 	Storage    storage.Service
-	AWS        aws.Service
+	AWS        batch.Service
 }
 
 // Common preload functionality.
@@ -247,7 +247,7 @@ func (g Graph) CreateEvent(c *gin.Context) {
 	newEvent, err := BatchService{AWS: g.AWS}.AddEvent(&graph.BatchJob, event)
 
 	if err != nil {
-		sugar.InternalError(c, nil)
+		sugar.InternalError(c, err)
 		return
 	}
 

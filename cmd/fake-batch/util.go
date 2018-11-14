@@ -2,10 +2,28 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/batch"
 )
+
+func newFlushWriter(w http.ResponseWriter) io.Writer {
+	var (
+		fw flushWriter
+		ok bool
+	)
+
+	fw.w, ok = w.(interface {
+		Write([]byte) (int, error)
+		Flush()
+	})
+	if !ok {
+		return w // Flushing not available.
+	}
+	return fw
+}
 
 type flushWriter struct {
 	w interface {

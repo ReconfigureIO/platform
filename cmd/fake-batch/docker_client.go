@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"strings"
+
+	"github.com/docker/docker/pkg/stdcopy"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -76,6 +79,7 @@ type dockerClient interface {
 
 type dockerHelper struct {
 	client  dockerClient
+	state   *DockerState
 	id      string
 	storage storage.Service
 }
@@ -101,7 +105,7 @@ func (dh dockerHelper) Wait() {
 // archival succeeds. If it does not succeed, it is better for the container to
 // hang around since it is the only place the logs exist.
 func (dh dockerHelper) ArchiveLogAndRemoveContainer(extra io.Reader) {
-	// Grab log, shove in S3.
+	// Grab log, put in S3.
 	rc, err := dh.Logs(context.Background())
 	if err != nil {
 		log.Printf("dockerHelper.Wait: dh.Logs: %v", err)
@@ -125,6 +129,11 @@ func (dh dockerHelper) ArchiveLogAndRemoveContainer(extra io.Reader) {
 	}
 
 	// Now that the log is in long term storage, the container can be deleted.
+	// First mark it as deleted in the ContainerState; this blocks until all
+	// non-archive log followers are gone.
+	dh.state.Delete(dh.id)
+
+	// No more use for this container, delete it.
 	err = dh.client.ContainerRemove(
 		context.Background(),
 		dh.id,
@@ -147,6 +156,11 @@ func (dh dockerHelper) Start() {
 			strings.NewReader(err.Error()),
 		)
 	}
+	cs, success := dh.state.Get(dh.id)
+	if success != true {
+		panic("we tried to start a container that doesn't exist")
+	}
+	cs.SetStarted()
 }
 
 func (dh dockerHelper) Run() {
@@ -155,7 +169,7 @@ func (dh dockerHelper) Run() {
 }
 
 func (dh dockerHelper) Logs(ctx context.Context) (io.ReadCloser, error) {
-	return dh.client.ContainerLogs(
+	rawLogs, err := dh.client.ContainerLogs(
 		ctx,
 		dh.id,
 		types.ContainerLogsOptions{
@@ -164,4 +178,19 @@ func (dh dockerHelper) Logs(ctx context.Context) (io.ReadCloser, error) {
 			ShowStdout: true,
 		},
 	)
+	if err != nil {
+		fmt.Printf("Error while running dh.client.ContainerLogs: %v \n dh.id was %v \n", err, dh.id)
+		return nil, err
+	}
+	combinedLogs, w := io.Pipe()
+	go stripDockerLogEncapsulation(w, rawLogs)
+	return combinedLogs, nil
+}
+
+func stripDockerLogEncapsulation(w *io.PipeWriter, r io.Reader) {
+	var err error
+	defer func() {
+		w.CloseWithError(err)
+	}()
+	_, err = stdcopy.StdCopy(w, w, r)
 }
