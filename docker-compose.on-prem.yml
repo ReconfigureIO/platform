@@ -70,6 +70,7 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=foobarbaz
       - S3_ENDPOINT=http://minio.test:9000/
+      - RECO_COMPILER_IMAGE=fake-sdaccel-builder:latest
     command: bash -c "make clean dist-image/dist/fake-batch && ./dist-image/dist/fake-batch"
 
   web:
@@ -101,6 +102,11 @@ services:
       - RECO_FEATURE_DEP_QUEUE=1
       - RECO_PUBLIC_PROJECT_ID=a95550bf-bffa-42df-b100-872501940c5c
 
+# fake-sdaccel-builder is a fake version of our production compiler container
+# image, sdaccel-builder. It sends events and generates logs but doesn't
+# interact with Vivado. We've added it here so that its build is triggered
+# during a 'docker-compose up', after that it can be used by fake-batch during
+# development
   fake-sdaccel-builder:
     build: ./fake-sdaccel-builder
     image: fake-sdaccel-builder:latest

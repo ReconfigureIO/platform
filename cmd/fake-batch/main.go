@@ -20,24 +20,11 @@ func main() {
 
 	jobDefinitions := map[string]JobDefinition{
 		"sdaccel-builder-build": JobDefinition{
-			Image: "398048034572.dkr.ecr.us-east-1.amazonaws.com/reconfigureio/build-framework/sdaccel-builder:v0.17.5",
+			Image: os.Getenv("RECO_COMPILER_IMAGE"),
 			MountPoints: []string{
 				"/opt/Xilinx:/opt/Xilinx",
 			},
 		},
-	}
-	if os.Getenv("RECO_ENV") == "development" {
-		jobDefinitions = map[string]JobDefinition{
-			"ubuntu": JobDefinition{
-				Image: "ubuntu:latest",
-			},
-			"sdaccel-builder-build": JobDefinition{
-				Image: "fake-sdaccel-builder:latest",
-				MountPoints: []string{
-					"/opt/Xilinx:/opt/Xilinx",
-				},
-			},
-		}
 	}
 
 	handler := &handler{
