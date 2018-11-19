@@ -126,8 +126,9 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
+	reportsURL := fmt.Sprintf("https://%s/simulations/%s/reports?token=%s", c.Request.Host, sim.ID, sim.Token)
 
-	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, sim.Command)
+	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, reportsURL, sim.Command)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
