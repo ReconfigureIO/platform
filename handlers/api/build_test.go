@@ -16,6 +16,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/ReconfigureIO/platform/models"
+	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/storage"
 )
 
@@ -145,4 +146,49 @@ func TestDownloadArtifact(t *testing.T) {
 		}
 
 	})
+}
+
+func TestBuildInput(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	storageService := storage.NewMockService(mockCtrl)
+	batchRepo := models.NewMockBatchRepo(mockCtrl)
+	buildRepo := models.NewMockBuildRepo(mockCtrl)
+	batchService := batch.NewMockService(mockCtrl)
+
+	build := models.Build{
+		ID:    "foobarID",
+		Token: "foobartoken",
+		Project: models.Project{
+			User: models.User{
+				ID:       "foobarUserID",
+				GithubID: 1234,
+				Token:    "foobarUserToken",
+			},
+		},
+	}
+
+	apiBuild := Build{
+		Storage:   storageService,
+		Repo:      buildRepo,
+		BatchRepo: batchRepo,
+		AWS:       batchService,
+	}
+	r := gin.Default()
+	r.POST("builds/:id/input", apiBuild.Input)
+
+	buildRepo.EXPECT().ByID(build.ID).Return(build, nil)
+	storageService.EXPECT().Upload("builds/"+build.ID+"/build.tar.gz", nil).Return("", nil)
+	batchService.EXPECT().RunBuild(
+		build,
+		"https://"+r.BasePath()+"builds/"+build.ID+"/events?token="+build.Token,
+		"https://"+r.BasePath()+"builds/"+build.ID+"/reports?token="+build.Token,
+	).Return("foobarBatchJobID", nil)
+	batchRepo.EXPECT().New("foobarBatchJobID").Return(models.BatchJob{})
+	buildRepo.EXPECT().AddBatchJobToBuild(build, models.BatchJob{}).Return(nil)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/builds/"+build.ID+"/input", nil)
+	req.SetBasicAuth(strconv.Itoa(build.Project.User.GithubID), build.Project.User.Token)
+	r.ServeHTTP(w, req)
 }
