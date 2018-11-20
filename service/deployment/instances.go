@@ -80,8 +80,17 @@ func (instances *instances) UpdateInstanceStatus(ctx context.Context) error {
 		return nil
 	}
 
+	var possibleEC2Instances []models.Deployment
+	for _, running := range runningdeployments {
+		id := running.InstanceID
+		if id == "" {
+			continue // No instance associated with this.
+		}
+		possibleEC2Instances = append(possibleEC2Instances, running)
+	}
+
 	// get the status of the associated EC2 instances
-	statuses, err := instances.Deploy.DescribeInstanceStatus(ctx, runningdeployments)
+	statuses, err := instances.Deploy.DescribeInstanceStatus(ctx, possibleEC2Instances)
 	if err != nil {
 		return err
 	}
