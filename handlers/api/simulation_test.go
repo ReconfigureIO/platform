@@ -19,8 +19,8 @@ func TestServiceInterface(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	s := batch.NewMockService(mockCtrl)
-	s.EXPECT().RunSimulation("foo", "bar", "test").Return("foobar", nil)
-	ss, err := s.RunSimulation("foo", "bar", "test")
+	s.EXPECT().RunSimulation("foo", "bar", "baz", "test").Return("foobar", nil)
+	ss, err := s.RunSimulation("foo", "bar", "baz", "test")
 	if err != nil || ss != "foobar" {
 		t.Error("unexpected result")
 	}
