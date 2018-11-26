@@ -1,4 +1,9 @@
-#!/bin/bash
+#!/bin/bash 
+# This script mimics the equivalent script (reco-sdaccel/aws/build.sh)
+# which is used in our production compiler. It produces some basic logs and
+# posts events to platform's events API but it has fewer system requirements
+# than the production script making it easier to test against during end to end
+# testing, for instance it does not require Vivado or run for 4+ hours. 
 set -e
 
 function post_event {
