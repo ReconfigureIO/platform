@@ -40,6 +40,8 @@ services:
 
   test:
     extends: web-base
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - db
       - web-base

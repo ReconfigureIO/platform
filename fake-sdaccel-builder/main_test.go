@@ -52,6 +52,9 @@ func prebuildImage() (string, error) {
 		"docker", "build", "--quiet", "./",
 	)
 	id, err := cmd.CombinedOutput()
+	if len(id) == 0 {
+		panic("No output from docker build")
+	}
 	return string(id[:len(id)-3]), err
 }
 
