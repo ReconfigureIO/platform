@@ -50,6 +50,13 @@ pipeline {
             }
         }
 
+        stage('host-only tests') {
+            steps {
+                sh 'make dependencies'
+                sh 'go test -tags=host_only -v $(go list ./... | grep -v /vendor/ | grep -v /cmd/)'
+            }
+        }
+
         stage('clean') {
             steps {
                 sh 'docker-compose run --rm web-base make clean'

@@ -1,3 +1,5 @@
+// +build host_only
+
 package main_test
 
 import (
@@ -63,13 +65,14 @@ type context struct {
 }
 
 func TestFakeSdaccelBuilder(t *testing.T) {
-	id, err := prebuildImage()
+	imageid, err := prebuildImage()
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := context{
-		imageID: id,
+		imageID: imageid,
 	}
+
 	t.Run("shell-scripts", func(t *testing.T) {
 		t.Run("graph.sh", ctx.testGraphDotSh)
 		t.Run("build.sh", ctx.testBuildDotSh)
