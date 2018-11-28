@@ -19,7 +19,7 @@ echo "running simulation..."
 
 for i in $(seq 1 100)
     do echo $i%
-    sleep 1
+    sleep $SLEEP_PERIOD
 done
 
 post_event COMPLETED

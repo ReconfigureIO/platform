@@ -18,7 +18,7 @@ echo "generating graph..."
 
 for i in $(seq 1 100)
     do echo $i%
-    sleep 1
+    sleep $SLEEP_PERIOD
 done
 
 echo "uploading graph... done"
