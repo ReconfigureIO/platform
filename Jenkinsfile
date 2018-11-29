@@ -4,6 +4,8 @@ pipeline {
         AWS_REGION = "us-east-1"
         KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
         RECO_INTERCOM_ACCESS_TOKEN = credentials('intercom_token')
+        GOPATH= "${env.WORKSPACE}/go"
+        PATH="${env.GOPATH}/bin:${env.PATH}"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
@@ -52,6 +54,7 @@ pipeline {
 
         stage('host-only tests') {
             steps {
+                sh 'curl https://glide.sh/get | sh'
                 sh 'make dependencies'
                 sh 'go test -tags=host_only -v $(go list ./... | grep -v /vendor/ | grep -v /cmd/)'
             }
