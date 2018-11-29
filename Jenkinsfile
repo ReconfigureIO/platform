@@ -4,8 +4,8 @@ pipeline {
         AWS_REGION = "us-east-1"
         KOPS_STATE_STORE = "S3://k8s-reconfigure-infra"
         RECO_INTERCOM_ACCESS_TOKEN = credentials('intercom_token')
-        GOPATH= "${env.WORKSPACE}/go"
-        PATH="${env.GOPATH}/bin:${env.PATH}"
+        GOPATH = "${env.WORKSPACE}/go"
+        PATH = "${env.GOPATH}/bin:${PATH}"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
