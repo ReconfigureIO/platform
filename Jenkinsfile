@@ -6,7 +6,7 @@ pipeline {
         RECO_INTERCOM_ACCESS_TOKEN = credentials('intercom_token')
         GOPATH = "${env.WORKSPACE}/go"
         PATH = "${env.WORKSPACE}/go/bin:/usr/lib/go-1.10/bin:${env.PATH}"
-        PATHX = "foobar"
+        PATHX = "${env.WORKSPACE}:${env.PATH}"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
