@@ -6,15 +6,6 @@ pipeline {
         RECO_INTERCOM_ACCESS_TOKEN = credentials('intercom_token')
         GOPATH = "${env.WORKSPACE}/go"
         PATH = "${env.WORKSPACE}/go/bin:/usr/lib/go-1.10/bin:${env.PATH}"
-
-        
-
-    stages {
-        stage('Test') {
-            steps {
-                echo "PATH : ${env.PATH}"
-                echo "PATHX: ${env.PATHX}"
-                sh "printenv | grep PATH"
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '', numToKeepStr: '20'))
