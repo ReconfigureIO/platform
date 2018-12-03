@@ -64,6 +64,7 @@ pipeline {
         stage('host-only tests') {
             steps {
                 sh 'mkdir ./go/bin -p'
+                sh 'mkdir ./go/src -p'
                 sh 'curl https://glide.sh/get | sh'
                 sh 'make dependencies'
                 sh 'go test -tags=host_only -v $(go list ./... | grep -v /vendor/ | grep -v /cmd/)'
