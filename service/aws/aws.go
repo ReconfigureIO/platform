@@ -115,7 +115,7 @@ func (s *Service) RunBuild(build models.Build, callbackURL string, reportsURL st
 }
 
 // RunSimulation creates an AWS Batch Job that runs our simulation process
-func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, command string) (string, error) {
+func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, reportsURL string, command string) (string, error) {
 	batchSession := batch.New(s.session)
 	params := &batch.SubmitJobInput{
 		JobDefinition: aws.String(s.conf.JobDefinition), // Required
@@ -139,6 +139,10 @@ func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, com
 				{
 					Name:  aws.String("CALLBACK_URL"),
 					Value: aws.String(callbackURL),
+				},
+				{
+					Name:  aws.String("REPORT_URL"),
+					Value: aws.String(reportsURL),
 				},
 				{
 					Name:  aws.String("CMD"),
