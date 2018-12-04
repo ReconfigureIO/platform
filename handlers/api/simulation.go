@@ -26,17 +26,6 @@ type Simulation struct {
 	Repo       models.SimulationRepo
 }
 
-// NewSimulation creates a new Simulation.
-func NewSimulation(APIBaseURL url.URL, events events.EventService, storageService storage.Service, awsSession batch.Service, repo models.SimulationRepo) Simulation {
-	return Simulation{
-		APIBaseURL: APIBaseURL,
-		AWS:        awsSession,
-		Events:     events,
-		Storage:    storageService,
-		Repo:       repo,
-	}
-}
-
 // Common preload functionality.
 func (s Simulation) Preload(db *gorm.DB) *gorm.DB {
 	return db.Preload("Project").
