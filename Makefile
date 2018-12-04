@@ -51,12 +51,10 @@ vet:
 	go list ./... | grep -v /vendor/ | xargs -L1 go vet -v
 
 dependencies:
-	glide install
+	go mod download
 
-$(GOPATH)/bin/mockgen: dependencies $(shell find vendor/github.com/golang/mock -name \*.go)
-	cd vendor/github.com/golang/mock/mockgen && \
-	go get `glide list 2> /dev/null | grep -A100 MISSING | grep -v MISSING | awk '{$$1=$$1};1'` && \
-	go build -o $(GOPATH)/bin/mockgen
+$(GOPATH)/bin/mockgen: dependencies
+	go install github.com/golang/mock/mockgen
 
 generate: $(GOPATH)/bin/mockgen
 	go generate -v $$(go list ./... | grep -v /vendor/ | grep -v /cmd/)
