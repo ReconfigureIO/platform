@@ -129,14 +129,14 @@ func (s Simulation) Input(c *gin.Context) {
 	}
 
 	urlEvents := s.APIBaseURL
-  urlEvents.RawQuery = fmt.Sprintf("token=%s", sim.Token)
-  urlEvents.Path = "/simulations/" + sim.ID + "/events"
-    
-  urlReports := s.APIBaseURL	
-  urlReports.RawQuery = fmt.Sprintf("token=%s", sim.Token)
-  urlReports.Path = "/simulations/" + sim.ID + "/reports"
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", sim.Token)
+	urlEvents.Path = "/simulations/" + sim.ID + "/events"
 
-  simID, err := s.AWS.RunSimulation(s3Url, urlEvents.String(), urlReports.String(), sim.Command)
+	urlReports := s.APIBaseURL
+	urlReports.RawQuery = fmt.Sprintf("token=%s", sim.Token)
+	urlReports.Path = "/simulations/" + sim.ID + "/reports"
+
+	simID, err := s.AWS.RunSimulation(s3Url, urlEvents.String(), urlReports.String(), sim.Command)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
