@@ -219,13 +219,13 @@ func (b Build) Input(c *gin.Context) {
 	urlEvents.Path = "/builds/" + build.ID + "/events"
 	urlReports.Path = "/builds/" + build.ID + "/reports"
 
-	buildID, err := b.AWS.RunBuild(build, urlEvents.String(), urlReports.String())
+	awsBatchJobID, err := b.AWS.RunBuild(build, urlEvents.String(), urlReports.String())
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
 
-	batchJob := b.BatchRepo.New(batchID)
+	batchJob := b.BatchRepo.New(awsBatchJobID)
 	err = b.Repo.AddBatchJobToBuild(build, batchJob)
 	if err != nil {
 		return
