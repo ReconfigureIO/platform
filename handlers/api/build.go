@@ -25,6 +25,8 @@ type Build struct {
 	Events          events.EventService
 	Storage         storage.Service
 	AWS             batch.Service
+	Repo            models.BuildRepo
+	BatchRepo       models.BatchRepo
 	PublicProjectID string
 }
 
@@ -184,8 +186,19 @@ func (b Build) Create(c *gin.Context) {
 
 // Input handles build inputs.
 func (b Build) Input(c *gin.Context) {
-	build, err := b.ByID(c)
+	var id string
+	if !bindID(c, &id) {
+		sugar.ErrResponse(c, 400, "No ID in request")
+		return
+	}
+	build, err := b.Repo.ByID(id)
+	// Not found? Might be a public build ID
+	if err == gorm.ErrRecordNotFound {
+		build, err = b.Repo.ByIDForProject(id, b.PublicProjectID)
+	}
+
 	if err != nil {
+		sugar.NotFoundOrError(c, err)
 		return
 	}
 
@@ -212,11 +225,8 @@ func (b Build) Input(c *gin.Context) {
 		return
 	}
 
-	err = Transaction(c, func(tx *gorm.DB) error {
-		batchJob := BatchService{AWS: b.AWS}.New(buildID)
-		return tx.Model(&build).Association("BatchJob").Append(batchJob).Error
-	})
-
+	batchJob := b.BatchRepo.New(batchID)
+	err = b.Repo.AddBatchJobToBuild(build, batchJob)
 	if err != nil {
 		return
 	}

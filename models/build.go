@@ -15,6 +15,10 @@ type BuildRepo interface {
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, Report) error
 	GetBuildReport(build Build) (BuildReport, error)
+	AddBatchJobToBuild(build Build, batchJob BatchJob) error
+	ByID(buildID string) (Build, error)
+	ByIDForUser(buildID, userID string) (Build, error)
+	ByIDForProject(buildID string, projectID string) (Build, error)
 }
 
 type buildRepo struct{ db *gorm.DB }
@@ -100,7 +104,7 @@ func (build Build) ReportUrl() string {
 	return fmt.Sprintf("builds/%s/reports", build.ID)
 }
 
-// Status returns buikld status.
+// Status returns build status.
 func (b *Build) Status() string {
 	events := b.BatchJob.Events
 	length := len(events)
@@ -159,4 +163,35 @@ func (repo *buildRepo) GetBuildReport(build Build) (BuildReport, error) {
 type PostBuild struct {
 	ProjectID string `json:"project_id" validate:"nonzero"`
 	Message   string `json:"message"`
+}
+
+func (repo *buildRepo) preload() {
+	repo.db.Preload("Project").
+		Preload("BatchJob").
+		Preload("BatchJob.Events", func(db *gorm.DB) *gorm.DB {
+			return db.Order("timestamp ASC")
+		})
+}
+
+func (repo *buildRepo) ByID(buildID string) (Build, error) {
+	var build Build
+	repo.preload()
+	err := repo.db.First(&build, "builds.id = ?", buildID).Error
+	return build, err
+}
+
+func (repo *buildRepo) ByIDForUser(buildID string, userID string) (Build, error) {
+	repo.db.Joins("join projects on projects.id = builds.project_id").
+		Where("projects.user_id=?", userID)
+	return repo.ByID(buildID)
+}
+
+func (repo *buildRepo) ByIDForProject(buildID string, projectID string) (Build, error) {
+	repo.db.Joins("join projects on projects.id = builds.project_id").
+		Where("projects.id=?", projectID)
+	return repo.ByID(buildID)
+}
+
+func (repo *buildRepo) AddBatchJobToBuild(build Build, batchJob BatchJob) error {
+	return repo.db.Model(&build).Association("BatchJob").Append(batchJob).Error
 }

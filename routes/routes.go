@@ -35,6 +35,8 @@ func SetupRoutes(
 	publicProjectID string,
 	authService auth.Service,
 	simRepo models.SimulationRepo,
+	buildRepo models.BuildRepo,
+	batchRepo models.BatchRepo,
 ) *gin.Engine {
 
 	// setup common routes
@@ -82,6 +84,8 @@ func SetupRoutes(
 		Storage:         storage,
 		PublicProjectID: publicProjectID,
 		AWS:             awsService,
+		Repo:            buildRepo,
+		BatchRepo:       batchRepo,
 	}
 	buildRoute := apiRoutes.Group("/builds")
 	{
