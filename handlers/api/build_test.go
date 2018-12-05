@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -168,13 +169,20 @@ func TestBuildInput(t *testing.T) {
 		},
 	}
 
-	apiBuild := Build{
-		Storage:   storageService,
-		Repo:      buildRepo,
-		BatchRepo: batchRepo,
-		AWS:       batchService,
-	}
 	r := gin.Default()
+	baseURL := url.URL{
+		Host:   r.BasePath(),
+		Scheme: "https",
+	}
+
+	apiBuild := Build{
+		APIBaseURL: baseURL,
+		Storage:    storageService,
+		Repo:       buildRepo,
+		BatchRepo:  batchRepo,
+		AWS:        batchService,
+	}
+
 	r.POST("builds/:id/input", apiBuild.Input)
 
 	buildRepo.EXPECT().ByID(build.ID).Return(build, nil)
