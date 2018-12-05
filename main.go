@@ -145,7 +145,21 @@ func main() {
 	}
 
 	// routes
-	routes.SetupRoutes(conf.Reco, conf.SecretKey, r, db, awsSession, events, leads, storageService, deploy, publicProjectID, authService, models.SimulationDataSource(db))
+	routes.SetupRoutes(conf.Reco,
+		conf.SecretKey,
+		r,
+		db,
+		awsSession,
+		events,
+		leads,
+		storageService,
+		deploy,
+		publicProjectID,
+		authService,
+		models.SimulationDataSource(db),
+		models.BuildDataSource(db),
+		models.BatchDataSource(db),
+	)
 
 	// queue
 	var deploymentQueue queue.Queue
