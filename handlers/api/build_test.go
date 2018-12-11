@@ -171,7 +171,7 @@ func TestBuildInput(t *testing.T) {
 
 	r := gin.Default()
 	baseURL := url.URL{
-		Host:   r.BasePath(),
+		Host:   "localhost",
 		Scheme: "https",
 	}
 
@@ -189,8 +189,8 @@ func TestBuildInput(t *testing.T) {
 	storageService.EXPECT().Upload("builds/"+build.ID+"/build.tar.gz", nil).Return("", nil)
 	batchService.EXPECT().RunBuild(
 		build,
-		"https://"+r.BasePath()+"builds/"+build.ID+"/events?token="+build.Token,
-		"https://"+r.BasePath()+"builds/"+build.ID+"/reports?token="+build.Token,
+		"https://localhost/builds/"+build.ID+"/events?token="+build.Token,
+		"https://localhost/builds/"+build.ID+"/reports?token="+build.Token,
 	).Return("foobarBatchJobID", nil)
 	batchRepo.EXPECT().New("foobarBatchJobID").Return(models.BatchJob{})
 	buildRepo.EXPECT().AddBatchJobToBuild(build, models.BatchJob{}).Return(nil)
