@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ReconfigureIO/platform/middleware"
 	"github.com/ReconfigureIO/platform/models"
@@ -18,20 +19,11 @@ import (
 
 // Simulation handles simulation requests.
 type Simulation struct {
-	AWS     batch.Service
-	Events  events.EventService
-	Storage storage.Service
-	Repo    models.SimulationRepo
-}
-
-// NewSimulation creates a new Simulation.
-func NewSimulation(events events.EventService, storageService storage.Service, awsSession batch.Service, repo models.SimulationRepo) Simulation {
-	return Simulation{
-		AWS:     awsSession,
-		Events:  events,
-		Storage: storageService,
-		Repo:    repo,
-	}
+	APIBaseURL url.URL
+	AWS        batch.Service
+	Events     events.EventService
+	Storage    storage.Service
+	Repo       models.SimulationRepo
 }
 
 // Common preload functionality.
@@ -125,10 +117,15 @@ func (s Simulation) Input(c *gin.Context) {
 		return
 	}
 
-	callbackURL := fmt.Sprintf("https://%s/simulations/%s/events?token=%s", c.Request.Host, sim.ID, sim.Token)
-	reportsURL := fmt.Sprintf("https://%s/simulations/%s/reports?token=%s", c.Request.Host, sim.ID, sim.Token)
+	urlEvents := s.APIBaseURL
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", sim.Token)
+	urlEvents.Path = "/simulations/" + sim.ID + "/events"
 
-	simID, err := s.AWS.RunSimulation(s3Url, callbackURL, reportsURL, sim.Command)
+	urlReports := s.APIBaseURL
+	urlReports.RawQuery = fmt.Sprintf("token=%s", sim.Token)
+	urlReports.Path = "/simulations/" + sim.ID + "/reports"
+
+	simID, err := s.AWS.RunSimulation(s3Url, urlEvents.String(), urlReports.String(), sim.Command)
 	if err != nil {
 		sugar.InternalError(c, err)
 		return

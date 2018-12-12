@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -168,21 +169,28 @@ func TestBuildInput(t *testing.T) {
 		},
 	}
 
-	apiBuild := Build{
-		Storage:   storageService,
-		Repo:      buildRepo,
-		BatchRepo: batchRepo,
-		AWS:       batchService,
-	}
 	r := gin.Default()
+	baseURL := url.URL{
+		Host:   "localhost",
+		Scheme: "https",
+	}
+
+	apiBuild := Build{
+		APIBaseURL: baseURL,
+		Storage:    storageService,
+		Repo:       buildRepo,
+		BatchRepo:  batchRepo,
+		AWS:        batchService,
+	}
+
 	r.POST("builds/:id/input", apiBuild.Input)
 
 	buildRepo.EXPECT().ByID(build.ID).Return(build, nil)
 	storageService.EXPECT().Upload("builds/"+build.ID+"/build.tar.gz", nil).Return("", nil)
 	batchService.EXPECT().RunBuild(
 		build,
-		"https://"+r.BasePath()+"builds/"+build.ID+"/events?token="+build.Token,
-		"https://"+r.BasePath()+"builds/"+build.ID+"/reports?token="+build.Token,
+		"https://localhost/builds/"+build.ID+"/events?token="+build.Token,
+		"https://localhost/builds/"+build.ID+"/reports?token="+build.Token,
 	).Return("foobarBatchJobID", nil)
 	batchRepo.EXPECT().New("foobarBatchJobID").Return(models.BatchJob{})
 	buildRepo.EXPECT().AddBatchJobToBuild(build, models.BatchJob{}).Return(nil)

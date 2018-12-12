@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/url"
+
 	"github.com/ReconfigureIO/platform/config"
 	"github.com/ReconfigureIO/platform/handlers"
 	"github.com/ReconfigureIO/platform/handlers/api"
@@ -22,6 +24,7 @@ import (
 func SetupRoutes(
 	config config.RecoConfig,
 	secretKey string,
+	apiBaseURL url.URL,
 	r *gin.Engine,
 	db *gorm.DB,
 	awsService batch.Service,
@@ -76,6 +79,7 @@ func SetupRoutes(
 	}
 
 	build := api.Build{
+		APIBaseURL:      apiBaseURL,
 		Events:          events,
 		Storage:         storage,
 		PublicProjectID: publicProjectID,
@@ -108,7 +112,13 @@ func SetupRoutes(
 		projectRoute.GET("/:id", project.Get)
 	}
 
-	simulation := api.NewSimulation(events, storage, awsService, simRepo)
+	simulation := api.Simulation{
+		APIBaseURL: apiBaseURL,
+		AWS:        awsService,
+		Events:     events,
+		Storage:    storage,
+		Repo:       simRepo,
+	}
 	simulationRoute := apiRoutes.Group("/simulations")
 	{
 		simulationRoute.GET("", simulation.List)
@@ -120,9 +130,10 @@ func SetupRoutes(
 	}
 
 	graph := api.Graph{
-		AWS:     awsService,
-		Events:  events,
-		Storage: storage,
+		APIBaseURL: apiBaseURL,
+		AWS:        awsService,
+		Events:     events,
+		Storage:    storage,
 	}
 	graphRoute := apiRoutes.Group("/graphs")
 	{
@@ -134,6 +145,7 @@ func SetupRoutes(
 	}
 
 	deployment := api.Deployment{
+		APIBaseURL:       apiBaseURL,
 		Events:           events,
 		Storage:          storage,
 		DeployService:    deploy,

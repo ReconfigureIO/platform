@@ -5,6 +5,7 @@ package routes
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestIndexHandler(t *testing.T) {
 	// Setup router
 	r := gin.Default()
 	r.LoadHTMLGlob("../templates/*")
-	r = SetupRoutes(config.RecoConfig{}, "secretKey", r, db, nil, events, nil, nil, nil, "foobar", &auth.NOPService{}, nil, nil, nil)
+	r = SetupRoutes(config.RecoConfig{}, "secretKey", url.URL{}, r, db, nil, events, nil, nil, nil, "foobar", &auth.NOPService{}, nil, nil, nil)
 
 	// Create a mock request to the index.
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
