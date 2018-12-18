@@ -15,7 +15,7 @@ type BuildRepo interface {
 	GetBuildsWithStatus([]string, int) ([]Build, error)
 	StoreBuildReport(Build, Report) error
 	GetBuildReport(build Build) (BuildReport, error)
-	AddBatchJobToBuild(build Build, batchJob BatchJob) error
+	AddBatchJobToBuild(build *Build, batchJob BatchJob) error
 	ByID(buildID string) (Build, error)
 	ByIDForUser(buildID, userID string) (Build, error)
 	ByIDForProject(buildID string, projectID string) (Build, error)
@@ -192,6 +192,6 @@ func (repo *buildRepo) ByIDForProject(buildID string, projectID string) (Build, 
 	return repo.ByID(buildID)
 }
 
-func (repo *buildRepo) AddBatchJobToBuild(build Build, batchJob BatchJob) error {
-	return repo.db.Model(&build).Association("BatchJob").Append(batchJob).Error
+func (repo *buildRepo) AddBatchJobToBuild(build *Build, batchJob BatchJob) error {
+	return repo.db.Model(build).Association("BatchJob").Append(batchJob).Error
 }

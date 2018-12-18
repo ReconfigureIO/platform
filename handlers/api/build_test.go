@@ -193,7 +193,7 @@ func TestBuildInput(t *testing.T) {
 		"https://localhost/builds/"+build.ID+"/reports?token="+build.Token,
 	).Return("foobarBatchJobID", nil)
 	batchRepo.EXPECT().New("foobarBatchJobID").Return(models.BatchJob{})
-	buildRepo.EXPECT().AddBatchJobToBuild(build, models.BatchJob{}).Return(nil)
+	buildRepo.EXPECT().AddBatchJobToBuild(&build, models.BatchJob{}).Return(nil)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/builds/"+build.ID+"/input", nil)

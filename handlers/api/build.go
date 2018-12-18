@@ -226,7 +226,7 @@ func (b Build) Input(c *gin.Context) {
 	}
 
 	batchJob := b.BatchRepo.New(awsBatchJobID)
-	err = b.Repo.AddBatchJobToBuild(build, batchJob)
+	err = b.Repo.AddBatchJobToBuild(&build, batchJob)
 	if err != nil {
 		return
 	}
