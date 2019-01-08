@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/ReconfigureIO/platform/service/batch"
 	"github.com/ReconfigureIO/platform/service/storage"
@@ -20,6 +21,7 @@ import (
 
 // Build handles requests for builds.
 type Build struct {
+	APIBaseURL      url.URL
 	Events          events.EventService
 	Storage         storage.Service
 	AWS             batch.Service
@@ -210,16 +212,21 @@ func (b Build) Input(c *gin.Context) {
 		sugar.InternalError(c, err)
 		return
 	}
-	callbackURL := fmt.Sprintf("https://%s/builds/%s/events?token=%s", c.Request.Host, build.ID, build.Token)
-	reportsURL := fmt.Sprintf("https://%s/builds/%s/reports?token=%s", c.Request.Host, build.ID, build.Token)
-	batchID, err := b.AWS.RunBuild(build, callbackURL, reportsURL)
+
+	urlEvents, urlReports := b.APIBaseURL, b.APIBaseURL
+	urlEvents.RawQuery = fmt.Sprintf("token=%s", build.Token)
+	urlReports.RawQuery = fmt.Sprintf("token=%s", build.Token)
+	urlEvents.Path = "/builds/" + build.ID + "/events"
+	urlReports.Path = "/builds/" + build.ID + "/reports"
+
+	awsBatchJobID, err := b.AWS.RunBuild(build, urlEvents.String(), urlReports.String())
 	if err != nil {
 		sugar.InternalError(c, err)
 		return
 	}
 
-	batchJob := b.BatchRepo.New(batchID)
-	err = b.Repo.AddBatchJobToBuild(build, batchJob)
+	batchJob := b.BatchRepo.New(awsBatchJobID)
+	err = b.Repo.AddBatchJobToBuild(&build, batchJob)
 	if err != nil {
 		return
 	}

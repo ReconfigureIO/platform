@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/ReconfigureIO/platform/service/batch"
@@ -26,6 +27,7 @@ const (
 
 // Deployment handles request for deployments.
 type Deployment struct {
+	APIBaseURL       url.URL
 	Events           events.EventService
 	UseSpotInstances bool
 	Storage          storage.Service
@@ -143,9 +145,11 @@ func (d Deployment) Create(c *gin.Context) {
 			return
 		}
 
-		callbackURL := fmt.Sprintf("https://%s/deployments/%s/events?token=%s", c.Request.Host, newDep.ID, newDep.Token)
+		urlEvents := d.APIBaseURL
+		urlEvents.RawQuery = fmt.Sprintf("token=%s", newDep.Token)
+		urlEvents.Path = "/deployments/" + newDep.ID + "/events"
 
-		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, callbackURL)
+		instanceID, err := d.DeployService.RunDeployment(context.Background(), newDep, urlEvents.String())
 		if err != nil {
 			sugar.InternalError(c, err)
 			return
