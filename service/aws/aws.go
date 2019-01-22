@@ -78,11 +78,11 @@ func (s *Service) RunBuild(build models.Build, callbackURL string, reportsURL st
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
+					Value: aws.String("xilinx_aws-vu9p-f1-04261818_dynamic_5_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
+					Value: aws.String("xilinx_aws-vu9p-f1-04261818_dynamic_5_0"),
 				},
 				{
 					Name:  aws.String("OUTPUT_URL"),
@@ -150,11 +150,11 @@ func (s *Service) RunSimulation(inputArtifactURL string, callbackURL string, rep
 				},
 				{
 					Name:  aws.String("DEVICE"),
-					Value: aws.String("xilinx_aws-vu9p-f1_4ddr-xpr-2pr_4_0"),
+					Value: aws.String("xilinx_aws-vu9p-f1-04261818_dynamic_5_0"),
 				},
 				{
 					Name:  aws.String("DEVICE_FULL"),
-					Value: aws.String("xilinx:aws-vu9p-f1:4ddr-xpr-2pr:4.0"),
+					Value: aws.String("xilinx_aws-vu9p-f1-04261818_dynamic_5_0"),
 				},
 			},
 		},
