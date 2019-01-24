@@ -48,7 +48,7 @@ type service struct {
 
 type ServiceConfig struct {
 	LogGroup      string `env:"RECO_DEPLOY_LOG_GROUP" envDefault:"/reconfigureio/deployments"`
-	Image         string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/docker-aws-fpga-runtime:latest"`
+	Image         string `env:"RECO_DEPLOY_IMAGE" envDefault:"reconfigureio/build-framework/sdaccel-builder:v0.18.7-dirty"`
 	AMI           string `env:"RECO_DEPLOY_AMI"`
 	Bucket        string `env:"RECO_DEPLOY_BUCKET" envDefault:"reconfigureio-builds"`
 	Subnet        string `env:"RECO_DEPLOY_SUBNET" envDefault:"subnet-fa2a9c9e"`
@@ -156,8 +156,8 @@ func (s *service) runInstance(ctx context.Context, encodedConfig string, dryRun 
 	ec2Session := ec2.New(s.session)
 
 	cfg := ec2.RunInstancesInput{
-		DryRun:                            aws.Bool(dryRun),
-		ImageId:                           aws.String(s.Conf.AMI),
+		DryRun:  aws.Bool(dryRun),
+		ImageId: aws.String(s.Conf.AMI),
 		InstanceInitiatedShutdownBehavior: aws.String("terminate"),
 		InstanceType:                      aws.String("f1.2xlarge"),
 		MaxCount:                          aws.Int64(1),
